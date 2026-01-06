@@ -46,8 +46,23 @@ export const SkillList: React.FC<SkillListProps> = ({
   // Helper to normalize strings for comparison (remove accents, lowercase)
   const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  const handleRoll = (skillName: string, rankValue: number, otherValue: number, llBonus: number) => {
-    const d20 = rollDice(20, 1);
+  const handleRoll = (skillName: string, rankValue: number, otherValue: number, llBonus: number, attributeName?: string) => {
+    // 1. Determine Dice Count based on Attribute
+    let diceCount = 1;
+    if (attributeName && char.attributes[attributeName as keyof Attributes]) {
+        diceCount = char.attributes[attributeName as keyof Attributes];
+    }
+    // Safety: Always roll at least 1 die
+    diceCount = Math.max(1, diceCount);
+
+    // 2. Roll the pool
+    const rolls: number[] = [];
+    for (let i = 0; i < diceCount; i++) {
+        rolls.push(rollDice(20, 1));
+    }
+
+    // 3. Pick the highest
+    const d20 = Math.max(...rolls);
     
     // Check for Reaction Penalty (Applies to Reflexos and Luta)
     let reactionPenalty = 0;
@@ -58,10 +73,18 @@ export const SkillList: React.FC<SkillListProps> = ({
 
     const total = d20 + rankValue + otherValue + llBonus - reactionPenalty;
     
-    // Construct breakdown string in a shorter format like the screenshot [Dice]+Bonus
+    // Construct breakdown string
     const totalBonuses = rankValue + otherValue + llBonus - reactionPenalty;
     const sign = totalBonuses >= 0 ? '+' : '';
-    let breakdown = `[${d20}]${sign}${totalBonuses}`;
+    
+    // Format: "[5, 18, 2] -> 18+5" or just "[15]+5" if single die
+    let breakdown = `[${rolls.join(', ')}]`;
+    
+    if (diceCount > 1) {
+        breakdown += ` ➜ ${d20}`;
+    }
+    
+    breakdown += `${sign}${totalBonuses}`;
 
     // --- Active Buffs Trigger Logic ---
     let buffsTriggered: Ability[] = [];
@@ -146,7 +169,7 @@ export const SkillList: React.FC<SkillListProps> = ({
       
       {/* Visual Roll Result Notification (Bottom Right) */}
       {rollResult && (
-        <div className="fixed bottom-6 right-6 z-50 w-72 bg-neutral-900 border border-neutral-800 rounded-sm shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
+        <div className="fixed bottom-6 right-6 z-50 w-80 bg-neutral-900 border border-neutral-800 rounded-sm shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
            {/* Accent Line */}
            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-pink-600"></div>
 
@@ -166,8 +189,8 @@ export const SkillList: React.FC<SkillListProps> = ({
               </div>
 
               <div className="flex justify-between items-end border-t border-neutral-800 pt-2 mt-2">
-                 <span className="text-neutral-500 font-mono text-sm tracking-tighter">{rollResult.breakdown}</span>
-                 <div className="flex items-center gap-2">
+                 <span className="text-neutral-500 font-mono text-xs tracking-tighter max-w-[70%] break-words">{rollResult.breakdown}</span>
+                 <div className="flex items-center gap-2 shrink-0">
                     <span className="text-neutral-600 text-sm font-bold">=</span>
                     <div className="text-4xl font-black text-white leading-none">{rollResult.total}</div>
                  </div>
@@ -225,7 +248,7 @@ export const SkillList: React.FC<SkillListProps> = ({
             >
               {/* Name Column (Click to Roll) */}
               <button 
-                onClick={() => handleRoll(skill.name, skill.value, otherBonus, llBonus)}
+                onClick={() => handleRoll(skill.name, skill.value, otherBonus, llBonus, skill.attribute)}
                 className="flex items-center gap-2 overflow-hidden text-left hover:bg-white/5 p-1 -ml-1 rounded transition-colors"
               >
                  <div className="relative w-4 h-4 flex items-center justify-center shrink-0">
