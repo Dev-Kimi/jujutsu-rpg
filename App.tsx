@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Droplet, Zap, Activity, Skull, Flame, LogOut } from 'lucide-react';
 import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes } from './types';
@@ -16,6 +15,12 @@ import { CharacterSelection } from './components/CharacterSelection';
 import { CharacterCreator } from './components/CharacterCreator';
 import { CharacterAttributes } from './components/CharacterAttributes';
 import { CampaignManager } from './components/CampaignManager';
+
+// Firebase auth imports
+import { auth } from './firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import Auth from './components/Auth';
+import UserMenu from './components/UserMenu';
 
 // Helper to generate a fresh character state (Fallback only)
 const getInitialChar = (): Character => ({
@@ -61,6 +66,16 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('combat');
   const [showAbilityLibrary, setShowAbilityLibrary] = useState(false);
   const [abilityLibraryCategory, setAbilityLibraryCategory] = useState<string>('Combatente');
+
+  // Firebase current user state
+  const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsub();
+  }, []);
   
   // Save List to LocalStorage whenever it changes
   useEffect(() => {
@@ -328,6 +343,11 @@ const App: React.FC = () => {
 
   // --- RENDER ---
 
+  // If not logged in, show Auth screen
+  if (!currentUser) {
+    return <Auth />;
+  }
+
   if (viewMode === 'menu') {
      return (
         <CharacterSelection 
@@ -397,6 +417,11 @@ const App: React.FC = () => {
               <span className="text-xs font-mono">Rodada {domainRound}</span>
             </div>
           )}
+        </div>
+
+        {/* Right area: user menu */}
+        <div className="flex items-center gap-4">
+          <UserMenu user={currentUser} />
         </div>
       </header>
 
