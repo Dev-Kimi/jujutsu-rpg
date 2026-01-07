@@ -17,8 +17,9 @@ import { CharacterAttributes } from './components/CharacterAttributes';
 import { CampaignManager } from './components/CampaignManager';
 
 // Firebase auth imports
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import Auth from './components/Auth';
 import UserMenu from './components/UserMenu';
 
@@ -77,9 +78,22 @@ const App: React.FC = () => {
     return () => unsub();
   }, []);
   
-  // Save List to LocalStorage whenever it changes
+  // Helper: persist savedCharacters to Firestore users/{uid}
+  const persistUserCharacters = async (chars: Character[]) => {
+    try {
+      if (!auth.currentUser) return;
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await setDoc(userRef, { savedCharacters: chars, email: auth.currentUser.email || null }, { merge: true });
+    } catch (err) {
+      console.error('Erro ao persistir savedCharacters no Firestore', err);
+    }
+  };
+
+  // Save List to LocalStorage whenever it changes (and persist to Firestore)
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedCharacters));
+    // Persist after localStorage updated
+    persistUserCharacters(savedCharacters);
   }, [savedCharacters]);
 
   // Derived Stats based on Character
@@ -129,11 +143,9 @@ const App: React.FC = () => {
   const saveCurrentCharacter = () => {
      setSavedCharacters(prev => {
       const exists = prev.some(c => c.id === character.id);
-      if (exists) {
-        return prev.map(c => c.id === character.id ? character : c);
-      } else {
-        return [...prev, character];
-      }
+      const updated = exists ? prev.map(c => c.id === character.id ? character : c) : [...prev, character];
+      // persistUserCharacters is invoked by the useEffect that watches savedCharacters
+      return updated;
     });
   };
 
@@ -162,8 +174,11 @@ const App: React.FC = () => {
   };
 
   const handleFinishCreation = (newChar: Character) => {
-     // Save immediately
-     setSavedCharacters(prev => [...prev, newChar]);
+     // Save immediately (this will trigger persistence effect)
+     setSavedCharacters(prev => {
+       const updated = [...prev, newChar];
+       return updated;
+     });
      // Select and go to sheet
      handleSelectCharacter(newChar);
   };
@@ -174,10 +189,11 @@ const App: React.FC = () => {
         setCharacter(getInitialChar());
     }
     setSavedCharacters(prev => prev.filter(c => c.id !== id));
+    // persistence handled by effect
   };
 
   const handleBackToMenu = () => {
-    saveCurrentCharacter(); // Auto-save on exit
+    saveCurrentCharacter(); // Auto-save on exit (will update savedCharacters and persist)
     setViewMode('menu');
   };
 
