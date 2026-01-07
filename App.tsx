@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Droplet, Zap, Activity, Skull, Flame, LogOut } from 'lucide-react';
 import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes } from './types';
@@ -14,6 +15,7 @@ import { LevelUpSummary } from './components/LevelUpSummary';
 import { CharacterSelection } from './components/CharacterSelection';
 import { CharacterCreator } from './components/CharacterCreator';
 import { CharacterAttributes } from './components/CharacterAttributes';
+import { CampaignManager } from './components/CampaignManager';
 
 // Helper to generate a fresh character state (Fallback only)
 const getInitialChar = (): Character => ({
@@ -29,7 +31,7 @@ const getInitialChar = (): Character => ({
   inventory: []
 });
 
-type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression';
+type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' | 'campaigns';
 type ViewMode = 'menu' | 'creator' | 'sheet';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
@@ -398,6 +400,32 @@ const App: React.FC = () => {
         </div>
       </header>
 
+      {/* If Campaign Tab Active, it takes over Main */}
+      {activeTab === 'campaigns' ? (
+          <div className="max-w-[1600px] mx-auto p-4 pb-24 h-full">
+            <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar mb-6">
+                {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'campaigns'] as Tab[]).map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`flex-1 py-2 px-2 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all whitespace-nowrap flex justify-center items-center gap-1
+                        ${activeTab === tab 
+                            ? 'bg-curse-600 text-white shadow-lg shadow-curse-900/50' 
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}
+                        `}
+                    >
+                    {tab === 'combat' && 'Combate'}
+                    {tab === 'abilities' && 'Habilid.'}
+                    {tab === 'techniques' && 'Técnicas'}
+                    {tab === 'inventory' && 'Invent.'}
+                    {tab === 'progression' && 'Progressão'}
+                    {tab === 'campaigns' && 'Campanhas'}
+                    </button>
+                ))}
+            </div>
+            <CampaignManager currentUserChar={character} />
+          </div>
+      ) : (
       <main className="max-w-[1600px] mx-auto p-4 pb-24">
         
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6 items-start">
@@ -511,7 +539,7 @@ const App: React.FC = () => {
             
             {/* Tab Navigation */}
             <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar">
-               {(['combat', 'abilities', 'techniques', 'inventory', 'progression'] as Tab[]).map(tab => (
+               {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'campaigns'] as Tab[]).map(tab => (
                  <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -526,6 +554,7 @@ const App: React.FC = () => {
                    {tab === 'techniques' && 'Técnicas'}
                    {tab === 'inventory' && 'Invent.'}
                    {tab === 'progression' && 'Progressão'}
+                   {tab === 'campaigns' && 'Campanhas'}
                  </button>
                ))}
             </div>
@@ -587,6 +616,7 @@ const App: React.FC = () => {
 
         </div>
       </main>
+      )}
     </div>
   );
 };
