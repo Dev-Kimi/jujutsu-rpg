@@ -90,6 +90,26 @@ export interface ActionState {
   reactionPenalty: number;
 }
 
+// --- CAMPAIGN TYPES ---
+
+export interface CampaignParticipant {
+  userId: string;
+  characterId: string;
+  characterName: string;
+  characterClass: string;
+  level: number;
+  imageUrl?: string;
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  description: string;
+  gmId: string; // User ID of the Game Master
+  participants: CampaignParticipant[];
+  createdAt: number;
+}
+
 // Updated based on Rulebook Section "Perícias"
 export const DEFAULT_SKILLS: Skill[] = [
   // Agilidade
