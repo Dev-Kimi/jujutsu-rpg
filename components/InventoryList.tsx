@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Item } from '../types';
 import { MUNDANE_WEAPONS, CURSED_TOOL_GRADES } from '../utils/equipmentData';
@@ -8,9 +9,10 @@ interface InventoryListProps {
   onAdd: (template?: Partial<Item>) => void;
   onUpdate: (id: string, field: keyof Item, value: any) => void;
   onRemove: (id: string) => void;
+  readOnly?: boolean;
 }
 
-export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUpdate, onRemove }) => {
+export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUpdate, onRemove, readOnly }) => {
   const [activeTab, setActiveTab] = useState<'my-items' | 'catalog'>('my-items');
   const [catalogSection, setCatalogSection] = useState<'weapons' | 'cursed'>('weapons');
 
@@ -23,9 +25,30 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
       name: name,
       description: description
     });
-    // Optional: Switch back to my-items to show it was added, or stay to add more
-    // setActiveTab('my-items'); 
   };
+
+  if (readOnly) {
+     // Simplified Read Only View
+     return (
+        <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[200px] flex flex-col p-4">
+             <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                 <Package size={16} /> Inventário
+             </h4>
+             <div className="space-y-2 overflow-y-auto max-h-[400px]">
+                 {items.length === 0 && <span className="text-slate-600 text-xs italic">Vazio.</span>}
+                 {items.map(item => (
+                     <div key={item.id} className={`bg-slate-950 border ${item.isBroken ? 'border-red-900/50' : 'border-slate-800'} rounded p-2 text-xs flex justify-between`}>
+                         <div>
+                            <span className={`font-bold ${item.isBroken ? 'text-red-500 line-through' : 'text-slate-200'}`}>{item.name}</span>
+                            {item.quantity > 1 && <span className="text-slate-500 ml-2">x{item.quantity}</span>}
+                            <div className="text-[10px] text-slate-500">{item.description}</div>
+                         </div>
+                     </div>
+                 ))}
+             </div>
+        </div>
+     );
+  }
 
   return (
     <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[500px] flex flex-col">
