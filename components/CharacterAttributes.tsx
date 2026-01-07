@@ -3,15 +3,17 @@ import React, { useState } from 'react';
 import { Character, Attributes, CharacterClass, Origin } from '../types';
 import { rollDice } from '../utils/calculations';
 import { Dna, Sword, Brain, Activity, Shield, Zap, X, Hexagon, Edit2, Check } from 'lucide-react';
+import { logDiceRoll } from '../utils/diceRollLogger';
 
 interface CharacterAttributesProps {
   char: Character;
   onUpdate: (field: keyof Character, value: any) => void;
   onUpdateAttribute: (attr: keyof Attributes, val: number) => void;
   readOnly?: boolean;
+  campaignId?: string; // Optional campaign ID for logging rolls
 }
 
-export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, onUpdate, onUpdateAttribute, readOnly }) => {
+export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, onUpdate, onUpdateAttribute, readOnly, campaignId }) => {
   const [rollResult, setRollResult] = useState<{ title: string, total: number, detail: string, isPhysical: boolean } | null>(null);
   const [isEditingIdentity, setIsEditingIdentity] = useState(false);
 
@@ -66,12 +68,26 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
     
     const total = highest + bonus;
 
+    const breakdown = `[${rolls.join(', ')}] ➜ ${highest} ${bonus > 0 ? `+ ${bonus} (LL)` : ''}`;
+    
     setRollResult({
       title: `Teste de ${attr}`,
       total,
       isPhysical,
-      detail: `[${rolls.join(', ')}] ➜ ${highest} ${bonus > 0 ? `+ ${bonus} (LL)` : ''}`
+      detail: breakdown
     });
+
+    // Log to campaign if campaignId is provided
+    if (campaignId) {
+      logDiceRoll(
+        campaignId,
+        char.name,
+        `Teste de ${attr}`,
+        rolls,
+        total,
+        breakdown
+      ).catch(err => console.error('Failed to log dice roll:', err));
+    }
   };
 
   const getIcon = (attr: keyof Attributes) => {
