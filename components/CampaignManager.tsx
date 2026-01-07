@@ -93,11 +93,19 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   };
 
   const handleViewCharacter = async (participant: CampaignParticipant) => {
-    // If it's me, I don't need to fetch, but let's allow it for consistency or block it
+    // If it's me, use the currentUserChar directly
     if (participant.userId === auth.currentUser?.uid) {
-        // Just alert or do nothing, user has their sheet in other tabs
-        alert("Esta é sua própria ficha.");
-        return;
+        // Check if the character ID matches
+        if (currentUserChar.id === participant.characterId) {
+            setViewingChar(currentUserChar);
+            const stats = calculateDerivedStats(currentUserChar);
+            setViewingStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE });
+            setView('sheet');
+            return;
+        } else {
+            alert("O personagem selecionado na campanha não corresponde ao personagem atual.");
+            return;
+        }
     }
 
     try {
@@ -106,9 +114,14 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
         
         if (userDocSnap.exists()) {
             const userData = userDocSnap.data();
-            // Assuming the structure is { savedCharacters: Character[] } based on App.tsx logic
-            // In a real FireStore impl, ensure this path matches where you save `savedCharacters`.
-            const characters = userData.savedCharacters as Character[]; 
+            // Check if savedCharacters exists and is an array
+            const characters = (userData.savedCharacters as Character[]) || [];
+            
+            if (!Array.isArray(characters) || characters.length === 0) {
+                alert("O jogador não possui personagens salvos no banco de dados.");
+                return;
+            }
+            
             const target = characters.find(c => c.id === participant.characterId);
             
             if (target) {
@@ -119,14 +132,14 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                 setViewingStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE });
                 setView('sheet');
             } else {
-                alert("Personagem não encontrado no banco de dados.");
+                alert(`Personagem com ID "${participant.characterId}" não encontrado no banco de dados do jogador.`);
             }
         } else {
-            alert("Dados do jogador não encontrados.");
+            alert("Dados do jogador não encontrados. O jogador pode não ter criado nenhum personagem ainda.");
         }
     } catch (error) {
         console.error("Error fetching character", error);
-        alert("Erro ao carregar ficha.");
+        alert("Erro ao carregar ficha: " + (error instanceof Error ? error.message : String(error)));
     }
   };
 
