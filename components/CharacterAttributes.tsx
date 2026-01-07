@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Character, Attributes, CharacterClass, Origin } from '../types';
 import { rollDice } from '../utils/calculations';
@@ -7,16 +8,17 @@ interface CharacterAttributesProps {
   char: Character;
   onUpdate: (field: keyof Character, value: any) => void;
   onUpdateAttribute: (attr: keyof Attributes, val: number) => void;
+  readOnly?: boolean;
 }
 
-export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, onUpdate, onUpdateAttribute }) => {
+export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, onUpdate, onUpdateAttribute, readOnly }) => {
   const [rollResult, setRollResult] = useState<{ title: string, total: number, detail: string, isPhysical: boolean } | null>(null);
   const [isEditingIdentity, setIsEditingIdentity] = useState(false);
 
   // --- SVG Logic ---
-  const size = 220;
+  const size = 180; // Smaller chart
   const center = size / 2;
-  const radius = 70;
+  const radius = 60;
   // Order to match typical Pentagon shape: AGI (Top), INT (Top Right), VIG (Bot Right), PRE (Bot Left), FOR (Top Left)
   const statsOrder: (keyof Attributes)[] = ['AGI', 'INT', 'VIG', 'PRE', 'FOR']; 
   const angles = [-90, -18, 54, 126, 198]; 
@@ -74,11 +76,11 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
 
   const getIcon = (attr: keyof Attributes) => {
     switch(attr) {
-      case 'FOR': return <Sword size={14} className="text-red-400" />;
-      case 'AGI': return <Zap size={14} className="text-yellow-400" />;
-      case 'VIG': return <Shield size={14} className="text-emerald-400" />;
-      case 'INT': return <Brain size={14} className="text-blue-400" />;
-      case 'PRE': return <Activity size={14} className="text-purple-400" />;
+      case 'FOR': return <Sword size={12} className="text-red-400" />;
+      case 'AGI': return <Zap size={12} className="text-yellow-400" />;
+      case 'VIG': return <Shield size={12} className="text-emerald-400" />;
+      case 'INT': return <Brain size={12} className="text-blue-400" />;
+      case 'PRE': return <Activity size={12} className="text-purple-400" />;
     }
   };
 
@@ -91,14 +93,16 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
   return (
     <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden relative">
       
-      {/* --- IDENTITY HEADER --- */}
-      <div className="p-4 border-b border-slate-800 bg-slate-950/50 relative">
-        <button 
-          onClick={() => setIsEditingIdentity(!isEditingIdentity)}
-          className="absolute top-3 right-3 text-slate-500 hover:text-white transition-colors"
-        >
-          {isEditingIdentity ? <Check size={16} className="text-emerald-400"/> : <Edit2 size={14} />}
-        </button>
+      {/* --- IDENTITY HEADER (Compact) --- */}
+      <div className="p-3 border-b border-slate-800 bg-slate-950/50 relative">
+        {!readOnly && (
+            <button 
+            onClick={() => setIsEditingIdentity(!isEditingIdentity)}
+            className="absolute top-3 right-3 text-slate-600 hover:text-white transition-colors"
+            >
+            {isEditingIdentity ? <Check size={14} className="text-emerald-400"/> : <Edit2 size={12} />}
+            </button>
+        )}
 
         {isEditingIdentity ? (
           <div className="space-y-2 animate-in fade-in">
@@ -113,7 +117,7 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
                   type="number" 
                   value={char.level} 
                   onChange={(e) => onUpdate('level', parseInt(e.target.value) || 1)}
-                  className="w-16 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-white"
+                  className="w-12 bg-slate-900 border border-slate-700 rounded p-1 text-xs text-white"
                   min={1} max={20}
                 />
                 <select 
@@ -127,117 +131,113 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
                    <option>Restrição Celestial</option>
                 </select>
              </div>
-             <select 
-                  value={char.origin}
-                  onChange={(e) => onUpdate('origin', e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-300"
-                >
-                   {Object.values(Origin).map(o => <option key={o} value={o}>{o}</option>)}
-             </select>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
-             {/* Avatar Circle */}
-             <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-slate-700 overflow-hidden shrink-0 shadow-lg">
+          <div className="flex items-center gap-3">
+             <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 overflow-hidden shrink-0 shadow-lg">
                 {char.imageUrl ? (
                    <img src={char.imageUrl} alt={char.name} className="w-full h-full object-cover" />
                 ) : (
-                   <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold text-xl">
+                   <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold text-lg">
                       {char.name.charAt(0)}
                    </div>
                 )}
              </div>
              
              <div className="min-w-0">
-                <h2 className="text-xl font-black text-white truncate leading-none mb-1">{char.name}</h2>
-                <div className="text-xs text-slate-400 font-mono flex items-center gap-2">
-                   <span className="bg-slate-800 px-1.5 rounded text-white font-bold">Lv.{char.level}</span>
+                <h2 className="text-lg font-black text-white truncate leading-none mb-0.5">{char.name}</h2>
+                <div className="text-[10px] text-slate-400 font-mono flex items-center gap-2">
+                   <span className="bg-slate-800 px-1 rounded text-white font-bold">Lv.{char.level}</span>
                    <span className="truncate">{char.characterClass}</span>
+                   <span className="text-slate-600">|</span>
+                   <span className="uppercase tracking-wider">{char.origin}</span>
                 </div>
-                <div className="text-[10px] text-slate-500 uppercase tracking-widest mt-0.5">{char.origin}</div>
              </div>
           </div>
         )}
       </div>
 
-      {/* --- ATTRIBUTES VISUALIZER --- */}
-      <div className="p-4 flex flex-col items-center justify-center relative bg-gradient-to-b from-slate-900 to-slate-950">
+      {/* --- ATTRIBUTES VISUALIZER & LIST --- */}
+      <div className="p-3 bg-gradient-to-b from-slate-900 to-slate-950">
          
-         {/* The Pentagon */}
-         <div className="relative w-[220px] h-[220px]">
-            <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="drop-shadow-[0_0_10px_rgba(124,58,237,0.2)]">
-                {webPoints.map((points, i) => (
-                    <polygon key={i} points={points} fill="none" stroke="#1e293b" strokeWidth="1" />
-                ))}
-                {angles.map((angle, i) => {
-                    const rad = (angle * Math.PI) / 180;
-                    const x = center + radius * Math.cos(rad);
-                    const y = center + radius * Math.sin(rad);
-                    return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="#1e293b" strokeWidth="1" />;
-                })}
-                <polygon 
-                    points={polyPoints}
-                    fill="rgba(139, 92, 246, 0.4)"
-                    stroke="#8b5cf6"
-                    strokeWidth="2"
-                    className="transition-all duration-500 ease-out"
-                />
-                 {/* Labels on vertices */}
-                 {statsOrder.map((key, i) => {
-                    const { x, y } = getPoint(6, i, 5);
-                    return (
-                        <text key={key} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fill="#94a3b8" fontSize="10" fontWeight="bold">
-                            {key}
-                        </text>
-                    );
-                 })}
-            </svg>
-            
-            {/* Center Text */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-               <Dna size={40} className="text-curse-500"/>
+         {/* The Pentagon (Smaller) */}
+         <div className="relative w-full flex justify-center mb-3">
+            <div className="relative w-[180px] h-[180px]">
+                <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="drop-shadow-[0_0_10px_rgba(124,58,237,0.1)]">
+                    {webPoints.map((points, i) => (
+                        <polygon key={i} points={points} fill="none" stroke="#1e293b" strokeWidth="1" />
+                    ))}
+                    {angles.map((angle, i) => {
+                        const rad = (angle * Math.PI) / 180;
+                        const x = center + radius * Math.cos(rad);
+                        const y = center + radius * Math.sin(rad);
+                        return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="#1e293b" strokeWidth="1" />;
+                    })}
+                    <polygon 
+                        points={polyPoints}
+                        fill="rgba(139, 92, 246, 0.3)"
+                        stroke="#8b5cf6"
+                        strokeWidth="1.5"
+                        className="transition-all duration-500 ease-out"
+                    />
+                    {/* Labels on vertices */}
+                    {statsOrder.map((key, i) => {
+                        const { x, y } = getPoint(5.8, i, 5);
+                        return (
+                            <text key={key} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fill="#64748b" fontSize="8" fontWeight="bold">
+                                {key}
+                            </text>
+                        );
+                    })}
+                </svg>
+                
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
+                   <Dna size={32} className="text-curse-500"/>
+                </div>
             </div>
          </div>
 
-         {/* --- EDITABLE LIST --- */}
-         <div className="grid grid-cols-1 w-full gap-2 mt-4">
+         {/* --- COMPACT EDITABLE LIST --- */}
+         <div className="flex flex-col gap-1">
             {(Object.keys(char.attributes) as Array<keyof Attributes>).map(attr => (
-               <div key={attr} className="flex items-center justify-between bg-slate-950/50 p-2 rounded-lg border border-slate-800/50 hover:border-slate-700 transition-colors group">
+               <div key={attr} className="flex items-center justify-between bg-slate-950/30 px-2 py-1 rounded border border-slate-800/30 hover:border-slate-700 transition-colors group">
                   
                   {/* Roll Button */}
                   <button 
                      onClick={() => handleAttributeRoll(attr)}
-                     className="flex items-center gap-3 flex-1 text-left hover:bg-white/5 rounded p-1 -ml-1 transition-colors"
+                     className="flex items-center gap-2 flex-1 text-left"
                   >
-                     <div className="w-6 h-6 rounded bg-slate-900 flex items-center justify-center shadow-inner">
+                     <div className="w-5 h-5 rounded bg-slate-900 flex items-center justify-center shadow-inner text-slate-400 group-hover:text-white transition-colors">
                         {getIcon(attr)}
                      </div>
-                     <div>
-                        <div className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{attr}</div>
-                        <div className="text-[9px] text-slate-500 font-mono leading-none">
-                           {char.attributes[attr]}d20
-                           {['FOR','AGI','VIG'].includes(attr) && ` + ${char.level * 2}`}
-                        </div>
-                     </div>
+                     <span className="text-xs font-bold text-slate-400 group-hover:text-white w-8">{attr}</span>
+                     <span className="text-[9px] text-slate-600 font-mono">
+                         {char.attributes[attr]}d20
+                         {['FOR','AGI','VIG'].includes(attr) && `+${char.level * 2}`}
+                     </span>
                   </button>
 
                   {/* Edit Controls */}
-                  <div className="flex items-center gap-2">
-                     <button 
-                        onClick={() => adjustAttr(attr, -1)}
-                        className="w-5 h-5 flex items-center justify-center rounded bg-slate-900 text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"
-                     >
-                        -
-                     </button>
-                     <span className={`w-4 text-center text-sm font-black ${char.attributes[attr] >= maxStat ? 'text-curse-400' : 'text-white'}`}>
+                  <div className="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                     {!readOnly && (
+                        <button 
+                            onClick={() => adjustAttr(attr, -1)}
+                            className="w-4 h-4 flex items-center justify-center rounded bg-slate-800 text-slate-500 hover:text-white text-[10px]"
+                        >
+                            -
+                        </button>
+                     )}
+                     <span className={`w-4 text-center text-xs font-bold ${char.attributes[attr] >= maxStat ? 'text-curse-400' : 'text-slate-200'}`}>
                         {char.attributes[attr]}
                      </span>
-                     <button 
-                        onClick={() => adjustAttr(attr, 1)}
-                        className="w-5 h-5 flex items-center justify-center rounded bg-slate-900 text-slate-500 hover:text-white hover:bg-slate-800 transition-colors"
-                     >
-                        +
-                     </button>
+                     {!readOnly && (
+                        <button 
+                            onClick={() => adjustAttr(attr, 1)}
+                            className="w-4 h-4 flex items-center justify-center rounded bg-slate-800 text-slate-500 hover:text-white text-[10px]"
+                        >
+                            +
+                        </button>
+                     )}
                   </div>
                </div>
             ))}
@@ -247,7 +247,7 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
 
       {/* --- ROLL TOAST NOTIFICATION --- */}
       {rollResult && (
-        <div className="absolute inset-0 z-20 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute inset-0 z-20 bg-slate-950/95 backdrop-blur-sm flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-200">
            <button 
              onClick={() => setRollResult(null)}
              className="absolute top-4 right-4 text-slate-500 hover:text-white"
