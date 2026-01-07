@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats } from '../types';
-import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin } from 'lucide-react';
+import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
-import { collection, addDoc, updateDoc, arrayUnion, query, onSnapshot, doc, getDoc, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
 import { StatBar } from './StatBar';
 import { SkillList } from './SkillList';
@@ -143,6 +143,68 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     }
   };
 
+  const handleRemoveParticipant = async (campaign: Campaign, participant: CampaignParticipant) => {
+    if (!auth.currentUser) return alert("Faça login.");
+    
+    // Only GM or the participant themselves can remove
+    const isGM = campaign.gmId === auth.currentUser.uid;
+    const isSelf = participant.userId === auth.currentUser.uid;
+    
+    if (!isGM && !isSelf) {
+      alert("Apenas o Mestre da Campanha ou o próprio jogador podem remover participantes.");
+      return;
+    }
+
+    if (!confirm(`Tem certeza que deseja remover ${participant.characterName} da campanha?`)) {
+      return;
+    }
+
+    try {
+      const campRef = doc(db, "campaigns", campaign.id);
+      await updateDoc(campRef, {
+        participants: arrayRemove(participant)
+      });
+      // Update local state immediately
+      if (selectedCampaign && selectedCampaign.id === campaign.id) {
+        setSelectedCampaign({
+          ...selectedCampaign,
+          participants: selectedCampaign.participants.filter(p => 
+            !(p.userId === participant.userId && p.characterId === participant.characterId)
+          )
+        });
+      }
+    } catch (error) {
+      console.error("Error removing participant", error);
+      alert("Erro ao remover participante.");
+    }
+  };
+
+  const handleDeleteCampaign = async (campaign: Campaign) => {
+    if (!auth.currentUser) return alert("Faça login.");
+    
+    if (campaign.gmId !== auth.currentUser.uid) {
+      alert("Apenas o criador da campanha pode deletá-la.");
+      return;
+    }
+
+    if (!confirm(`Tem certeza que deseja deletar a campanha "${campaign.name}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const campRef = doc(db, "campaigns", campaign.id);
+      await deleteDoc(campRef);
+      // If we're viewing this campaign, go back to list
+      if (selectedCampaign && selectedCampaign.id === campaign.id) {
+        setView('list');
+        setSelectedCampaign(null);
+      }
+    } catch (error) {
+      console.error("Error deleting campaign", error);
+      alert("Erro ao deletar campanha.");
+    }
+  };
+
   // --- RENDERERS ---
 
   if (view === 'sheet' && viewingChar) {
@@ -218,6 +280,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
 
   if (view === 'detail' && selectedCampaign) {
     const isParticipant = selectedCampaign.participants.some(p => p.userId === auth.currentUser?.uid);
+    const isGM = selectedCampaign.gmId === auth.currentUser?.uid;
 
     return (
       <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4">
@@ -230,8 +293,21 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
 
          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
             <div className="relative z-10">
-               <h1 className="text-3xl font-black text-white mb-2">{selectedCampaign.name}</h1>
-               <p className="text-slate-400">{selectedCampaign.description}</p>
+               <div className="flex justify-between items-start mb-2">
+                  <div>
+                     <h1 className="text-3xl font-black text-white mb-2">{selectedCampaign.name}</h1>
+                     <p className="text-slate-400">{selectedCampaign.description}</p>
+                  </div>
+                  {isGM && (
+                     <button
+                        onClick={() => handleDeleteCampaign(selectedCampaign)}
+                        className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all"
+                        title="Deletar Campanha"
+                     >
+                        <Trash2 size={18} />
+                     </button>
+                  )}
+               </div>
                
                <div className="mt-6 flex gap-4">
                   {!isParticipant && (
@@ -253,30 +329,49 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
             </h3>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               {selectedCampaign.participants.map((p, idx) => (
-                 <button 
-                    key={idx}
-                    onClick={() => handleViewCharacter(p)}
-                    className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex items-center gap-4 hover:border-curse-500/50 hover:bg-slate-900 transition-all text-left group"
-                 >
-                    <div className="w-12 h-12 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shrink-0">
-                       {p.imageUrl ? (
-                          <img src={p.imageUrl} alt={p.characterName} className="w-full h-full object-cover" />
-                       ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold">{p.characterName.charAt(0)}</div>
-                       )}
-                    </div>
-                    <div>
-                       <div className="font-bold text-white group-hover:text-curse-300 transition-colors">{p.characterName}</div>
-                       <div className="text-xs text-slate-500">Lv.{p.level} {p.characterClass}</div>
-                       {p.userId === selectedCampaign.gmId && (
-                          <div className="text-[10px] text-yellow-500 flex items-center gap-1 mt-1 font-bold uppercase tracking-wider">
-                             <Crown size={10} /> Mestre
-                          </div>
-                       )}
-                    </div>
-                 </button>
-               ))}
+               {selectedCampaign.participants.map((p, idx) => {
+                 const canRemove = isGM || p.userId === auth.currentUser?.uid;
+                 return (
+                   <div 
+                      key={idx}
+                      className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center gap-4 hover:border-curse-500/50 hover:bg-slate-900 transition-all group relative"
+                   >
+                      <button
+                         onClick={() => handleViewCharacter(p)}
+                         className="flex items-center gap-4 flex-1 text-left"
+                      >
+                         <div className="w-12 h-12 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shrink-0">
+                            {p.imageUrl ? (
+                               <img src={p.imageUrl} alt={p.characterName} className="w-full h-full object-cover" />
+                            ) : (
+                               <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold">{p.characterName.charAt(0)}</div>
+                            )}
+                         </div>
+                         <div>
+                            <div className="font-bold text-white group-hover:text-curse-300 transition-colors">{p.characterName}</div>
+                            <div className="text-xs text-slate-500">Lv.{p.level} {p.characterClass}</div>
+                            {p.userId === selectedCampaign.gmId && (
+                               <div className="text-[10px] text-yellow-500 flex items-center gap-1 mt-1 font-bold uppercase tracking-wider">
+                                  <Crown size={10} /> Mestre
+                               </div>
+                            )}
+                         </div>
+                      </button>
+                      {canRemove && (
+                         <button
+                            onClick={(e) => {
+                               e.stopPropagation();
+                               handleRemoveParticipant(selectedCampaign, p);
+                            }}
+                            className="p-2 hover:bg-red-600/20 hover:text-red-400 text-slate-600 rounded-lg transition-colors"
+                            title="Remover da Campanha"
+                         >
+                            <UserMinus size={18} />
+                         </button>
+                      )}
+                   </div>
+                 );
+               })}
             </div>
          </div>
       </div>
@@ -326,25 +421,44 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
             </div>
          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-               {campaigns.map(camp => (
-                  <div 
-                    key={camp.id}
-                    onClick={() => { setSelectedCampaign(camp); setView('detail'); }}
-                    className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-curse-500/50 hover:shadow-lg hover:shadow-curse-900/10 cursor-pointer transition-all group"
-                  >
-                     <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-white text-lg group-hover:text-curse-300 transition-colors">{camp.name}</h4>
-                        <span className="bg-slate-950 text-slate-500 text-[10px] px-2 py-1 rounded-full border border-slate-800 font-mono">
-                           {camp.participants.length} Players
-                        </span>
-                     </div>
-                     <p className="text-sm text-slate-400 line-clamp-2 mb-4 h-10">{camp.description}</p>
-                     
-                     <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <Shield size={12} /> Mestre ID: <span className="font-mono">{camp.gmId.slice(0, 6)}...</span>
-                     </div>
-                  </div>
-               ))}
+               {campaigns.map(camp => {
+                 const isGM = camp.gmId === auth.currentUser?.uid;
+                 return (
+                   <div 
+                      key={camp.id}
+                      className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-curse-500/50 hover:shadow-lg hover:shadow-curse-900/10 transition-all group relative"
+                   >
+                      <div 
+                         onClick={() => { setSelectedCampaign(camp); setView('detail'); }}
+                         className="cursor-pointer"
+                      >
+                         <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-bold text-white text-lg group-hover:text-curse-300 transition-colors">{camp.name}</h4>
+                            <span className="bg-slate-950 text-slate-500 text-[10px] px-2 py-1 rounded-full border border-slate-800 font-mono">
+                               {camp.participants.length} Players
+                            </span>
+                         </div>
+                         <p className="text-sm text-slate-400 line-clamp-2 mb-4 h-10">{camp.description}</p>
+                         
+                         <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <Shield size={12} /> Mestre ID: <span className="font-mono">{camp.gmId.slice(0, 6)}...</span>
+                         </div>
+                      </div>
+                      {isGM && (
+                         <button
+                            onClick={(e) => {
+                               e.stopPropagation();
+                               handleDeleteCampaign(camp);
+                            }}
+                            className="absolute top-3 right-3 p-2 hover:bg-red-600/20 hover:text-red-400 text-slate-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                            title="Deletar Campanha"
+                         >
+                            <Trash2 size={16} />
+                         </button>
+                      )}
+                   </div>
+                 );
+               })}
             </div>
          )}
       </div>
