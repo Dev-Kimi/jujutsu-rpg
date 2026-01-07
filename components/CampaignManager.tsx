@@ -412,6 +412,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                      onUpdate={editingAsGM ? handleCharUpdateAsGM : () => {}} 
                      onUpdateAttribute={editingAsGM ? handleAttributeUpdateAsGM : () => {}} 
                      readOnly={isReadOnly}
+                     campaignId={selectedCampaign?.id}
                   />
                   <div className="space-y-1 opacity-90">
                      <StatBar 
@@ -449,6 +450,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                     onAddSkill={editingAsGM ? handleAddSkillAsGM : () => {}} 
                     onRemoveSkill={editingAsGM ? handleRemoveSkillAsGM : () => {}} 
                     readOnly={isReadOnly}
+                    campaignId={selectedCampaign?.id}
                   />
                </section>
 
