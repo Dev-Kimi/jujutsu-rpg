@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Character, Skill, Attributes, Ability, CurrentStats, ActionState } from '../types';
 import { BookOpen, Dices, Search, Lock, Sparkles, Plus, Trash2, Zap, X, Hexagon } from 'lucide-react';
 import { rollDice, parseAbilityCost, parseAbilitySkillTrigger } from '../utils/calculations';
+import { logDiceRoll } from '../utils/diceRollLogger';
 
 interface SkillListProps {
   char: Character;
@@ -16,6 +17,7 @@ interface SkillListProps {
   consumeCE?: (amount: number) => void;
   actionState?: ActionState;
   readOnly?: boolean;
+  campaignId?: string; // Optional campaign ID for logging rolls
 }
 
 const TRAINING_LEVELS = [
@@ -36,7 +38,8 @@ export const SkillList: React.FC<SkillListProps> = ({
   consumePE,
   consumeCE,
   actionState,
-  readOnly
+  readOnly,
+  campaignId
 }) => {
   const [rollResult, setRollResult] = useState<{ name: string, total: number, breakdown: string } | null>(null);
   const [filter, setFilter] = useState('');
@@ -124,6 +127,18 @@ export const SkillList: React.FC<SkillListProps> = ({
       total: total,
       breakdown: breakdown
     });
+
+    // Log to campaign if campaignId is provided
+    if (campaignId) {
+      logDiceRoll(
+        campaignId,
+        char.name,
+        skillName,
+        rolls,
+        total,
+        breakdown
+      ).catch(err => console.error('Failed to log dice roll:', err));
+    }
   };
 
   const filteredSkills = char.skills
