@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// --- IMPORTS DO FIREBASE E AUTH ---
-import { auth, db } from './firebase';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import Auth from './components/Auth';
-
-// --- IMPORTS DO JOGO ---
-import { Droplet, Zap, Activity, Skull, Flame, User as UserIcon, LogOut } from 'lucide-react';
-import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState } from './types';
+import { Droplet, Zap, Activity, Skull, Flame, LogOut } from 'lucide-react';
+import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes } from './types';
 import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger } from './utils/calculations';
 import { StatBar } from './components/StatBar';
 import { CombatTabs } from './components/CombatTabs';
@@ -20,6 +13,7 @@ import { TechniqueManager } from './components/TechniqueManager';
 import { LevelUpSummary } from './components/LevelUpSummary';
 import { CharacterSelection } from './components/CharacterSelection';
 import { CharacterCreator } from './components/CharacterCreator';
+import { CharacterAttributes } from './components/CharacterAttributes';
 
 // Helper to generate a fresh character state (Fallback only)
 const getInitialChar = (): Character => ({
@@ -27,9 +21,9 @@ const getInitialChar = (): Character => ({
   name: "Feiticeiro",
   level: 1,
   origin: Origin.Inato,
-  characterClass: "Combatente",
+  characterClass: "Combatente", // Default
   attributes: { FOR: 1, AGI: 1, VIG: 1, INT: 1, PRE: 1 },
-  skills: JSON.parse(JSON.stringify(DEFAULT_SKILLS)),
+  skills: JSON.parse(JSON.stringify(DEFAULT_SKILLS)), // Deep copy to avoid reference issues
   abilities: [],
   techniques: [],
   inventory: []
@@ -41,30 +35,22 @@ type ViewMode = 'menu' | 'creator' | 'sheet';
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 
 const App: React.FC = () => {
-  // ------------------------------------------------------------------
-  // 1. LÓGICA DE LOGIN (O PORTEIRO)
-  // ------------------------------------------------------------------
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-
-  // Monitora se o usuário entrou ou saiu
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      // Só paramos de carregar DEPOIS que sabemos quem é o usuário
-      // Se tiver usuário, vamos carregar os dados dele do banco logo abaixo
-      if (!currentUser) setLoadingAuth(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // ------------------------------------------------------------------
-  // 2. ESTADOS DO JOGO
-  // ------------------------------------------------------------------
+  // View State
   const [viewMode, setViewMode] = useState<ViewMode>('menu');
-  
-  // Data State - Começa vazio e preenchemos via Firebase ou LocalStorage
-  const [savedCharacters, setSavedCharacters] = useState<Character[]>([]);
+
+  // Data State - Lazy Initialization to prevent overwriting LocalStorage with empty array
+  const [savedCharacters, setSavedCharacters] = useState<Character[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      try {
+        return saved ? JSON.parse(saved) : [];
+      } catch (e) {
+        console.error("Failed to parse characters", e);
+        return [];
+      }
+    }
+    return [];
+  });
 
   const [character, setCharacter] = useState<Character>(getInitialChar());
   
@@ -73,55 +59,11 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('combat');
   const [showAbilityLibrary, setShowAbilityLibrary] = useState(false);
   const [abilityLibraryCategory, setAbilityLibraryCategory] = useState<string>('Combatente');
-
-  // ------------------------------------------------------------------
-  // 3. CARREGAR E SALVAR DADOS (INTEGRAÇÃO FIREBASE)
-  // ------------------------------------------------------------------
   
-  // Carregar dados quando o usuário loga
+  // Save List to LocalStorage whenever it changes
   useEffect(() => {
-    if (user) {
-      const loadUserData = async () => {
-        try {
-          const docRef = doc(db, "users", user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.characters) setSavedCharacters(data.characters);
-          }
-        } catch (error) {
-          console.error("Erro ao carregar fichas:", error);
-        } finally {
-          setLoadingAuth(false); // Libera a tela
-        }
-      };
-      loadUserData();
-    }
-  }, [user]);
-
-  // Salvar dados no Firebase sempre que a lista de personagens mudar
-  useEffect(() => {
-    if (user && !loadingAuth && savedCharacters.length > 0) {
-      const saveUserData = async () => {
-        try {
-          await setDoc(doc(db, "users", user.uid), {
-            characters: savedCharacters,
-            lastUpdated: new Date().toISOString()
-          }, { merge: true });
-        } catch (error) {
-          console.error("Erro ao salvar:", error);
-        }
-      };
-      // Espera 2 segundos antes de salvar para não sobrecarregar o banco (Debounce)
-      const timeout = setTimeout(saveUserData, 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [savedCharacters, user, loadingAuth]);
-
-
-  // ------------------------------------------------------------------
-  // 4. LÓGICA DO JOGO (GAMEPLAY) - MANTIDA IGUAL
-  // ------------------------------------------------------------------
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedCharacters));
+  }, [savedCharacters]);
 
   // Derived Stats based on Character
   const stats = calculateDerivedStats(character);
@@ -146,6 +88,8 @@ const App: React.FC = () => {
   // Robust Stats Initialization & Clamping
   useEffect(() => {
     if (viewMode === 'sheet') {
+       // If stats are zero (likely fresh load) and Max is > 0, initialize to Max.
+       // Since we don't save "Current HP", loading a char always resets to full.
        if (currentStats.pv === 0 && currentStats.ce === 0 && currentStats.pe === 0 && stats.MaxPV > 0) {
            setCurrentStats({
              pv: stats.MaxPV,
@@ -153,6 +97,7 @@ const App: React.FC = () => {
              pe: stats.MaxPE
            });
        } else {
+           // Otherwise, just clamp if Max decreased (e.g. level down)
            setCurrentStats(prev => ({
              pv: Math.min(prev.pv, stats.MaxPV),
              ce: Math.min(prev.ce, stats.MaxCE),
@@ -178,6 +123,8 @@ const App: React.FC = () => {
   const handleSelectCharacter = (char: Character) => {
     setCharacter(char);
     
+    // Explicitly calculate and set FULL stats based on the loaded character
+    // This helps immediate render before useEffect kicks in
     const newStats = calculateDerivedStats(char);
     setCurrentStats({ 
       pv: newStats.MaxPV, 
@@ -185,6 +132,7 @@ const App: React.FC = () => {
       pe: newStats.MaxPE 
     });
 
+    // Reset temporary states for new session
     setActionState({ standard: true, movement: 2, reactionPenalty: 0 });
     setDomainActive(false);
     setActiveBuffs([]);
@@ -197,11 +145,14 @@ const App: React.FC = () => {
   };
 
   const handleFinishCreation = (newChar: Character) => {
+     // Save immediately
      setSavedCharacters(prev => [...prev, newChar]);
+     // Select and go to sheet
      handleSelectCharacter(newChar);
   };
 
   const handleDeleteCharacter = (id: string) => {
+    // If we delete the currently active character, reset the active state to avoid re-saving a ghost
     if (character.id === id) {
         setCharacter(getInitialChar());
     }
@@ -209,7 +160,7 @@ const App: React.FC = () => {
   };
 
   const handleBackToMenu = () => {
-    saveCurrentCharacter(); 
+    saveCurrentCharacter(); // Auto-save on exit
     setViewMode('menu');
   };
 
@@ -264,6 +215,17 @@ const App: React.FC = () => {
   };
   
   // Update Wrappers
+  const handleCharUpdate = (field: keyof Character, value: any) => {
+    setCharacter(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleAttributeUpdate = (attr: keyof Attributes, val: number) => {
+    setCharacter(prev => ({
+        ...prev,
+        attributes: { ...prev.attributes, [attr]: val }
+    }));
+  };
+
   const handleSkillUpdate = (id: string, field: keyof Skill, value: any) => {
     setCharacter(prev => ({
       ...prev,
@@ -362,27 +324,7 @@ const App: React.FC = () => {
     }
   };
 
-  // ------------------------------------------------------------------
-  // 5. RENDERIZAÇÃO (PROTEÇÃO DE TELA)
-  // ------------------------------------------------------------------
-
-  // Se estiver carregando o Firebase, mostra tela de loading
-  if (loadingAuth) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-slate-400 gap-4">
-        <div className="w-8 h-8 border-4 border-curse-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="animate-pulse">Expandindo Domínio...</p>
-      </div>
-    );
-  }
-
-  // Se NÃO tiver usuário logado, mostra a tela de Login (Auth)
-  if (!user) {
-    return <Auth />;
-  }
-
-  // SE TIVER LOGADO, MOSTRA O JOGO ORIGINAL ABAIXO
-  // (Mantive toda a sua lógica de visualização aqui)
+  // --- RENDER ---
 
   if (viewMode === 'menu') {
      return (
@@ -454,20 +396,6 @@ const App: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* INFO DO USUÁRIO E BOTÃO SAIR */}
-        <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 hidden md:block">{user.email}</span>
-            <button 
-                onClick={() => {
-                  saveCurrentCharacter();
-                  signOut(auth);
-                }}
-                className="text-xs bg-red-900/20 text-red-400 hover:bg-red-900/40 border border-red-900/50 px-3 py-1.5 rounded transition-colors"
-            >
-                Sair
-            </button>
-        </div>
       </header>
 
       <main className="max-w-[1600px] mx-auto p-4 pb-24">
@@ -477,40 +405,12 @@ const App: React.FC = () => {
           {/* LEFT COLUMN: Identity, Attributes, Stats (3 cols) */}
           <section className="md:col-span-1 xl:col-span-3 space-y-6">
             
-            {/* Identity Card */}
-            <div className="bg-slate-900/50 rounded-xl border border-slate-800 backdrop-blur-sm relative overflow-hidden group">
-              {character.imageUrl && (
-                 <div className="absolute inset-0">
-                    <img src={character.imageUrl} className="w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
-                 </div>
-              )}
-              
-              <div className="relative z-10 p-4 space-y-3">
-                <button 
-                  onClick={() => setShowEditor(true)}
-                  className="absolute top-4 right-4 text-xs bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 z-20"
-                >
-                    Editar
-                </button>
-
-                <div className="flex items-center gap-2 mb-2 text-curse-400 border-b border-slate-800 pb-2">
-                  <UserIcon size={16} />
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400">Agente</h2>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between items-baseline">
-                    <h3 className="text-2xl font-bold text-white truncate">{character.name}</h3>
-                    <span className="text-sm font-mono text-curse-400">Lv.{character.level}</span>
-                  </div>
-                  <div className="flex gap-2 text-xs text-slate-500 mt-1">
-                    <span className="bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800 backdrop-blur-md">{character.origin}</span>
-                    <span className="bg-slate-950/80 px-2 py-0.5 rounded border border-slate-800 backdrop-blur-md">{character.characterClass}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* New Character Identity & Attributes Component */}
+            <CharacterAttributes 
+               char={character}
+               onUpdate={handleCharUpdate}
+               onUpdateAttribute={handleAttributeUpdate}
+            />
 
             {/* Status Bars */}
             <div className="space-y-1">
