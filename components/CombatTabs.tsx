@@ -4,6 +4,7 @@ import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Action
 import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
 import { ActionTracker } from './ActionTracker';
+import { logDiceRoll } from '../utils/diceRollLogger';
 
 interface CombatTabsProps {
   char: Character;
@@ -16,6 +17,7 @@ interface CombatTabsProps {
   actionState: ActionState;
   setActionState: (state: ActionState) => void;
   onUpdateInventory?: (id: string, field: keyof Item, value: any) => void;
+  campaignId?: string; // Optional campaign ID for logging rolls
 }
 
 export const CombatTabs: React.FC<CombatTabsProps> = ({ 
@@ -28,7 +30,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   onConsumeBuffs,
   actionState,
   setActionState,
-  onUpdateInventory
+  onUpdateInventory,
+  campaignId
 }) => {
   const [activeTab, setActiveTab] = useState<'physical' | 'technique' | 'defense'>('physical');
   const [invested, setInvested] = useState<number>(1);
@@ -123,6 +126,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     let isDamageTaken = false;
     let weaponBroken = false;
     let rollTitle = "Ataque";
+    let loggedRolls: number[] = []; // Store rolls for logging
 
     const isHR = char.origin === Origin.RestricaoCelestial;
 
@@ -153,7 +157,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       
       if (isHR) {
         const hrDiceCount = char.level * 2;
-        const hrRoll = rollDice(3, hrDiceCount);
+        // Roll individual dice for logging
+        for (let i = 0; i < hrDiceCount; i++) {
+          loggedRolls.push(rollDice(3, 1));
+        }
+        const hrRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
         
         total = baseDamageValue + hrRoll + strBonus;
         detail = `${baseDamageText} + ${hrRoll} (HR) + ${strBonus} (FOR)`;
@@ -171,7 +179,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              }
         }
 
-        const reinforcementRoll = rollDice(4, invested);
+        // Roll individual dice for logging
+        for (let i = 0; i < invested; i++) {
+          loggedRolls.push(rollDice(4, 1));
+        }
+        const reinforcementRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
         total = baseDamageValue + reinforcementRoll + strBonus;
         detail = `[DanoBase]${baseDamageText} + [Reforço]${reinforcementRoll} + [Força]${strBonus}`;
       }
@@ -192,7 +204,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       rollTitle = selectedTech.name;
       actionCostCE = invested; 
       const intBonus = char.attributes.INT;
-      const magicRoll = rollDice(techniqueDie, invested);
+      // Roll individual dice for logging
+      for (let i = 0; i < invested; i++) {
+        loggedRolls.push(rollDice(techniqueDie, 1));
+      }
+      const magicRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
       total = magicRoll + intBonus;
       detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus}`;
     } 
@@ -251,6 +267,20 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     }
 
     setLastResult({ total, detail, isDamageTaken, weaponBroken, title: rollTitle });
+
+    // Log to campaign if campaignId is provided
+    if (campaignId) {
+      if (loggedRolls.length > 0 || activeTab === 'defense') {
+        logDiceRoll(
+          campaignId,
+          char.name,
+          rollTitle,
+          loggedRolls.length > 0 ? loggedRolls : [total], // For defense, use total as single "roll"
+          total,
+          detail
+        ).catch(err => console.error('Failed to log dice roll:', err));
+      }
+    }
   };
 
   const isHR = char.origin === Origin.RestricaoCelestial;
