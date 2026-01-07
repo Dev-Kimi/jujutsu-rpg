@@ -110,6 +110,18 @@ export interface Campaign {
   createdAt: number;
 }
 
+export interface DiceRollLog {
+  id: string;
+  campaignId: string;
+  userId: string;
+  characterName: string;
+  rollName: string; // Nome da perícia/habilidade/ataque
+  rolls: number[]; // Array com os valores dos dados
+  total: number; // Total da rolagem
+  timestamp: number;
+  breakdown?: string; // String de breakdown opcional
+}
+
 // Updated based on Rulebook Section "Perícias"
 export const DEFAULT_SKILLS: Skill[] = [
   // Agilidade
