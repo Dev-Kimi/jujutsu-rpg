@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats } from '../types';
-import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus } from 'lucide-react';
+import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
-import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
 import { StatBar } from './StatBar';
 import { SkillList } from './SkillList';
@@ -25,6 +25,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   // Read Only Sheet State
   const [viewingChar, setViewingChar] = useState<Character | null>(null);
   const [viewingStats, setViewingStats] = useState<CurrentStats>({ pv: 0, ce: 0, pe: 0 });
+  const [editingAsGM, setEditingAsGM] = useState(false);
+  const [editingParticipant, setEditingParticipant] = useState<CampaignParticipant | null>(null);
 
   // 1. Fetch Campaigns
   useEffect(() => {
@@ -93,13 +95,26 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   };
 
   const handleViewCharacter = async (participant: CampaignParticipant) => {
+    if (!selectedCampaign) return;
+    
+    const isGM = selectedCampaign.gmId === auth.currentUser?.uid;
+    const isSelf = participant.userId === auth.currentUser?.uid;
+    
+    // Only GM can view other players' sheets
+    if (!isSelf && !isGM) {
+      alert("Apenas o Mestre da Campanha pode visualizar as fichas dos participantes.");
+      return;
+    }
+    
     // If it's me, use the currentUserChar directly
-    if (participant.userId === auth.currentUser?.uid) {
+    if (isSelf) {
         // Check if the character ID matches
         if (currentUserChar.id === participant.characterId) {
             setViewingChar(currentUserChar);
             const stats = calculateDerivedStats(currentUserChar);
             setViewingStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE });
+            setEditingAsGM(false);
+            setEditingParticipant(null);
             setView('sheet');
             return;
         } else {
@@ -108,6 +123,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
         }
     }
 
+    // GM viewing another player's sheet
     try {
         const userDocRef = doc(db, "users", participant.userId);
         const userDocSnap = await getDoc(userDocRef);
@@ -130,6 +146,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                 // For read-only, we assume full health/resources or you'd need to sync CurrentStats to Firestore too.
                 // Here we set to MAX for display purposes.
                 setViewingStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE });
+                setEditingAsGM(true);
+                setEditingParticipant(participant);
                 setView('sheet');
             } else {
                 alert(`Personagem com ID "${participant.characterId}" não encontrado no banco de dados do jogador.`);
@@ -140,6 +158,56 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     } catch (error) {
         console.error("Error fetching character", error);
         alert("Erro ao carregar ficha: " + (error instanceof Error ? error.message : String(error)));
+    }
+  };
+
+  const handleSaveCharacterAsGM = async () => {
+    if (!viewingChar || !editingParticipant) return;
+    
+    try {
+      const userDocRef = doc(db, "users", editingParticipant.userId);
+      const userDocSnap = await getDoc(userDocRef);
+      
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        const characters = (userData.savedCharacters as Character[]) || [];
+        
+        // Update the character in the array
+        const updatedCharacters = characters.map(c => 
+          c.id === viewingChar.id ? viewingChar : c
+        );
+        
+        // Save back to Firestore
+        await setDoc(userDocRef, {
+          ...userData,
+          savedCharacters: updatedCharacters
+        }, { merge: true });
+        
+        // Update participant info in campaign if name/level changed
+        if (selectedCampaign) {
+          const campRef = doc(db, "campaigns", selectedCampaign.id);
+          const updatedParticipants = selectedCampaign.participants.map(p => 
+            p.userId === editingParticipant.userId && p.characterId === viewingChar.id
+              ? { ...p, characterName: viewingChar.name, level: viewingChar.level, characterClass: viewingChar.characterClass }
+              : p
+          );
+          
+          await updateDoc(campRef, {
+            participants: updatedParticipants
+          });
+          
+          // Update local state
+          setSelectedCampaign({
+            ...selectedCampaign,
+            participants: updatedParticipants
+          });
+        }
+        
+        alert("Ficha salva com sucesso!");
+      }
+    } catch (error) {
+      console.error("Error saving character as GM", error);
+      alert("Erro ao salvar ficha: " + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -205,31 +273,133 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     }
   };
 
+  // Handlers for GM editing
+  const handleCharUpdateAsGM = (field: keyof Character, value: any) => {
+    if (!viewingChar) return;
+    setViewingChar({ ...viewingChar, [field]: value });
+  };
+
+  const handleAttributeUpdateAsGM = (attr: keyof import('../types').Attributes, val: number) => {
+    if (!viewingChar) return;
+    setViewingChar({
+      ...viewingChar,
+      attributes: { ...viewingChar.attributes, [attr]: val }
+    });
+  };
+
+  const handleSkillUpdateAsGM = (id: string, field: keyof import('../types').Skill, value: any) => {
+    if (!viewingChar) return;
+    setViewingChar({
+      ...viewingChar,
+      skills: viewingChar.skills.map(s => s.id === id ? { ...s, [field]: value } : s)
+    });
+  };
+
+  const handleAddSkillAsGM = () => {
+    if (!viewingChar) return;
+    const newSkill: import('../types').Skill = { 
+      id: Math.random().toString(36).substring(2, 9), 
+      name: "Nova Perícia", 
+      value: 0 
+    };
+    setViewingChar({ ...viewingChar, skills: [...viewingChar.skills, newSkill] });
+  };
+
+  const handleRemoveSkillAsGM = (id: string) => {
+    if (!viewingChar) return;
+    setViewingChar({
+      ...viewingChar,
+      skills: viewingChar.skills.filter(s => s.id !== id)
+    });
+  };
+
+  const handleArrayUpdateAsGM = (field: 'abilities' | 'inventory', id: string, itemField: string, value: any) => {
+    if (!viewingChar) return;
+    setViewingChar({
+      ...viewingChar,
+      [field]: viewingChar[field].map((item: any) => item.id === id ? { ...item, [itemField]: value } : item)
+    });
+  };
+
+  const handleArrayAddAsGM = (field: 'abilities' | 'inventory', category?: string, template?: Partial<import('../types').Item>) => {
+    if (!viewingChar) return;
+    const id = Math.random().toString(36).substring(2, 9);
+    let newItem;
+    if (field === 'inventory') {
+      newItem = { id, name: template?.name || "", quantity: 1, description: template?.description || "" } as import('../types').Item;
+    } else {
+      newItem = { id, name: "", cost: "", description: "", category: category || "Combatente" } as import('../types').Ability;
+    }
+    setViewingChar({ ...viewingChar, [field]: [...viewingChar[field], newItem] });
+  };
+
+  const handleArrayRemoveAsGM = (field: 'abilities' | 'inventory', id: string) => {
+    if (!viewingChar) return;
+    setViewingChar({
+      ...viewingChar,
+      [field]: viewingChar[field].filter((item: any) => item.id !== id)
+    });
+  };
+
   // --- RENDERERS ---
 
   if (view === 'sheet' && viewingChar) {
      const stats = calculateDerivedStats(viewingChar);
+     const isReadOnly = !editingAsGM;
+     
      return (
         <div className="animate-in slide-in-from-bottom-5 duration-300 pb-20">
-           {/* Read Only Header */}
-           <div className="sticky top-0 z-20 bg-slate-900 border-b border-curse-500 p-4 flex items-center justify-between shadow-lg">
+           {/* Header */}
+           <div className={`sticky top-0 z-20 ${editingAsGM ? 'bg-curse-900/80 border-curse-500' : 'bg-slate-900 border-curse-500'} border-b p-4 flex items-center justify-between shadow-lg`}>
                <div className="flex items-center gap-4">
                   <button 
-                    onClick={() => setView('detail')} 
+                    onClick={() => {
+                      setView('detail');
+                      setEditingAsGM(false);
+                      setEditingParticipant(null);
+                    }} 
                     className="p-2 hover:bg-slate-800 rounded-full transition-colors"
                   >
                      <ArrowLeft />
                   </button>
                   <div>
                      <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        <Eye size={20} className="text-emerald-400" /> Visualizando: {viewingChar.name}
+                        {editingAsGM ? (
+                          <>
+                            <Edit2 size={20} className="text-curse-400" /> Editando: {viewingChar.name}
+                          </>
+                        ) : (
+                          <>
+                            <Eye size={20} className="text-emerald-400" /> Visualizando: {viewingChar.name}
+                          </>
+                        )}
                      </h2>
-                     <p className="text-xs text-slate-400">Modo Somente Leitura</p>
+                     <p className="text-xs text-slate-400">
+                        {editingAsGM ? "Modo Edição (Mestre)" : "Modo Somente Leitura"}
+                     </p>
                   </div>
                </div>
-               <button onClick={() => setView('detail')} className="text-slate-400 hover:text-white">
-                  <X />
-               </button>
+               <div className="flex items-center gap-2">
+                  {editingAsGM && (
+                     <button 
+                        onClick={handleSaveCharacterAsGM}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all"
+                        title="Salvar Alterações"
+                     >
+                        <Save size={18} /> Salvar
+                     </button>
+                  )}
+                  <button 
+                    onClick={() => {
+                      setView('detail');
+                      setEditingAsGM(false);
+                      setEditingParticipant(null);
+                    }} 
+                    className="text-slate-400 hover:text-white"
+                  >
+                     <X />
+                  </button>
+               </div>
            </div>
            
            <div className="max-w-[1600px] mx-auto p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-6 items-start">
@@ -237,14 +407,35 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                <section className="md:col-span-1 xl:col-span-3 space-y-6">
                   <CharacterAttributes 
                      char={viewingChar} 
-                     onUpdate={() => {}} 
-                     onUpdateAttribute={() => {}} 
-                     readOnly // New Prop
+                     onUpdate={editingAsGM ? handleCharUpdateAsGM : () => {}} 
+                     onUpdateAttribute={editingAsGM ? handleAttributeUpdateAsGM : () => {}} 
+                     readOnly={isReadOnly}
                   />
                   <div className="space-y-1 opacity-90">
-                     <StatBar label="Vida (PV)" current={viewingStats.pv} max={stats.MaxPV} colorClass="bg-blood-500" onChange={()=>{}} readOnly />
-                     <StatBar label="Energia (CE)" current={viewingStats.ce} max={stats.MaxCE} colorClass="bg-curse-500" onChange={()=>{}} readOnly />
-                     <StatBar label="Esforço (PE)" current={viewingStats.pe} max={stats.MaxPE} colorClass="bg-orange-500" onChange={()=>{}} readOnly />
+                     <StatBar 
+                       label="Vida (PV)" 
+                       current={viewingStats.pv} 
+                       max={stats.MaxPV} 
+                       colorClass="bg-blood-500" 
+                       onChange={editingAsGM ? (v) => setViewingStats({ ...viewingStats, pv: v }) : () => {}} 
+                       readOnly={isReadOnly} 
+                     />
+                     <StatBar 
+                       label="Energia (CE)" 
+                       current={viewingStats.ce} 
+                       max={stats.MaxCE} 
+                       colorClass="bg-curse-500" 
+                       onChange={editingAsGM ? (v) => setViewingStats({ ...viewingStats, ce: v }) : () => {}} 
+                       readOnly={isReadOnly} 
+                     />
+                     <StatBar 
+                       label="Esforço (PE)" 
+                       current={viewingStats.pe} 
+                       max={stats.MaxPE} 
+                       colorClass="bg-orange-500" 
+                       onChange={editingAsGM ? (v) => setViewingStats({ ...viewingStats, pe: v }) : () => {}} 
+                       readOnly={isReadOnly} 
+                     />
                   </div>
                </section>
 
@@ -252,25 +443,29 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                <section className="md:col-span-1 xl:col-span-5">
                   <SkillList 
                     char={viewingChar} 
-                    onUpdateSkill={()=>{}} 
-                    onAddSkill={()=>{}} 
-                    onRemoveSkill={()=>{}} 
-                    readOnly // New Prop
+                    onUpdateSkill={editingAsGM ? handleSkillUpdateAsGM : () => {}} 
+                    onAddSkill={editingAsGM ? handleAddSkillAsGM : () => {}} 
+                    onRemoveSkill={editingAsGM ? handleRemoveSkillAsGM : () => {}} 
+                    readOnly={isReadOnly}
                   />
                </section>
 
-               {/* Inventory / Abilities (Simplified for Read Only) */}
+               {/* Inventory / Abilities */}
                <section className="md:col-span-2 xl:col-span-4 space-y-4">
                   <AccordionList 
                      title="Habilidades"
                      items={viewingChar.abilities}
-                     onAdd={()=>{}} onUpdate={()=>{}} onRemove={()=>{}}
+                     onAdd={editingAsGM ? (cat) => handleArrayAddAsGM('abilities', cat) : () => {}} 
+                     onUpdate={editingAsGM ? (id, field, val) => handleArrayUpdateAsGM('abilities', id, field, val) : () => {}} 
+                     onRemove={editingAsGM ? (id) => handleArrayRemoveAsGM('abilities', id) : () => {}}
                      enableTabs={false}
                   />
                   <InventoryList 
                      items={viewingChar.inventory} 
-                     onAdd={()=>{}} onUpdate={()=>{}} onRemove={()=>{}} 
-                     readOnly // New Prop
+                     onAdd={editingAsGM ? (template) => handleArrayAddAsGM('inventory', undefined, template) : () => {}} 
+                     onUpdate={editingAsGM ? (id, field, val) => handleArrayUpdateAsGM('inventory', id, field, val) : () => {}} 
+                     onRemove={editingAsGM ? (id) => handleArrayRemoveAsGM('inventory', id) : () => {}} 
+                     readOnly={isReadOnly}
                   />
                </section>
            </div>
@@ -331,32 +526,56 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                {selectedCampaign.participants.map((p, idx) => {
                  const canRemove = isGM || p.userId === auth.currentUser?.uid;
+                 const canView = isGM || p.userId === auth.currentUser?.uid; // Only GM or self can view
                  return (
                    <div 
                       key={idx}
-                      className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center gap-4 hover:border-curse-500/50 hover:bg-slate-900 transition-all group relative"
+                      className={`bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center gap-4 transition-all group relative ${
+                        canView ? 'hover:border-curse-500/50 hover:bg-slate-900 cursor-pointer' : 'opacity-75'
+                      }`}
                    >
-                      <button
-                         onClick={() => handleViewCharacter(p)}
-                         className="flex items-center gap-4 flex-1 text-left"
-                      >
-                         <div className="w-12 h-12 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shrink-0">
-                            {p.imageUrl ? (
-                               <img src={p.imageUrl} alt={p.characterName} className="w-full h-full object-cover" />
-                            ) : (
-                               <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold">{p.characterName.charAt(0)}</div>
-                            )}
-                         </div>
-                         <div>
-                            <div className="font-bold text-white group-hover:text-curse-300 transition-colors">{p.characterName}</div>
-                            <div className="text-xs text-slate-500">Lv.{p.level} {p.characterClass}</div>
-                            {p.userId === selectedCampaign.gmId && (
-                               <div className="text-[10px] text-yellow-500 flex items-center gap-1 mt-1 font-bold uppercase tracking-wider">
-                                  <Crown size={10} /> Mestre
-                               </div>
-                            )}
-                         </div>
-                      </button>
+                      {canView ? (
+                        <button
+                           onClick={() => handleViewCharacter(p)}
+                           className="flex items-center gap-4 flex-1 text-left"
+                        >
+                           <div className="w-12 h-12 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shrink-0">
+                              {p.imageUrl ? (
+                                 <img src={p.imageUrl} alt={p.characterName} className="w-full h-full object-cover" />
+                              ) : (
+                                 <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold">{p.characterName.charAt(0)}</div>
+                              )}
+                           </div>
+                           <div>
+                              <div className="font-bold text-white group-hover:text-curse-300 transition-colors">{p.characterName}</div>
+                              <div className="text-xs text-slate-500">Lv.{p.level} {p.characterClass}</div>
+                              {p.userId === selectedCampaign.gmId && (
+                                 <div className="text-[10px] text-yellow-500 flex items-center gap-1 mt-1 font-bold uppercase tracking-wider">
+                                    <Crown size={10} /> Mestre
+                                 </div>
+                              )}
+                           </div>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-4 flex-1">
+                           <div className="w-12 h-12 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shrink-0">
+                              {p.imageUrl ? (
+                                 <img src={p.imageUrl} alt={p.characterName} className="w-full h-full object-cover" />
+                              ) : (
+                                 <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold">{p.characterName.charAt(0)}</div>
+                              )}
+                           </div>
+                           <div>
+                              <div className="font-bold text-white">{p.characterName}</div>
+                              <div className="text-xs text-slate-500">Lv.{p.level} {p.characterClass}</div>
+                              {p.userId === selectedCampaign.gmId && (
+                                 <div className="text-[10px] text-yellow-500 flex items-center gap-1 mt-1 font-bold uppercase tracking-wider">
+                                    <Crown size={10} /> Mestre
+                                 </div>
+                              )}
+                           </div>
+                        </div>
+                      )}
                       {canRemove && (
                          <button
                             onClick={(e) => {
