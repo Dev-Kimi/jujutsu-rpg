@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats } from '../types';
-import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save } from 'lucide-react';
+import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
 import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
@@ -10,6 +10,7 @@ import { SkillList } from './SkillList';
 import { AccordionList } from './AccordionList';
 import { InventoryList } from './InventoryList';
 import { calculateDerivedStats } from '../utils/calculations';
+import { DiceRollLog } from './DiceRollLog';
 
 interface CampaignManagerProps {
   currentUserChar: Character;
@@ -27,6 +28,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   const [viewingStats, setViewingStats] = useState<CurrentStats>({ pv: 0, ce: 0, pe: 0 });
   const [editingAsGM, setEditingAsGM] = useState(false);
   const [editingParticipant, setEditingParticipant] = useState<CampaignParticipant | null>(null);
+  const [showDiceLog, setShowDiceLog] = useState(false);
 
   // 1. Fetch Campaigns
   useEffect(() => {
@@ -504,13 +506,21 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                   )}
                </div>
                
-               <div className="mt-6 flex gap-4">
+               <div className="mt-6 flex gap-4 flex-wrap">
                   {!isParticipant && (
                     <button 
                       onClick={() => handleJoinCampaign(selectedCampaign)}
                       className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-900/20 transition-all"
                     >
                        <Play size={18} /> Entrar com {currentUserChar.name}
+                    </button>
+                  )}
+                  {(isParticipant || isGM) && (
+                    <button 
+                      onClick={() => setShowDiceLog(true)}
+                      className="bg-curse-600 hover:bg-curse-500 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg shadow-curse-900/20 transition-all"
+                    >
+                       <Dices size={18} /> Log de Rolagens
                     </button>
                   )}
                </div>
@@ -593,6 +603,15 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                })}
             </div>
          </div>
+
+         {/* Dice Roll Log */}
+         {selectedCampaign && (
+           <DiceRollLog 
+             campaignId={selectedCampaign.id}
+             isOpen={showDiceLog}
+             onClose={() => setShowDiceLog(false)}
+           />
+         )}
       </div>
     );
   }
