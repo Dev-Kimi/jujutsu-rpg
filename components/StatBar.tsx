@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Minus, Plus, RotateCcw, TrendingUp, AlertCircle } from 'lucide-react';
 
@@ -8,9 +9,10 @@ interface StatBarProps {
   colorClass: string; // e.g., 'bg-red-500'
   onChange: (newVal: number) => void;
   icon?: React.ReactNode;
+  readOnly?: boolean;
 }
 
-export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, onChange, icon }) => {
+export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, onChange, icon, readOnly }) => {
   const percentage = max > 0 ? (current / max) * 100 : 0;
   const isOvercharged = current > max;
   const isLow = current <= max * 0.25 && current > 0;
@@ -36,7 +38,7 @@ export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClas
         </div>
         
         <div className="flex items-center gap-2">
-           {current !== max && (
+           {!readOnly && current !== max && (
             <button 
               onClick={resetToMax}
               className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-curse-300 transition-colors uppercase font-bold tracking-wider mr-2 bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800 hover:border-curse-500/50"
@@ -75,37 +77,39 @@ export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClas
       </div>
 
       {/* Controls */}
-      <div className="flex justify-between gap-2 relative z-10">
-        <div className="flex gap-1">
-          <button 
-            onClick={() => adjust(-5)} 
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-400 transition-colors text-xs font-mono border border-transparent hover:border-red-900/50"
-          >
-            -5
-          </button>
-          <button 
-            onClick={() => adjust(-1)} 
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-400 transition-colors border border-transparent hover:border-red-900/50"
-          >
-            <Minus size={14} />
-          </button>
+      {!readOnly && (
+        <div className="flex justify-between gap-2 relative z-10">
+            <div className="flex gap-1">
+            <button 
+                onClick={() => adjust(-5)} 
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-400 transition-colors text-xs font-mono border border-transparent hover:border-red-900/50"
+            >
+                -5
+            </button>
+            <button 
+                onClick={() => adjust(-1)} 
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-400 transition-colors border border-transparent hover:border-red-900/50"
+            >
+                <Minus size={14} />
+            </button>
+            </div>
+            
+            <div className="flex gap-1">
+            <button 
+                onClick={() => adjust(1)} 
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/30 text-slate-400 hover:text-emerald-400 transition-colors border border-transparent hover:border-emerald-900/50"
+            >
+                <Plus size={14} />
+            </button>
+            <button 
+                onClick={() => adjust(5)} 
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/30 text-slate-400 hover:text-emerald-400 transition-colors text-xs font-mono border border-transparent hover:border-emerald-900/50"
+            >
+                +5
+            </button>
+            </div>
         </div>
-        
-        <div className="flex gap-1">
-          <button 
-            onClick={() => adjust(1)} 
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/30 text-slate-400 hover:text-emerald-400 transition-colors border border-transparent hover:border-emerald-900/50"
-          >
-            <Plus size={14} />
-          </button>
-          <button 
-            onClick={() => adjust(5)} 
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/30 text-slate-400 hover:text-emerald-400 transition-colors text-xs font-mono border border-transparent hover:border-emerald-900/50"
-          >
-            +5
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
