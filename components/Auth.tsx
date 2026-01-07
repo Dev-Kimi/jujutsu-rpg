@@ -1,12 +1,12 @@
-// src/components/Auth.tsx
 import React, { useState } from 'react';
-import { auth } from '../firebase'; // Importa a conexão que criamos acima
+import { auth, db } from '../firebase';
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   GoogleAuthProvider, 
   signInWithPopup 
 } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 export default function Auth() {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -14,25 +14,43 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
+  const ensureUserDoc = async (uid: string, email?: string) => {
+    try {
+      const userRef = doc(db, 'users', uid);
+      const snap = await getDoc(userRef);
+      if (!snap.exists()) {
+        await setDoc(userRef, { savedCharacters: [], email: email || null }, { merge: true });
+      } else {
+        // Ensure email is present (merge)
+        await setDoc(userRef, { email: email || null }, { merge: true });
+      }
+    } catch (err) {
+      console.error('Erro criando/verificando documento de usuário', err);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     try {
       if (isRegistering) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await ensureUserDoc(userCredential.user.uid, userCredential.user.email || undefined);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await ensureUserDoc(userCredential.user.uid, userCredential.user.email || undefined);
       }
     } catch (err: any) {
-      setError("Erro: " + err.message);
+      setError("Erro: " + (err.message || err));
     }
   };
 
   const handleGoogle = async () => {
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      await ensureUserDoc(result.user.uid, result.user.email || undefined);
     } catch (err: any) {
-      setError("Erro Google: " + err.message);
+      setError("Erro Google: " + (err.message || err));
     }
   };
 
