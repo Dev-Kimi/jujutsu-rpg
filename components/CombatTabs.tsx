@@ -204,13 +204,38 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       rollTitle = selectedTech.name;
       actionCostCE = invested; 
       const intBonus = char.attributes.INT;
+      
+      // Check for "Economia de Fluxo" passive ability
+      const hasEconomiaFluxo = char.abilities.some(ability => 
+        ability.name === "Economia de Fluxo" && ability.category === "Feiticeiro"
+      );
+      
+      // Apply "Economia de Fluxo" cost reduction (reduce CE cost by half of INT)
+      let economiaReduction = 0;
+      if (hasEconomiaFluxo) {
+        economiaReduction = Math.floor(intBonus / 2);
+        actionCostCE = Math.max(0, actionCostCE - economiaReduction);
+      }
+      
       // Roll individual dice for logging
       for (let i = 0; i < invested; i++) {
         loggedRolls.push(rollDice(techniqueDie, 1));
       }
       const magicRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
       total = magicRoll + intBonus;
-      detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus}`;
+      
+      // If using 10 CE (after reduction check original invested amount), reduce INT from total
+      if (invested >= 10) {
+        total = Math.max(0, total - intBonus);
+        detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus} - [INT]${intBonus} (10+ CE)`;
+      } else {
+        detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus}`;
+      }
+      
+      // Add economia de fluxo reduction to detail if applicable
+      if (hasEconomiaFluxo && economiaReduction > 0) {
+        detail += ` (Economia de Fluxo: -${economiaReduction} CE)`;
+      }
     } 
     else if (activeTab === 'defense') {
        if (isHR) {
@@ -247,6 +272,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     }
 
     // 3. Check TOTAL Resources (Action + Buffs)
+    // Note: actionCostCE for techniques already has Economia de Fluxo reduction applied
     const finalCostPE = actionCostPE + totalBuffCost.pe;
     const finalCostCE = actionCostCE + totalBuffCost.ce;
 
@@ -368,9 +394,28 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             {activeTab === 'technique' && "Técnica Inata"}
             {activeTab === 'defense' && "Calculadora de Dano"}
           </span>
-          <span className={currentStats.ce < (activeTab === 'technique' ? invested : currentCostCE) && !isHR ? "text-red-500" : "text-curse-400"}>
-             {isHR && activeTab === 'physical' ? 'Custo: 0 (Passivo)' : `Custo Ação: ${activeTab === 'technique' ? invested : currentCostCE} CE`}
-          </span>
+          <div className="text-right">
+            {activeTab === 'technique' && (() => {
+              const hasEconomiaFluxo = char.abilities.some(ability => 
+                ability.name === "Economia de Fluxo" && ability.category === "Feiticeiro"
+              );
+              const economiaReduction = hasEconomiaFluxo ? Math.floor(char.attributes.INT / 2) : 0;
+              const finalCost = Math.max(0, invested - economiaReduction);
+              const displayCost = economiaReduction > 0 ? `${invested} - ${economiaReduction} = ${finalCost}` : invested;
+              
+              return (
+                <span className={currentStats.ce < finalCost && !isHR ? "text-red-500" : "text-curse-400"}>
+                  Custo Ação: {displayCost} CE
+                  {economiaReduction > 0 && <span className="text-emerald-400 text-[10px] normal-case"> (Economia de Fluxo)</span>}
+                </span>
+              );
+            })()}
+            {activeTab !== 'technique' && (
+              <span className={currentStats.ce < currentCostCE && !isHR ? "text-red-500" : "text-curse-400"}>
+                {isHR && activeTab === 'physical' ? 'Custo: 0 (Passivo)' : `Custo Ação: ${currentCostCE} CE`}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Dynamic Inputs */}
