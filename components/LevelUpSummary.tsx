@@ -15,16 +15,16 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
   const isHR = char.origin === Origin.RestricaoCelestial;
 
   // Calculate used resources
-  // "Pontos de Habilidade" são usados para criar habilidades personalizadas (não-base)
-  // Count skills that are NOT base (custom skills created with skill points)
-  // isBase should be true for default skills, false or undefined for custom skills
-  const actualUsedSkills = char.skills.filter(skill => skill.isBase !== true).length;
+  // "Pontos de Habilidade" são usados para adicionar habilidades de classe (abilities)
+  // Count all abilities, but exclude the "Habilidade Base de Classe" if it exists
+  const actualUsedSkills = char.abilities.length;
   
   const totalAttrPointsUsed = (Object.values(char.attributes) as number[]).reduce((a, b) => a + b, 0) - 5; // Subtract base 5
   
   // Calculate actual used resources from character
   const actualUsedAttr = Math.max(0, totalAttrPointsUsed);
   const actualUsedTechniques = char.techniques.length;
+  // "Pontos de Aptidão" são usados para habilidades que não são passivas (custo != "Passivo")
   const actualUsedAptitude = char.abilities.filter(ability => 
     ability.cost && ability.cost.toLowerCase() !== "passivo"
   ).length;
@@ -261,10 +261,12 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
          </h4>
          <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden text-xs max-h-[600px] overflow-y-auto custom-scrollbar">
             {levelProgress.map((entry, index) => {
-              // Recalculate used resources to ensure we have current values
-              const currentUsedSkills = char.skills.filter(skill => skill.isBase !== true).length;
+              // Recalculate used resources to ensure we have current values from character
+              // "Pontos de Habilidade" = todas as habilidades (abilities) do personagem
+              const currentUsedSkills = char.abilities.length;
               const currentUsedAttr = Math.max(0, (Object.values(char.attributes) as number[]).reduce((a, b) => a + b, 0) - 5);
               const currentUsedTechniques = char.techniques.length;
+              // "Pontos de Aptidão" = habilidades que não são passivas
               const currentUsedAptitude = char.abilities.filter(ability => 
                 ability.cost && ability.cost.toLowerCase() !== "passivo"
               ).length;
