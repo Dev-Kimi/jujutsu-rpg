@@ -210,10 +210,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         ability.name === "Economia de Fluxo" && ability.category === "Feiticeiro"
       );
       
-      // Apply "Economia de Fluxo" cost reduction (reduce CE cost by half of INT, rounded up)
+      // Apply "Economia de Fluxo" cost reduction (reduce CE cost by full INT value)
       let economiaReduction = 0;
       if (hasEconomiaFluxo) {
-        economiaReduction = Math.ceil(intBonus / 2);
+        economiaReduction = intBonus;
         actionCostCE = Math.max(1, actionCostCE - economiaReduction); // Minimum cost of 1 CE
       }
       
@@ -399,7 +399,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
               const hasEconomiaFluxo = char.abilities.some(ability => 
                 ability.name === "Economia de Fluxo" && ability.category === "Feiticeiro"
               );
-              const economiaReduction = hasEconomiaFluxo ? Math.ceil(char.attributes.INT / 2) : 0;
+              const economiaReduction = hasEconomiaFluxo ? char.attributes.INT : 0;
               const finalCost = Math.max(1, invested - economiaReduction); // Minimum cost of 1 CE
               const displayCost = economiaReduction > 0 ? `${invested} - ${economiaReduction} = ${finalCost}` : invested;
               
