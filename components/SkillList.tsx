@@ -223,7 +223,7 @@ export const SkillList: React.FC<SkillListProps> = ({
           const otherBonus = skill.otherValue || 0;
           const isCustom = !skill.isBase;
           
-          const isPhysical = skill.attribute && ['FOR', 'AGI', 'VIG'].includes(skill.attribute);
+          const isPhysical = skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute);
           const llBonus = isPhysical ? LL : 0;
           const totalBonus = skill.value + otherBonus + llBonus;
           
@@ -275,7 +275,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                           }`}>
                               {skill.name}
                           </span>
-                          {isPhysical && <span className="text-[9px] text-slate-600 font-mono">+LL</span>}
+                          {(skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) && <span className="text-[9px] text-slate-600 font-mono">+LL</span>}
                           {isPenalized && <span className="text-[9px] text-red-500 font-bold">-{actionState?.reactionPenalty}</span>}
                       </div>
                    )}
