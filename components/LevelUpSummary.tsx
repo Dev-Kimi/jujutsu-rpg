@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Character, Origin } from '../types';
 import { calculateTotalResources, getNextLevelRewards, SORCERER_TABLE, HEAVENLY_TABLE } from '../utils/progressionLogic';
-import { TrendingUp, Award, Book, Dna, Star, Crown, ChevronRight } from 'lucide-react';
+import { TrendingUp, Award, Book, Dna, Star, Crown, ChevronRight, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 
 interface LevelUpSummaryProps {
   char: Character;
@@ -14,10 +14,122 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
   
   const isHR = char.origin === Origin.RestricaoCelestial;
 
-  // Calculate used resources (mocked or derived from actual arrays if we implemented tracking used points)
-  // For now, we display Total Available based on Math.
+  // Calculate used resources
   const usedSkills = char.skills.reduce((acc, skill) => acc + (skill.value === 5 ? 1 : skill.value === 10 ? 2 : skill.value === 15 ? 3 : 0), 0);
-  const totalAttrPointsUsed = Object.values(char.attributes).reduce((a, b) => a + b, 0);
+  const totalAttrPointsUsed = Object.values(char.attributes).reduce((a, b) => a + b, 0) - 5; // Subtract base 5
+  
+  // Calculate actual used resources from character
+  const actualUsedAttr = Math.max(0, totalAttrPointsUsed);
+  const actualUsedSkills = usedSkills;
+  const actualUsedTechniques = char.techniques.length;
+  const actualUsedAptitude = char.abilities.filter(ability => 
+    ability.cost && ability.cost.toLowerCase() !== "passivo"
+  ).length;
+
+  // Calculate resources gained and used per level
+  const levelProgress = useMemo(() => {
+    const progress: Array<{
+      level: number;
+      gains: string[];
+      gained: {
+        attribute: number;
+        skill: number;
+        aptitude: number;
+        technique: number;
+        training: number;
+      };
+      cumulative: {
+        attribute: number;
+        skill: number;
+        aptitude: number;
+        technique: number;
+        training: number;
+      };
+    }> = [];
+    
+    const isInato = char.origin === Origin.Inato;
+    const isHR = char.origin === Origin.RestricaoCelestial;
+    
+    let cumulativeAttr = 0;
+    let cumulativeSkill = 0;
+    let cumulativeAptitude = 0;
+    let cumulativeTechnique = 0;
+    let cumulativeTraining = 0;
+    
+    const table = isHR ? HEAVENLY_TABLE : SORCERER_TABLE;
+    
+    for (let level = 1; level <= char.level; level++) {
+      const entry = table.find(e => e.level === level);
+      if (!entry && !isHR) continue;
+      
+      const gains = entry ? entry.gains : [];
+      
+      let gainedAttr = 0;
+      let gainedSkill = 0;
+      let gainedAptitude = 0;
+      let gainedTechnique = 0;
+      let gainedTraining = 0;
+      
+      if (level === 1) {
+        gainedAttr = 5; // Start: +5 Pontos de Atributo
+        gainedSkill = 1; // +1 Ponto de Habilidade
+        gainedTechnique = 1; // Variação de Técnica Inata
+        if (isInato) {
+          gainedSkill += 1; // Inato bonus level 1
+        }
+        if (isHR) {
+          gainedAttr = 3; // HR: +3 Atributos Iniciais
+        }
+      }
+      
+      if (!isHR) {
+        gains.forEach(gain => {
+          if (gain.includes("Ponto de Habilidade")) gainedSkill += 1;
+          if (gain.includes("Ponto de Aptidão")) gainedAptitude += 1;
+          if (gain.includes("Aumento de Atributo") || gain.includes("Atributo (+1)")) gainedAttr += 1;
+          if (gain.includes("Variação da Técnica Inata")) gainedTechnique += 1;
+          if (gain.includes("Grau de Treinamento")) {
+            if (gain.includes("+3")) gainedTraining += 3;
+          }
+        });
+        
+        if (level === 5 && isInato && gains.some(g => g.includes("Bônus de Origem Inato"))) {
+          gainedSkill += 1;
+        }
+      } else {
+        if ([4, 8, 12, 16, 20].includes(level)) {
+          gainedAttr += 1;
+        }
+      }
+      
+      cumulativeAttr += gainedAttr;
+      cumulativeSkill += gainedSkill;
+      cumulativeAptitude += gainedAptitude;
+      cumulativeTechnique += gainedTechnique;
+      cumulativeTraining += gainedTraining;
+      
+      progress.push({
+        level,
+        gains,
+        gained: {
+          attribute: gainedAttr,
+          skill: gainedSkill,
+          aptitude: gainedAptitude,
+          technique: gainedTechnique,
+          training: gainedTraining
+        },
+        cumulative: {
+          attribute: cumulativeAttr,
+          skill: cumulativeSkill,
+          aptitude: cumulativeAptitude,
+          technique: cumulativeTechnique,
+          training: cumulativeTraining
+        }
+      });
+    }
+    
+    return progress;
+  }, [char.level, char.origin]);
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
@@ -139,22 +251,129 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
          </div>
       </div>
       
-      {/* Full Table Reference (Collapsed or Mini) */}
+      {/* Detailed Progress Table */}
       <div className="mt-8">
          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
-             Referência de Progressão ({isHR ? 'Restrição Celestial' : 'Padrão'})
+             Progressão por Nível
          </h4>
-         <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden text-xs max-h-[300px] overflow-y-auto custom-scrollbar">
-            {(isHR ? HEAVENLY_TABLE : SORCERER_TABLE).map((row) => (
-               <div key={row.level} className={`flex border-b border-slate-900 p-3 ${row.level === char.level ? 'bg-curse-900/20' : ''}`}>
-                  <div className={`w-12 font-bold font-mono ${row.level <= char.level ? 'text-curse-400' : 'text-slate-600'}`}>
-                     Lv.{row.level}
+         <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden text-xs max-h-[600px] overflow-y-auto custom-scrollbar">
+            {levelProgress.map((entry) => {
+              // Calculate used resources up to this level (can't exceed cumulative gained)
+              const levelUsedAttr = Math.min(entry.cumulative.attribute, actualUsedAttr);
+              const levelUsedSkill = Math.min(entry.cumulative.skill, actualUsedSkills);
+              const levelUsedAptitude = Math.min(entry.cumulative.aptitude, actualUsedAptitude);
+              const levelUsedTechnique = Math.min(entry.cumulative.technique, actualUsedTechniques);
+              
+              // Calculate available (gained - used)
+              const availableAttr = entry.cumulative.attribute - levelUsedAttr;
+              const availableSkill = entry.cumulative.skill - levelUsedSkill;
+              const availableAptitude = entry.cumulative.aptitude - levelUsedAptitude;
+              const availableTechnique = entry.cumulative.technique - levelUsedTechnique;
+              
+              return (
+                <div key={entry.level} className={`border-b border-slate-900 p-4 ${entry.level === char.level ? 'bg-curse-900/20 border-l-2 border-l-curse-500' : ''}`}>
+                  <div className="flex items-start gap-3 mb-2">
+                    <div className={`w-12 font-bold font-mono text-lg ${entry.level <= char.level ? 'text-curse-400' : 'text-slate-600'}`}>
+                       Lv.{entry.level}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-slate-300 mb-2 font-medium">
+                        {entry.gains.length > 0 ? entry.gains.join(" • ") : "Apenas aumento de status base"}
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                        {entry.cumulative.attribute > 0 && (
+                          <div className="bg-slate-900/50 rounded p-2 border border-slate-800">
+                            <div className="text-[10px] text-slate-500 uppercase mb-1">Atributo</div>
+                            <div className="text-white font-mono text-sm">
+                              <span className="text-emerald-400">{levelUsedAttr}</span>/
+                              <span className="text-slate-400">{entry.cumulative.attribute}</span>
+                            </div>
+                            {availableAttr > 0 && (
+                              <div className="text-[9px] text-yellow-400 mt-1">
+                                Disponível: {availableAttr}
+                              </div>
+                            )}
+                            {availableAttr === 0 && levelUsedAttr >= entry.cumulative.attribute && (
+                              <div className="text-[9px] text-emerald-400 mt-1 flex items-center gap-1">
+                                <CheckCircle2 size={10} /> Usado
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {entry.cumulative.skill > 0 && (
+                          <div className="bg-slate-900/50 rounded p-2 border border-slate-800">
+                            <div className="text-[10px] text-slate-500 uppercase mb-1">Habilidade</div>
+                            <div className="text-white font-mono text-sm">
+                              <span className="text-emerald-400">{levelUsedSkill}</span>/
+                              <span className="text-slate-400">{entry.cumulative.skill}</span>
+                            </div>
+                            {availableSkill > 0 && (
+                              <div className="text-[9px] text-yellow-400 mt-1">
+                                Disponível: {availableSkill}
+                              </div>
+                            )}
+                            {availableSkill === 0 && levelUsedSkill >= entry.cumulative.skill && (
+                              <div className="text-[9px] text-emerald-400 mt-1 flex items-center gap-1">
+                                <CheckCircle2 size={10} /> Usado
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {entry.cumulative.aptitude > 0 && (
+                          <div className="bg-slate-900/50 rounded p-2 border border-slate-800">
+                            <div className="text-[10px] text-slate-500 uppercase mb-1">Aptidão</div>
+                            <div className="text-white font-mono text-sm">
+                              <span className="text-emerald-400">{levelUsedAptitude}</span>/
+                              <span className="text-slate-400">{entry.cumulative.aptitude}</span>
+                            </div>
+                            {availableAptitude > 0 && (
+                              <div className="text-[9px] text-yellow-400 mt-1">
+                                Disponível: {availableAptitude}
+                              </div>
+                            )}
+                            {availableAptitude === 0 && levelUsedAptitude >= entry.cumulative.aptitude && (
+                              <div className="text-[9px] text-emerald-400 mt-1 flex items-center gap-1">
+                                <CheckCircle2 size={10} /> Usado
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {entry.cumulative.technique > 0 && (
+                          <div className="bg-slate-900/50 rounded p-2 border border-slate-800">
+                            <div className="text-[10px] text-slate-500 uppercase mb-1">Técnica</div>
+                            <div className="text-white font-mono text-sm">
+                              <span className="text-emerald-400">{levelUsedTechnique}</span>/
+                              <span className="text-slate-400">{entry.cumulative.technique}</span>
+                            </div>
+                            {availableTechnique > 0 && (
+                              <div className="text-[9px] text-yellow-400 mt-1">
+                                Disponível: {availableTechnique}
+                              </div>
+                            )}
+                            {availableTechnique === 0 && levelUsedTechnique >= entry.cumulative.technique && (
+                              <div className="text-[9px] text-emerald-400 mt-1 flex items-center gap-1">
+                                <CheckCircle2 size={10} /> Usado
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {entry.gained.training > 0 && (
+                          <div className="bg-slate-900/50 rounded p-2 border border-slate-800">
+                            <div className="text-[10px] text-slate-500 uppercase mb-1">Treinamento</div>
+                            <div className="text-white font-mono text-sm">
+                              <span className="text-slate-400">+{entry.gained.training}</span>
+                            </div>
+                            <div className="text-[9px] text-slate-500 mt-1">
+                              Grau de Treinamento
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 text-slate-400">
-                     {row.gains.join(" • ")}
-                  </div>
-               </div>
-            ))}
+                </div>
+              );
+            })}
          </div>
       </div>
 
