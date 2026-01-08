@@ -34,7 +34,8 @@ const getInitialChar = (): Character => ({
   skills: JSON.parse(JSON.stringify(DEFAULT_SKILLS)), // Deep copy to avoid reference issues
   abilities: [],
   techniques: [],
-  inventory: []
+  inventory: [],
+  aptitudes: {} // Initialize empty aptitudes
 });
 
 type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' | 'campaigns';
@@ -378,6 +379,16 @@ const App: React.FC = () => {
      setCharacter(prev => ({ ...prev, [field]: prev[field].filter((item: any) => item.id !== id) }));
   };
 
+  const handleAptitudeUpdate = (category: keyof import('./types').AptitudeLevels, level: number) => {
+    setCharacter(prev => ({
+      ...prev,
+      aptitudes: {
+        ...prev.aptitudes,
+        [category]: Math.max(0, level) // Ensure level is at least 0
+      }
+    }));
+  };
+
   const toggleDomain = (initialCost: number) => {
     if (!domainActive) {
       if (currentStats.ce < initialCost) {
@@ -700,7 +711,7 @@ const App: React.FC = () => {
                  />
                )}
                {activeTab === 'progression' && (
-                  <LevelUpSummary char={character} />
+                  <LevelUpSummary char={character} onUpdateAptitude={handleAptitudeUpdate} />
                )}
             </div>
 
