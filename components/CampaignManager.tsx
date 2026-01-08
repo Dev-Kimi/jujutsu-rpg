@@ -612,6 +612,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
              campaignId={selectedCampaign.id}
              isOpen={showDiceLog}
              onClose={() => setShowDiceLog(false)}
+             gmId={selectedCampaign.gmId}
            />
          )}
       </div>
