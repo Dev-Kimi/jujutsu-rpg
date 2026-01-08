@@ -1,21 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DiceRollLog as DiceRollLogType } from '../types';
-import { db } from '../firebase';
-import { collection, query, onSnapshot, orderBy, limit, where } from 'firebase/firestore';
-import { Dices, X, Hexagon } from 'lucide-react';
+import { db, auth } from '../firebase';
+import { collection, query, onSnapshot, orderBy, limit, where, doc, writeBatch, getDocs } from 'firebase/firestore';
+import { Dices, X, Hexagon, Trash2 } from 'lucide-react';
 
 interface DiceRollLogProps {
   campaignId: string;
   isOpen: boolean;
   onClose: () => void;
+  gmId?: string; // Optional GM ID to enable clear log button
 }
 
-export const DiceRollLog: React.FC<DiceRollLogProps> = ({ campaignId, isOpen, onClose }) => {
+export const DiceRollLog: React.FC<DiceRollLogProps> = ({ campaignId, isOpen, onClose, gmId }) => {
   const [rolls, setRolls] = useState<DiceRollLogType[]>([]);
   const [filter, setFilter] = useState('');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevRollsLengthRef = useRef<number>(0);
+  
+  // Check if current user is GM
+  const isGM = gmId && auth.currentUser && gmId === auth.currentUser.uid;
 
   useEffect(() => {
-    if (!isOpen || !campaignId) return;
+    if (!isOpen || !campaignId) {
+      prevRollsLengthRef.current = 0;
+      return;
+    }
+
+    // Initialize prevRollsLengthRef when opening
+    prevRollsLengthRef.current = 0;
 
     const q = query(
       collection(db, 'diceRolls'),
@@ -29,7 +41,23 @@ export const DiceRollLog: React.FC<DiceRollLogProps> = ({ campaignId, isOpen, on
         id: doc.id,
         ...doc.data()
       } as DiceRollLogType));
+      
+      // Check if a new roll was added (length increased)
+      const prevLength = prevRollsLengthRef.current;
+      const hasNewRoll = campaignRolls.length > prevLength && prevLength > 0;
+      prevRollsLengthRef.current = campaignRolls.length;
+      
       setRolls(campaignRolls);
+      
+      // Scroll to top (newest) when a new roll is added
+      if (hasNewRoll && scrollContainerRef.current) {
+        // Use setTimeout to ensure DOM is updated
+        setTimeout(() => {
+          if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+          }
+        }, 150);
+      }
     }, (error) => {
       console.error('Error fetching dice rolls:', error);
       // If orderBy fails (no index), fallback to client-side filtering
@@ -42,7 +70,22 @@ export const DiceRollLog: React.FC<DiceRollLogProps> = ({ campaignId, isOpen, on
         const campaignRolls = snapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() } as DiceRollLogType))
           .sort((a, b) => b.timestamp - a.timestamp);
+        
+        // Check if a new roll was added (length increased)
+        const prevLength = prevRollsLengthRef.current;
+        const hasNewRoll = campaignRolls.length > prevLength && prevLength > 0;
+        prevRollsLengthRef.current = campaignRolls.length;
+        
         setRolls(campaignRolls);
+        
+        // Scroll to top (newest) when a new roll is added
+        if (hasNewRoll && scrollContainerRef.current) {
+          setTimeout(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = 0;
+            }
+          }, 150);
+        }
       });
       return () => fallbackUnsub();
     });
@@ -70,6 +113,59 @@ export const DiceRollLog: React.FC<DiceRollLogProps> = ({ campaignId, isOpen, on
     });
   };
 
+  const handleClearLog = async () => {
+    if (!isGM) return;
+    
+    if (!confirm('Tem certeza que deseja limpar todo o log de rolagens desta campanha? Esta ação não pode ser desfeita.')) {
+      return;
+    }
+
+    try {
+      // Get all roll documents for this campaign
+      const q = query(
+        collection(db, 'diceRolls'),
+        where('campaignId', '==', campaignId)
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        alert('Log já está vazio.');
+        return;
+      }
+      
+      // Delete in batches (Firestore limit is 500 per batch)
+      const batchSize = 500;
+      const docs = snapshot.docs;
+      
+      for (let i = 0; i < docs.length; i += batchSize) {
+        const batch = writeBatch(db);
+        const batchDocs = docs.slice(i, i + batchSize);
+        
+        batchDocs.forEach((docSnapshot) => {
+          batch.delete(doc(db, 'diceRolls', docSnapshot.id));
+        });
+        
+        await batch.commit();
+      }
+      
+      alert('Log limpo com sucesso!');
+      // Reset ref
+      prevRollsLengthRef.current = 0;
+    } catch (error) {
+      console.error('Error clearing log:', error);
+      alert('Erro ao limpar log: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  };
+
+  // Initialize prevRollsLength when first opening with existing rolls
+  useEffect(() => {
+    if (isOpen && rolls.length > 0 && prevRollsLengthRef.current === 0) {
+      // Set to current length when opening for the first time (but don't scroll on initial load)
+      prevRollsLengthRef.current = rolls.length;
+    }
+  }, [isOpen, rolls.length]);
+
   if (!isOpen) return null;
 
   return (
@@ -81,12 +177,23 @@ export const DiceRollLog: React.FC<DiceRollLogProps> = ({ campaignId, isOpen, on
             <Dices size={20} className="text-curse-400" />
             <h2 className="text-lg font-bold text-white">Log de Rolagens</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            {isGM && rolls.length > 0 && (
+              <button
+                onClick={handleClearLog}
+                className="p-2 hover:bg-red-600/20 rounded-lg transition-colors text-slate-400 hover:text-red-400"
+                title="Limpar Log (apenas GM)"
+              >
+                <Trash2 size={18} />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Filter */}
@@ -101,7 +208,7 @@ export const DiceRollLog: React.FC<DiceRollLogProps> = ({ campaignId, isOpen, on
         </div>
 
         {/* Roll List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3">
           {filteredRolls.length === 0 ? (
             <div className="text-center py-12 text-slate-600 italic">
               {filter ? 'Nenhuma rolagem encontrada com esse filtro.' : 'Nenhuma rolagem ainda.'}
