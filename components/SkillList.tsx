@@ -24,7 +24,7 @@ const TRAINING_LEVELS = [
   { value: 0, label: "0", name: "Destreinado", color: "text-slate-600 font-normal" },
   { value: 5, label: "+5", name: "Treinado", color: "text-emerald-500 font-bold" },
   { value: 10, label: "+10", name: "Veterano", color: "text-blue-500 font-bold" },
-  { value: 15, label: "+15", name: "Expert", color: "text-yellow-500 font-black" },
+  { value: 15, label: "+15", name: "Expert", color: "text-orange-500 font-black" },
 ];
 
 export const SkillList: React.FC<SkillListProps> = ({ 
@@ -268,7 +268,11 @@ export const SkillList: React.FC<SkillListProps> = ({
                       />
                    ) : (
                       <div className="flex items-baseline gap-1">
-                          <span className={`font-medium truncate ${hasQueuedBuff ? 'text-emerald-400' : isPenalized ? 'text-red-400' : 'text-slate-300 group-hover:text-white'}`}>
+                          <span className={`font-medium truncate ${
+                            hasQueuedBuff ? 'text-emerald-400' : 
+                            isPenalized ? 'text-red-400' : 
+                            currentLevel.color
+                          }`}>
                               {skill.name}
                           </span>
                           {isPhysical && <span className="text-[9px] text-slate-600 font-mono">+LL</span>}
@@ -284,14 +288,14 @@ export const SkillList: React.FC<SkillListProps> = ({
                     <select
                       value={skill.attribute || ""}
                       onChange={(e) => onUpdateSkill(skill.id, 'attribute', e.target.value)}
-                      className="w-full bg-transparent text-[10px] text-slate-500 text-center cursor-pointer appearance-none focus:text-white"
+                      className={`w-full bg-transparent text-[10px] text-center cursor-pointer appearance-none focus:outline-none ${currentLevel.color}`}
                     >
                       <option value="">-</option>
                       {attributeOptions.map(attr => <option key={attr} value={attr}>{attr}</option>)}
                     </select>
                  ) : (
-                   <div className="text-[10px] text-slate-500 font-mono group-hover:text-curse-400">
-                     {skill.attribute} <span className="text-slate-600 group-hover:text-curse-600">({attrVal})</span>
+                   <div className={`text-[10px] font-mono ${currentLevel.color}`}>
+                     {skill.attribute} <span className={`${currentLevel.value === 0 ? 'text-slate-600' : 'opacity-70'}`}>({attrVal})</span>
                    </div>
                  )}
               </div>
