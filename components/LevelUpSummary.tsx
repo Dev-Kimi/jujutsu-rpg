@@ -15,12 +15,15 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
   const isHR = char.origin === Origin.RestricaoCelestial;
 
   // Calculate used resources
-  const usedSkills = char.skills.reduce((acc, skill) => acc + (skill.value === 5 ? 1 : skill.value === 10 ? 2 : skill.value === 15 ? 3 : 0), 0);
-  const totalAttrPointsUsed = Object.values(char.attributes).reduce((a, b) => a + b, 0) - 5; // Subtract base 5
+  // "Pontos de Habilidade" são usados para criar habilidades personalizadas (não-base)
+  // Count skills that are NOT base (custom skills created with skill points)
+  // isBase should be true for default skills, false or undefined for custom skills
+  const actualUsedSkills = char.skills.filter(skill => skill.isBase !== true).length;
+  
+  const totalAttrPointsUsed = (Object.values(char.attributes) as number[]).reduce((a, b) => a + b, 0) - 5; // Subtract base 5
   
   // Calculate actual used resources from character
   const actualUsedAttr = Math.max(0, totalAttrPointsUsed);
-  const actualUsedSkills = usedSkills;
   const actualUsedTechniques = char.techniques.length;
   const actualUsedAptitude = char.abilities.filter(ability => 
     ability.cost && ability.cost.toLowerCase() !== "passivo"
@@ -257,12 +260,21 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
              Progressão por Nível
          </h4>
          <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden text-xs max-h-[600px] overflow-y-auto custom-scrollbar">
-            {levelProgress.map((entry) => {
-              // Calculate used resources up to this level (can't exceed cumulative gained)
-              const levelUsedAttr = Math.min(entry.cumulative.attribute, actualUsedAttr);
-              const levelUsedSkill = Math.min(entry.cumulative.skill, actualUsedSkills);
-              const levelUsedAptitude = Math.min(entry.cumulative.aptitude, actualUsedAptitude);
-              const levelUsedTechnique = Math.min(entry.cumulative.technique, actualUsedTechniques);
+            {levelProgress.map((entry, index) => {
+              // Recalculate used resources to ensure we have current values
+              const currentUsedSkills = char.skills.filter(skill => skill.isBase !== true).length;
+              const currentUsedAttr = Math.max(0, (Object.values(char.attributes) as number[]).reduce((a, b) => a + b, 0) - 5);
+              const currentUsedTechniques = char.techniques.length;
+              const currentUsedAptitude = char.abilities.filter(ability => 
+                ability.cost && ability.cost.toLowerCase() !== "passivo"
+              ).length;
+              
+              // Calculate used resources up to this level
+              // Can't use more than we've gained at that level, but can use up to the total available
+              const levelUsedAttr = Math.min(entry.cumulative.attribute, currentUsedAttr);
+              const levelUsedSkill = Math.min(entry.cumulative.skill, currentUsedSkills);
+              const levelUsedAptitude = Math.min(entry.cumulative.aptitude, currentUsedAptitude);
+              const levelUsedTechnique = Math.min(entry.cumulative.technique, currentUsedTechniques);
               
               // Calculate available (gained - used)
               const availableAttr = entry.cumulative.attribute - levelUsedAttr;
