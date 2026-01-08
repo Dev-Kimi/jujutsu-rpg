@@ -1,13 +1,14 @@
 import React, { useMemo } from 'react';
-import { Character, Origin } from '../types';
+import { Character, Origin, AptitudeLevels } from '../types';
 import { calculateTotalResources, getNextLevelRewards, SORCERER_TABLE, HEAVENLY_TABLE } from '../utils/progressionLogic';
-import { TrendingUp, Award, Book, Dna, Star, Crown, ChevronRight, CheckCircle2, Circle, AlertCircle } from 'lucide-react';
+import { TrendingUp, Award, Book, Dna, Star, Crown, ChevronRight, CheckCircle2, Circle, AlertCircle, Plus, Minus, Shield, Zap, Heart } from 'lucide-react';
 
 interface LevelUpSummaryProps {
   char: Character;
+  onUpdateAptitude?: (category: keyof AptitudeLevels, level: number) => void;
 }
 
-export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
+export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAptitude }) => {
   
   const resources = useMemo(() => calculateTotalResources(char.level, char.origin), [char.level, char.origin]);
   const nextRewards = useMemo(() => getNextLevelRewards(char.level, char.origin), [char.level, char.origin]);
@@ -24,10 +25,13 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
   // Calculate actual used resources from character
   const actualUsedAttr = Math.max(0, totalAttrPointsUsed);
   const actualUsedTechniques = char.techniques.length;
-  // "Pontos de Aptidão" são usados para habilidades que não são passivas (custo != "Passivo")
-  const actualUsedAptitude = char.abilities.filter(ability => 
-    ability.cost && ability.cost.toLowerCase() !== "passivo"
-  ).length;
+  
+  // "Pontos de Aptidão" são usados para aumentar níveis de aptidão em categorias de Habilidades Amaldiçoadas
+  // Cada nível de aptidão custa 1 ponto de aptidão (nível 1 = 1 ponto, nível 2 = 2 pontos total, etc)
+  const aptitudeLevels = char.aptitudes || {};
+  const actualUsedAptitude = (aptitudeLevels.manipulacao || 0) + 
+                              (aptitudeLevels.barreiras || 0) + 
+                              (aptitudeLevels.energiaReversa || 0);
 
   // Calculate resources gained and used per level
   const levelProgress = useMemo(() => {
@@ -221,8 +225,11 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
              <div className="text-2xl font-bold text-white">{resources.totalAptitude}</div>
              <div className="text-xs text-slate-400">Pontos de Aptidão</div>
            </div>
-           <div className="mt-3 pt-3 border-t border-slate-800/50 text-[10px] text-slate-500">
-              Usados para comprar Talentos ou Habilidades de Classe.
+           <div className="mt-3 pt-3 border-t border-slate-800/50 text-[10px] text-slate-500 flex justify-between">
+              <span>Gastos: {actualUsedAptitude}</span>
+              <span className={resources.totalAptitude - actualUsedAptitude < 0 ? "text-red-400" : "text-emerald-400"}>
+                 Restante: {resources.totalAptitude - actualUsedAptitude}
+              </span>
            </div>
         </div>
       </div>
@@ -254,6 +261,122 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
          </div>
       </div>
       
+      {/* Aptitude Levels Manager */}
+      <div className="mt-8">
+         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
+             Níveis de Aptidão
+         </h4>
+         <div className="bg-slate-950 rounded-xl border border-slate-800 p-4">
+           <p className="text-xs text-slate-400 mb-4">
+             Use Pontos de Aptidão para aumentar seu nível em categorias de Habilidades Amaldiçoadas. 
+             Cada nível custa 1 ponto de aptidão.
+           </p>
+           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+             {/* Manipulação */}
+             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4">
+               <div className="flex items-center justify-between mb-3">
+                 <div className="flex items-center gap-2">
+                   <Zap size={18} className="text-purple-400" />
+                   <span className="text-sm font-bold text-slate-300">Manipulação</span>
+                 </div>
+                 <span className="text-lg font-bold font-mono text-curse-400">
+                   Nv. {aptitudeLevels.manipulacao || 0}
+                 </span>
+               </div>
+               <div className="flex items-center gap-2">
+                 <button
+                   onClick={() => onUpdateAptitude && onUpdateAptitude('manipulacao', Math.max(0, (aptitudeLevels.manipulacao || 0) - 1))}
+                   disabled={!onUpdateAptitude || (aptitudeLevels.manipulacao || 0) === 0}
+                   className="p-1.5 rounded bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors"
+                   title="Diminuir nível"
+                 >
+                   <Minus size={14} />
+                 </button>
+                 <div className="flex-1 text-center text-xs text-slate-500">
+                   {actualUsedAptitude} / {resources.totalAptitude} pontos usados
+                 </div>
+                 <button
+                   onClick={() => onUpdateAptitude && onUpdateAptitude('manipulacao', (aptitudeLevels.manipulacao || 0) + 1)}
+                   disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
+                   className="p-1.5 rounded bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors"
+                   title="Aumentar nível"
+                 >
+                   <Plus size={14} />
+                 </button>
+               </div>
+             </div>
+
+             {/* Barreiras */}
+             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4">
+               <div className="flex items-center justify-between mb-3">
+                 <div className="flex items-center gap-2">
+                   <Shield size={18} className="text-blue-400" />
+                   <span className="text-sm font-bold text-slate-300">Barreiras</span>
+                 </div>
+                 <span className="text-lg font-bold font-mono text-curse-400">
+                   Nv. {aptitudeLevels.barreiras || 0}
+                 </span>
+               </div>
+               <div className="flex items-center gap-2">
+                 <button
+                   onClick={() => onUpdateAptitude && onUpdateAptitude('barreiras', Math.max(0, (aptitudeLevels.barreiras || 0) - 1))}
+                   disabled={!onUpdateAptitude || (aptitudeLevels.barreiras || 0) === 0}
+                   className="p-1.5 rounded bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors"
+                   title="Diminuir nível"
+                 >
+                   <Minus size={14} />
+                 </button>
+                 <div className="flex-1 text-center text-xs text-slate-500">
+                   Pontos de Aptidão
+                 </div>
+                 <button
+                   onClick={() => onUpdateAptitude && onUpdateAptitude('barreiras', (aptitudeLevels.barreiras || 0) + 1)}
+                   disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
+                   className="p-1.5 rounded bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors"
+                   title="Aumentar nível"
+                 >
+                   <Plus size={14} />
+                 </button>
+               </div>
+             </div>
+
+             {/* Energia Reversa */}
+             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4">
+               <div className="flex items-center justify-between mb-3">
+                 <div className="flex items-center gap-2">
+                   <Heart size={18} className="text-emerald-400" />
+                   <span className="text-sm font-bold text-slate-300">Energia Reversa</span>
+                 </div>
+                 <span className="text-lg font-bold font-mono text-curse-400">
+                   Nv. {aptitudeLevels.energiaReversa || 0}
+                 </span>
+               </div>
+               <div className="flex items-center gap-2">
+                 <button
+                   onClick={() => onUpdateAptitude && onUpdateAptitude('energiaReversa', Math.max(0, (aptitudeLevels.energiaReversa || 0) - 1))}
+                   disabled={!onUpdateAptitude || (aptitudeLevels.energiaReversa || 0) === 0}
+                   className="p-1.5 rounded bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors"
+                   title="Diminuir nível"
+                 >
+                   <Minus size={14} />
+                 </button>
+                 <div className="flex-1 text-center text-xs text-slate-500">
+                   Cada nível = 1 ponto
+                 </div>
+                 <button
+                   onClick={() => onUpdateAptitude && onUpdateAptitude('energiaReversa', (aptitudeLevels.energiaReversa || 0) + 1)}
+                   disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
+                   className="p-1.5 rounded bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors"
+                   title="Aumentar nível"
+                 >
+                   <Plus size={14} />
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
+      </div>
+
       {/* Detailed Progress Table */}
       <div className="mt-8">
          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">
@@ -266,10 +389,11 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char }) => {
               const currentUsedSkills = char.abilities.length;
               const currentUsedAttr = Math.max(0, (Object.values(char.attributes) as number[]).reduce((a, b) => a + b, 0) - 5);
               const currentUsedTechniques = char.techniques.length;
-              // "Pontos de Aptidão" = habilidades que não são passivas
-              const currentUsedAptitude = char.abilities.filter(ability => 
-                ability.cost && ability.cost.toLowerCase() !== "passivo"
-              ).length;
+              // "Pontos de Aptidão" = soma dos níveis de aptidão em cada categoria
+              const currentAptitudeLevels = char.aptitudes || {};
+              const currentUsedAptitude = (currentAptitudeLevels.manipulacao || 0) + 
+                                           (currentAptitudeLevels.barreiras || 0) + 
+                                           (currentAptitudeLevels.energiaReversa || 0);
               
               // Calculate used resources up to this level
               // Can't use more than we've gained at that level, but can use up to the total available
