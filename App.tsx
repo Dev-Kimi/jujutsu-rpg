@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Droplet, Zap, Activity, Skull, Flame, LogOut } from 'lucide-react';
 import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes } from './types';
 import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger } from './utils/calculations';
@@ -116,6 +116,9 @@ const App: React.FC = () => {
   // Active Buffs State
   const [activeBuffs, setActiveBuffs] = useState<Ability[]>([]);
 
+  // Ref to track last saved character for auto-save optimization
+  const lastSavedCharacterRef = useRef<string>('');
+
   // Robust Stats Initialization & Clamping
   useEffect(() => {
     if (viewMode === 'sheet') {
@@ -152,6 +155,9 @@ const App: React.FC = () => {
   const handleSelectCharacter = (char: Character) => {
     setCharacter(char);
     
+    // Update the ref to the loaded character to avoid immediate auto-save
+    lastSavedCharacterRef.current = JSON.stringify(char);
+    
     // Explicitly calculate and set FULL stats based on the loaded character
     // This helps immediate render before useEffect kicks in
     const newStats = calculateDerivedStats(char);
@@ -174,6 +180,8 @@ const App: React.FC = () => {
   };
 
   const handleFinishCreation = (newChar: Character) => {
+     // Update ref to the new character since it's already being saved
+     lastSavedCharacterRef.current = JSON.stringify(newChar);
      // Save immediately (this will trigger persistence effect)
      setSavedCharacters(prev => {
        const updated = [...prev, newChar];
@@ -196,6 +204,49 @@ const App: React.FC = () => {
     saveCurrentCharacter(); // Auto-save on exit (will update savedCharacters and persist)
     setViewMode('menu');
   };
+
+  // Auto-save character when it changes in sheet view
+  useEffect(() => {
+    // Only auto-save if we're in sheet view and the character has been properly loaded
+    if (viewMode !== 'sheet') {
+      lastSavedCharacterRef.current = ''; // Reset when leaving sheet view
+      return;
+    }
+    
+    // Don't save the initial/fallback character (check if it's the default one)
+    const initialChar = getInitialChar();
+    if (!character.id || (character.id === initialChar.id && character.name === initialChar.name)) {
+      return;
+    }
+    
+    // Check if this character exists in savedCharacters (to avoid saving brand new chars before they're properly initialized)
+    const exists = savedCharacters.some(c => c.id === character.id);
+    if (!exists && savedCharacters.length > 0) {
+      return; // Wait for proper initialization
+    }
+    
+    // Serialize character to compare with last saved version
+    const currentCharJson = JSON.stringify(character);
+    if (currentCharJson === lastSavedCharacterRef.current) {
+      return; // No changes, skip save
+    }
+    
+    // Debounce auto-save to avoid excessive saves during rapid edits
+    const timeoutId = setTimeout(() => {
+      setSavedCharacters(prev => {
+        const charExists = prev.some(c => c.id === character.id);
+        const updated = charExists 
+          ? prev.map(c => c.id === character.id ? character : c) 
+          : [...prev, character];
+        
+        // Update ref after saving
+        lastSavedCharacterRef.current = JSON.stringify(character);
+        return updated;
+      });
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [character, viewMode]); // Watch character and viewMode
 
   // --- Gameplay Logic Helpers ---
 
