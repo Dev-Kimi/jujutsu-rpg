@@ -65,7 +65,8 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
       skills: JSON.parse(JSON.stringify(DEFAULT_SKILLS)),
       abilities: [],
       techniques: [],
-      inventory: []
+      inventory: [],
+      aptitudes: {} // Initialize empty aptitudes
     };
     onFinish(newChar);
   };
