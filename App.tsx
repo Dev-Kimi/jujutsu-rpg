@@ -42,7 +42,7 @@ type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' |
 type ViewMode = 'menu' | 'creator' | 'sheet';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
-const APP_VERSION = '1.0.1'; // Update this when you deploy changes
+const APP_VERSION = '1.0.7'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
