@@ -449,7 +449,7 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
     cost: "1 PE + X CE",
-    description: "[Livre] Tier 1 - Requisitos: Nível 2, Aprimoramento de Fluxo. Antes de um ataque, gaste X CE (até sua LL). Adicione X de dano a esse ataque com arma."
+    description: "[Livre] Tier 1 - Requisitos: Nível 2, Aprimoramento de Fluxo. Antes de um ataque, gaste X CE (até sua LL). Adicione Xd4 de dano a esse ataque com arma."
   },
   {
     name: "Aprimoramento de Fluxo",
