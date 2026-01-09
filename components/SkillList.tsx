@@ -179,26 +179,26 @@ export const SkillList: React.FC<SkillListProps> = ({
       
       {/* Visual Roll Result Notification */}
       {rollResult && activeRollResult === 'skill' && (
-        <div className="fixed bottom-6 right-6 z-50 w-80 bg-neutral-900 border border-neutral-800 rounded-sm shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
-           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-pink-600"></div>
-           <div className="p-4 pl-6 relative">
+        <div className="fixed bottom-6 right-6 z-50 w-80 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
+           <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-curse-500"></div>
+           <div className="p-4 pl-6 relative bg-gradient-to-br from-slate-900 to-slate-950">
               <button 
                 onClick={() => { setRollResult(null); setActiveRollResult(null); }} 
-                className="absolute top-2 right-2 text-neutral-500 hover:text-white transition-colors"
+                className="absolute top-2 right-2 text-slate-500 hover:text-white transition-colors p-1 hover:bg-slate-800 rounded"
               >
                  <X size={16} />
               </button>
-              <div className="flex items-center gap-3 mb-2">
-                 <div className="text-pink-600">
-                    <Hexagon size={28} fill="currentColor" className="text-pink-600" />
+              <div className="flex items-center gap-3 mb-3">
+                 <div className="p-2 bg-curse-900/30 rounded-lg border border-curse-800/50">
+                    <Dices size={20} className="text-curse-400" />
                  </div>
-                 <h3 className="font-bold text-white text-lg leading-none">{rollResult.name}</h3>
+                 <h3 className="font-bold text-white text-base leading-tight">{rollResult.name}</h3>
               </div>
-              <div className="flex justify-between items-end border-t border-neutral-800 pt-2 mt-2">
-                 <span className="text-neutral-500 font-mono text-xs tracking-tighter max-w-[70%] break-words">{rollResult.breakdown}</span>
-                 <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-neutral-600 text-sm font-bold">=</span>
-                    <div className="text-4xl font-black text-white leading-none">{rollResult.total}</div>
+              <div className="flex justify-between items-end border-t border-slate-800 pt-3 mt-2 gap-3">
+                 <span className="text-slate-400 font-mono text-xs tracking-tighter max-w-[60%] break-words leading-relaxed">{rollResult.breakdown}</span>
+                 <div className="flex items-baseline gap-2 shrink-0">
+                    <span className="text-slate-600 text-lg font-bold">=</span>
+                    <div className="text-3xl font-black text-curse-400 leading-none">{rollResult.total}</div>
                  </div>
               </div>
            </div>
