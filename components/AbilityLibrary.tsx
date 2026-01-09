@@ -183,12 +183,33 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
 
               {expandedId === ability.name && (
                 <div className="px-4 pb-4 pt-0 text-xs text-slate-400 leading-relaxed border-t border-slate-800/50 bg-slate-900/50 mt-1 pt-3 animate-in slide-in-from-top-1">
-                  <div className="flex gap-2 mb-2">
+                  <div className="flex flex-wrap gap-2 mb-3">
                      <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-700">
                        Custo: {ability.cost || 'Variável'}
                      </span>
+                     {ability.description && ability.description.includes('Tier') && (
+                       <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-purple-700/50">
+                         {ability.description.match(/Tier \d+/)?.[0] || ''}
+                     </span>
+                     )}
+                     {ability.description && ability.description.includes('Requisitos:') && (
+                       <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded text-[10px] font-medium border border-blue-700/50 max-w-xs">
+                         {ability.description.match(/Requisitos: [^.]+(?=\.)/)?.[0] || ''}
+                     </span>
+                     )}
                   </div>
-                  {ability.description}
+                  <div className="text-slate-300 leading-relaxed space-y-2">
+                    {/* Extract action type */}
+                    {ability.description.match(/\[([^\]]+)\]/)?.[1] && (
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
+                        Tipo de Ação: {ability.description.match(/\[([^\]]+)\]/)?.[1]}
+                      </div>
+                    )}
+                    {/* Extract effect description (everything after the tier/requisitos line) */}
+                    <div className="whitespace-pre-line">
+                      {ability.description.replace(/\[([^\]]+)\]\s*Tier \d+ - Requisitos: [^.]+\.\s*/, '').trim()}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
