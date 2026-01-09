@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Sword, Zap, Shield, Dices, ArrowRight, Layers, Wand2, AlertCircle, Crosshair, Hammer, X, Hexagon } from 'lucide-react';
-import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, ActionState, Item } from '../types';
+import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
 import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
-import { ActionTracker } from './ActionTracker';
 import { logDiceRoll } from '../utils/diceRollLogger';
 
 interface CombatTabsProps {
@@ -14,8 +13,8 @@ interface CombatTabsProps {
   consumePE: (amount: number) => void;
   activeBuffs?: Ability[];
   onConsumeBuffs?: (buffs: Ability[]) => void;
-  actionState: ActionState;
-  setActionState: (state: ActionState) => void;
+  activeRollResult: 'skill' | 'combat' | null;
+  setActiveRollResult: (type: 'skill' | 'combat' | null) => void;
   onUpdateInventory?: (id: string, field: keyof Item, value: any) => void;
   campaignId?: string; // Optional campaign ID for logging rolls
 }
@@ -28,8 +27,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   consumePE,
   activeBuffs = [],
   onConsumeBuffs,
-  actionState,
-  setActionState,
+  activeRollResult,
+  setActiveRollResult,
   onUpdateInventory,
   campaignId
 }) => {
@@ -65,6 +64,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
   const reset = () => {
     setLastResult(null);
+    setActiveRollResult(null);
     setInvested(1);
     setIncomingDamage(0);
   };
@@ -252,14 +252,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       isDamageTaken = true;
       rollTitle = "Dano Final Recebido";
       
-      // Defense Reaction Penalty Logic - DISPLAY ONLY HERE
-      // The penalty now applies to Skill Checks (Reflexos/Luta), not fixed Damage Reduction.
-      let penaltyDetail = "";
-      if (actionState.reactionPenalty > 0) {
-          // Just show a reminder in the detail string, do not subtract from DR
-          penaltyDetail = ` (Nota: -${actionState.reactionPenalty} em Reações)`;
-      }
-
       detail = `${incomingDamage} - ${reductionAmount} (Mitigado)`;
     }
 
@@ -293,6 +285,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     }
 
     setLastResult({ total, detail, isDamageTaken, weaponBroken, title: rollTitle });
+    setActiveRollResult('combat'); // Set active roll result to combat, which will hide skill results
 
     // Log to campaign if campaignId is provided
     if (campaignId) {
@@ -331,12 +324,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   return (
     <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-xl p-4">
       
-      {/* Turn Action Tracker */}
-      <ActionTracker 
-        state={actionState} 
-        onUpdate={setActionState} 
-      />
-
       {/* Tabs Header */}
       <div className="flex border-b border-slate-800 mb-4">
         <button 
@@ -580,14 +567,14 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         </button>
 
         {/* Visual Roll Result Notification (Bottom Right) */}
-        {lastResult && (
+        {lastResult && activeRollResult === 'combat' && (
           <div className="fixed bottom-6 right-6 z-50 w-72 bg-neutral-900 border border-neutral-800 rounded-sm shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
              {/* Accent Line */}
              <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${lastResult.isDamageTaken ? 'bg-red-600' : 'bg-pink-600'}`}></div>
 
              <div className="p-4 pl-6 relative">
                 <button 
-                  onClick={() => setLastResult(null)} 
+                  onClick={() => { setLastResult(null); setActiveRollResult(null); }} 
                   className="absolute top-2 right-2 text-neutral-500 hover:text-white transition-colors"
                 >
                    <X size={16} />
