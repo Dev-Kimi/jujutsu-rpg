@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Character, Skill, Attributes, Ability, CurrentStats, ActionState } from '../types';
+import { Character, Skill, Attributes, Ability, CurrentStats } from '../types';
 import { BookOpen, Dices, Search, Lock, Sparkles, Plus, Trash2, Zap, X, Hexagon } from 'lucide-react';
 import { rollDice, parseAbilityCost, parseAbilitySkillTrigger } from '../utils/calculations';
 import { logDiceRoll } from '../utils/diceRollLogger';
@@ -15,7 +15,8 @@ interface SkillListProps {
   currentStats?: CurrentStats;
   consumePE?: (amount: number) => void;
   consumeCE?: (amount: number) => void;
-  actionState?: ActionState;
+  activeRollResult: 'skill' | 'combat' | null;
+  setActiveRollResult: (type: 'skill' | 'combat' | null) => void;
   readOnly?: boolean;
   campaignId?: string; // Optional campaign ID for logging rolls
 }
@@ -37,7 +38,8 @@ export const SkillList: React.FC<SkillListProps> = ({
   currentStats,
   consumePE,
   consumeCE,
-  actionState,
+  activeRollResult,
+  setActiveRollResult,
   readOnly,
   campaignId
 }) => {
@@ -69,18 +71,11 @@ export const SkillList: React.FC<SkillListProps> = ({
 
     // 3. Pick the highest
     const d20 = Math.max(...rolls);
-    
-    // Check for Reaction Penalty (Applies to Reflexos and Luta)
-    let reactionPenalty = 0;
-    const lowerSkillName = skillName.toLowerCase();
-    if (actionState && actionState.reactionPenalty > 0 && (lowerSkillName === 'reflexos' || lowerSkillName === 'luta')) {
-       reactionPenalty = actionState.reactionPenalty;
-    }
 
-    const total = d20 + rankValue + otherValue + llBonus - reactionPenalty;
+    const total = d20 + rankValue + otherValue + llBonus;
     
     // Construct breakdown string
-    const totalBonuses = rankValue + otherValue + llBonus - reactionPenalty;
+    const totalBonuses = rankValue + otherValue + llBonus;
     const sign = totalBonuses >= 0 ? '+' : '';
     
     // Format: "[5, 18, 2] -> 18+5" or just "[15]+5" if single die
@@ -127,6 +122,7 @@ export const SkillList: React.FC<SkillListProps> = ({
       total: total,
       breakdown: breakdown
     });
+    setActiveRollResult('skill'); // Set active roll result to skill, which will hide combat results
 
     // Log to campaign if campaignId is provided
     if (campaignId) {
@@ -182,12 +178,12 @@ export const SkillList: React.FC<SkillListProps> = ({
       </div>
       
       {/* Visual Roll Result Notification */}
-      {rollResult && (
+      {rollResult && activeRollResult === 'skill' && (
         <div className="fixed bottom-6 right-6 z-50 w-80 bg-neutral-900 border border-neutral-800 rounded-sm shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-pink-600"></div>
            <div className="p-4 pl-6 relative">
               <button 
-                onClick={() => setRollResult(null)} 
+                onClick={() => { setRollResult(null); setActiveRollResult(null); }} 
                 className="absolute top-2 right-2 text-neutral-500 hover:text-white transition-colors"
               >
                  <X size={16} />
@@ -233,9 +229,6 @@ export const SkillList: React.FC<SkillListProps> = ({
              return normalize(triggerRaw) === normalize(skill.name);
           });
 
-          const isPenalized = actionState && actionState.reactionPenalty > 0 && 
-                             (skill.name.toLowerCase() === 'reflexos' || skill.name.toLowerCase() === 'luta');
-          
           const currentLevel = TRAINING_LEVELS.find(l => l.value === skill.value) || TRAINING_LEVELS[0];
           
           // Get Attribute Value for Display
@@ -246,7 +239,6 @@ export const SkillList: React.FC<SkillListProps> = ({
               key={skill.id} 
               className={`grid grid-cols-[1fr_60px_60px_40px_40px] gap-1 items-center px-3 py-1 border-b border-slate-800/30 text-xs hover:bg-white/5 transition-colors group
                 ${idx % 2 === 0 ? 'bg-transparent' : 'bg-slate-950/20'}
-                ${isPenalized ? 'bg-red-950/20' : ''}
               `}
             >
               {/* Name (Roll) */}
@@ -270,13 +262,11 @@ export const SkillList: React.FC<SkillListProps> = ({
                       <div className="flex items-baseline gap-1">
                           <span className={`font-medium truncate ${
                             hasQueuedBuff ? 'text-emerald-400' : 
-                            isPenalized ? 'text-red-400' : 
                             currentLevel.color
                           }`}>
                               {skill.name}
                           </span>
                           {(skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) && <span className="text-[9px] text-slate-600 font-mono">+LL</span>}
-                          {isPenalized && <span className="text-[9px] text-red-500 font-bold">-{actionState?.reactionPenalty}</span>}
                       </div>
                    )}
                  </div>
