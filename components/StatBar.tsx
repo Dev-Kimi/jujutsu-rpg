@@ -27,7 +27,7 @@ export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClas
   };
 
   return (
-    <div className={`mb-4 bg-slate-900/50 p-3 rounded-xl border relative group overflow-hidden transition-colors ${isLow ? 'border-red-900/30' : 'border-slate-800'}`}>
+    <div className={`mb-4 bg-slate-900/50 p-3 rounded-xl border relative group overflow-hidden transition-colors duration-75 ${isLow ? 'border-red-900/30' : 'border-slate-800'}`}>
       
       <div className="flex justify-between items-end mb-2 relative z-10">
         <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-slate-300">
@@ -41,7 +41,7 @@ export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClas
            {!readOnly && current !== max && (
             <button 
               onClick={resetToMax}
-              className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-curse-300 transition-colors uppercase font-bold tracking-wider mr-2 bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800 hover:border-curse-500/50"
+              className="text-[10px] flex items-center gap-1 text-slate-500 hover:text-curse-300 transition-colors duration-75 uppercase font-bold tracking-wider mr-2 bg-slate-950/50 px-2 py-0.5 rounded border border-slate-800 hover:border-curse-500/50"
               title="Resetar para o Máximo"
             >
               <RotateCcw size={10} /> Reset
@@ -57,7 +57,7 @@ export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClas
       <div className="h-3 w-full bg-slate-950 rounded-full overflow-hidden mb-3 relative border border-slate-800/50">
         {/* The Bar */}
         <div 
-          className={`h-full transition-all duration-300 relative
+          className={`h-full transition-all duration-100 relative
             ${colorClass} 
             ${isOvercharged ? 'brightness-125' : ''}
             ${isLow ? 'animate-pulse' : ''}
@@ -82,13 +82,13 @@ export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClas
             <div className="flex gap-1">
             <button 
                 onClick={() => adjust(-5)} 
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-400 transition-colors text-xs font-mono border border-transparent hover:border-red-900/50"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-400 transition-colors duration-75 text-xs font-mono border border-transparent hover:border-red-900/50"
             >
                 -5
             </button>
             <button 
                 onClick={() => adjust(-1)} 
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-400 transition-colors border border-transparent hover:border-red-900/50"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/30 text-slate-400 hover:text-red-400 transition-colors duration-75 border border-transparent hover:border-red-900/50"
             >
                 <Minus size={14} />
             </button>
@@ -97,7 +97,7 @@ export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClas
             <div className="flex gap-1">
             <button 
                 onClick={() => adjust(1)} 
-                className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/30 text-slate-400 hover:text-emerald-400 transition-colors border border-transparent hover:border-emerald-900/50"
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/30 text-slate-400 hover:text-emerald-400 transition-colors duration-75 border border-transparent hover:border-emerald-900/50"
             >
                 <Plus size={14} />
             </button>
