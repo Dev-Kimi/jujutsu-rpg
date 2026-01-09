@@ -436,274 +436,285 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
   },
 
   // --- HABILIDADES AMALDIÇOADAS: MANIPULAÇÃO (FLUXO) ---
+  // Tier 1
   {
     name: "Análise de Energia",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
-    cost: "Passivo",
-    description: "Vê rastros de CE de até 1 hora. +5 em Sobrevivência/Investigação para rastrear."
-  },
-  {
-    name: "Aprimoramento de Fluxo",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Manipulação",
-    cost: "3 PE",
-    description: "+2 em uma rolagem de perícia, ataque ou defesa."
-  },
-  {
-    name: "Amortecimento Sonoro",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Manipulação",
-    cost: "2 PE",
-    description: "Vantagem em Furtividade por 1 minuto."
-  },
-  {
-    name: "Supressão de Energia",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Manipulação",
-    cost: "3 PE",
-    description: "Oculta presença. Teste de Feitiçaria define a CD."
-  },
-  {
-    name: "Estímulo Muscular",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Manipulação",
-    cost: "2 PE",
-    description: "+2 em ataques corpo a corpo no próximo turno."
-  },
-  {
-    name: "Imbuir Propriedade",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Manipulação",
-    cost: "3 PE",
-    description: "Imbui alvo com propriedade neutra da técnica inata."
-  },
-  {
-    name: "Presença Amaldiçoada",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Manipulação",
-    cost: "2 PE",
-    description: "Intimidação vs Vontade. Alvo sofre -3 na próxima rolagem contra você."
+    cost: "Nenhum",
+    description: "[Passiva] Tier 1 - Requisitos: Nível 1. Permite ver pegadas e rastros de Energia Amaldiçoada deixados a até 1 hora. Concede +5 em testes de Sobrevivência ou Investigação para seguir um alvo."
   },
   {
     name: "Reforço de Arma",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
     cost: "1 PE + X CE",
-    description: "Adiciona X de dano ao ataque com arma (Max LL)."
+    description: "[Livre] Tier 1 - Requisitos: Nível 2, Aprimoramento de Fluxo. Antes de um ataque, gaste X CE (até sua LL). Adicione X de dano a esse ataque com arma."
+  },
+  {
+    name: "Aprimoramento de Fluxo",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Manipulação",
+    cost: "3 PE",
+    description: "[Livre] Tier 1 - Requisitos: Nível 2. Adicione um bônus de +2 em uma única rolagem de perícia, ataque ou defesa."
+  },
+  {
+    name: "Amortecimento Sonoro",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Manipulação",
+    cost: "2 PE",
+    description: "[Livre] Tier 1 - Requisitos: Nível 3, Furtividade. Você envolve seus pés e equipamentos com uma fina camada de energia para abafar o atrito. Você ganha Vantagem em testes de Furtividade por 1 minuto."
+  },
+  // Tier 2
+  {
+    name: "Supressão de Energia Amaldiçoada",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Manipulação",
+    cost: "3 PE",
+    description: "[Livre] Tier 2 - Requisitos: Nível 4. O personagem faz um teste de Feitiçaria para suprimir seu fluxo. O resultado define a CD (Classe de Dificuldade) para ser detectado. Não aparece na detecção passiva de outros."
+  },
+  {
+    name: "Estímulo Muscular",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Manipulação",
+    cost: "4 PE",
+    description: "[Livre] Tier 2 - Requisitos: Nível 5. Você recebe um bônus de +2 em todas as rolagens de perícias físicas."
   },
   {
     name: "Reforço Mental",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
-    cost: "2 PE",
-    description: "[Reação] +5 em teste de Vontade ou Fortitude."
+    cost: "5 PE",
+    description: "[Livre/Reação] Tier 2 - Requisitos: Nível 5. Você protege com energia amaldiçoada o canal que liga alguma parte do seu corpo ao cérebro. Ao ser alvo de um efeito que força seu corpo ou sua vontade, você pode fazer um teste de Vontade ou Fortitude. Você ganha um bônus de +5 nesse teste. (Pode ser usado com reação, mas sem bônus no teste no turno)."
   },
   {
-    name: "Ataque Disperso",
+    name: "Imbuir Propriedade",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
-    cost: "3 PE",
-    description: "Aumenta área do ataque (Cone ou Linha)."
+    cost: "3 PE + 5 CE",
+    description: "[Movimento] Tier 2 - Requisitos: Nível 6. Ao tocar um alvo você imbui ele com uma propriedade neutra de sua técnica inata. Essa propriedade pode conceder um bônus de acordo com a técnica inata do usuário, podendo ser em rolagens, efeito de status e até imunidade à critério do Mestre."
+  },
+  {
+    name: "Presença Amaldiçoada",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Manipulação",
+    cost: "Nenhum",
+    description: "[Passiva] Tier 2 - Requisitos: Nível 9, Análise de Energia. Faça um teste oposto de Intimidação vs. Vontade contra um alvo. Se bem-sucedido, o alvo sofre -3 na próxima rolagem contra você. Não funciona contra inimigos mais fortes ou com mesma força que você."
   },
   {
     name: "Punho Divergente",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
-    cost: "3 PE + 4 CE",
-    description: "Sofre -5 no ataque para causar dano extra igual à Liberação."
+    cost: "2 PE",
+    description: "[Livre] Tier 2 - Requisitos: Nível 10. Você atrasa a liberação de sua energia no corpo do alvo para pegá-lo de surpresa. Ao acertar um inimigo, faça-o rolar um teste de Fortitude ou Reflexos (o que for maior), se for menor que seu teste de ataque ele fica atordoado. Se o inimigo bloquear um soco com essa técnica ele deve rolar o mesmo teste, se falhar perde o contra-ataque que ganharia ao bloquear."
   },
+  // Tier 3
   {
-    name: "Percepção de Energia",
+    name: "Percepção de Energia Amaldiçoada",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
-    cost: "Passiva",
-    description: "Não pode ser surpreendido por inimigos com Energia Amaldiçoada."
+    cost: "Nenhum",
+    description: "[Passivo] Tier 3 - Requisitos: Nível 8, Análise de Energia. Sua leitura de energia se torna instintiva. Você não pode ser surpreendido por inimigos que possuam Energia Amaldiçoada (mesmo invisíveis), a menos que eles estejam usando Ocultação de Presença com sucesso superior à sua Percepção Passiva."
   },
   {
-    name: "Estímulo Muscular Avançado",
+    name: "Colapsar Estrutura",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Manipulação",
+    cost: "4 PE + X CE",
+    description: "[Padrão] Tier 3 - Requisitos: Nível 11, Ressonância de Energia. Você toca uma estrutura inanimada (parede, chão, pilar, veículo) e injeta energia bruta até ela colapsar. Você causa 4 vezes a quantidade de CE investida de dano."
+  },
+  {
+    name: "Ataque Disperso",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
     cost: "5 PE",
-    description: "+3 ataque e +2 defesa por turnos iguais ao Vigor."
-  },
-  {
-    name: "Impulso nos Pés",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Manipulação",
-    cost: "4 PE",
-    description: "+3m deslocamento e +2 em rolagens de movimento."
-  },
-  {
-    name: "Aderência Amaldiçoada",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Manipulação",
-    cost: "2 PE",
-    description: "Permite caminhar em paredes/tetos."
+    description: "[Livre] Tier 3 - Requisitos: Nível 12. Você manipula sua energia para explodir ao contato ao invés de apenas se concentrar em um ponto. A área do ataque aumenta para um Cone de 3 metros ou Linha de 6 metros."
   },
   {
     name: "Ressonância de Energia",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
     cost: "5 PE + 5 CE",
-    description: "Próximo ataque ignora RD do alvo."
+    description: "[Livre] Tier 3 - Requisitos: Nível 13. Você vibra sua energia para penetrar a defesa do oponente no impacto. Seu próximo ataque corpo a corpo ignora completamente a Redução de Dano (RD) do alvo (seja por armadura, pele dura ou técnica)."
   },
+  // Tier 4
   {
-    name: "Colapsar Estrutura",
+    name: "Estímulo Muscular Avançado",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
-    cost: "6 PE + X CE",
-    description: "Dobra dano contra estruturas inanimadas."
+    cost: "5 PE",
+    description: "[Livre] Tier 4 - Requisitos: Nível 14, Estímulo Muscular. Você recebe +3 em rolagens de perícias físicas."
   },
   {
-    name: "Kokusen (Raio Negro)",
+    name: "Impulso nos Pés",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Manipulação",
-    cost: "Especial",
-    description: "Ao rolar 20 natural no ataque. Dano ^ 2.5. Recupera CE."
+    cost: "4 PE",
+    description: "[Livre] Tier 4 - Requisitos: Nível 15, Estímulo Muscular Avançado. Uma vez por turno, você pode liberar uma explosão controlada de energia amaldiçoada de seus pés para ganhar um impulso momentâneo de velocidade. Seu deslocamento de movimento aumenta em 3 metros e recebe +2 em rolagens que envolve movimento durante este turno."
+  },
+  {
+    name: "Aderência Amaldiçoada",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Manipulação",
+    cost: "5 PE",
+    description: "[Livre] Tier 4 - Requisitos: Nível 16. Você concentra energia na sola dos pés ou palmas das mãos. Permite caminhar em superfícies verticais ou no teto como se fosse chão normal, deixando as mãos livres."
+  },
+  {
+    name: "Voar",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Manipulação",
+    cost: "10 PE/turno",
+    description: "[Livre] Tier 4 - Requisitos: Nível 20, Impulso nos Pés. Seu físico se aprimorou ao ponto de conseguir voar dando \"mini pulos\" no ar."
   },
 
-  // --- HABILIDADES AMALDIÇOADAS: BARREIRAS ---
+  // --- HABILIDADES AMALDIÇOADAS: BARREIRAS (DOMÍNIO) ---
+  // Tier 1
   {
-    name: "Cortina (Tobaril)",
+    name: "Cortina",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
     cost: "X CE",
-    description: "Ritual. Cria cúpula de 50m raio. Oculta interior."
+    description: "[Completa] Tier 1 - Requisitos: Nível 1, Treinado em Feitiçaria. Cria uma barreira visual e de detecção com 50m de raio. Dura 1 hora por ponto de aptidão em barreira."
   },
+  // Tier 2
   {
     name: "Barreira",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
-    cost: "10+ CE",
-    description: "Cria parede de 3x3m com PV = 3x custo investido."
+    cost: "Até sua Liberação de CE",
+    description: "[Completa] Tier 2 - Requisitos: Nível 4, Cortina. Por 1 hora, você cria uma barreira opaca de 3m x 3m em um local que possa ver. Ela possui 3 vezes a quantidade de vida que o usuário usou na criação."
   },
   {
     name: "Domínio Simples",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
-    cost: "3 PE + 15 CE/T",
-    description: "Raio 2m. Anula acerto garantido de Domínio."
-  },
-  {
-    name: "Velo (Barreira Simples)",
-    category: "Habilidades Amaldiçoadas",
-    subCategory: "Barreiras",
-    cost: "5 CE",
-    description: "Cria barreira invisível fraca. Alerta se alguém cruzar."
+    cost: "15 PE + 15 CE/turno",
+    description: "[Padrão] Tier 2 - Requisitos: Nível 5. Cria uma área de 2m de raio que anula o acerto garantido de uma Expansão de Domínio inimiga."
   },
   {
     name: "Espaço em Batalha",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
-    cost: "5 CE/T",
-    description: "[Reação] Ataca quem entra no domínio simples com +5."
+    cost: "Nenhum",
+    description: "[Livre] Tier 2 - Requisitos: Nível 8. Você pode usar sua Reação para atacar qualquer criatura que entre num raio de seu domínio simples com um bônus de +5."
   },
+  // Tier 3
   {
     name: "Cortina Seletiva",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
     cost: "+10 CE",
-    description: "Adiciona condição à cortina (ex: bloquear sinal)."
+    description: "[Livre] Tier 3 - Requisitos: Nível 9. Ao criar uma Cortina, você pode adicionar uma condição simples (ex: \"Pessoas comuns não podem sair da barreira\" ou \"O sinal de celular é bloqueado dentro\"). Requer um Voto Vinculativo simples na hora da criação."
   },
   {
     name: "Amplificação de Domínio",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
-    cost: "5 PE + 10 CE/T",
-    description: "Anula efeito de técnica que o atinja ao envolver-se em aura."
+    cost: "15 PE + 15 CE/turno",
+    description: "[Livre] Tier 3 - Requisitos: Nível 11. Enquanto ativa, anula o efeito de uma técnica amaldiçoada que entre na área do seu toque. Você não pode usar sua técnica enquanto usa essa habilidade."
   },
   {
     name: "Dominância Absoluta",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
-    cost: "Passiva",
-    description: "Ataque de oportunidade grátis contra quem entra no Domínio Simples."
+    cost: "Nenhum",
+    description: "[Passiva] Tier 3 - Requisitos: Nível 14, Domínio Simples. Enquanto seu Domínio Simples está ativo, você pode fazer um ataque de oportunidade (sem gastar Reação) contra quem entrar na área. Limite de um por turno de inimigo."
   },
+  // Tier 4
   {
     name: "Expansão de Domínio (Incompleta)",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
-    cost: "50 CE",
-    description: "Área 15m, 2 turnos. Técnica sem custo de CE dentro."
+    cost: "50 PE + 50 CE",
+    description: "[Completa] Tier 4 - Requisitos: Nível 12, Espaço em Batalha. Cria uma área de 15m de raio por 2 turnos. Você pode usar sua técnica principal sem custo de CE dentro dela. Causa Exaustão de Técnica."
   },
   {
     name: "Expansão de Domínio (Completa)",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Barreiras",
-    cost: "150/200 CE",
-    description: "Barreira 15m. Acerto Garantido da Técnica Inata."
+    cost: "100 PE + 150 CE",
+    description: "[Completa] Tier 4 - Requisitos: Nível 16, Expansão de Domínio (Incompleta). Cria uma barreira de 15m de raio. Seus ataques de técnica amaldiçoada têm acerto garantido. Causa Exaustão de Técnica."
   },
 
   // --- HABILIDADES AMALDIÇOADAS: ENERGIA REVERSA (RCT) ---
+  // Tier 3
   {
     name: "Energia Reversa (Autocura)",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
     cost: "2 PE + X CE",
-    description: "Recupera PV igual a (CE investido)d6."
+    description: "[Padrão] Tier 3 - Requisitos: Nível 10. Você recupera uma quantidade de PV igual a: (CE investido) d6"
   },
   {
-    name: "Estabilização",
+    name: "Estabilização de Energia Reversa",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
-    cost: "2 PE + X CE",
-    description: "Estabiliza aliado na condição Moribundo."
+    cost: "5 PE + X CE",
+    description: "[Completa] Tier 3 - Requisitos: Nível 10. Toca um aliado Moribundo. Ele para de fazer testes de morte e estabiliza automaticamente, mas permanece inconsciente com 1 PV."
   },
   {
     name: "Purificação",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
-    cost: "X CE",
-    description: "Purifica energia residual ou objetos amaldiçoados."
+    cost: "3 PE + X CE",
+    description: "[Padrão] Tier 3 - Requisitos: Nível 10, Energia Reversa. Permite purificar a energia residual de um local amaldiçoado ou suprimir temporariamente o poder de um Objeto Amaldiçoado de baixo nível. O CE necessário para a purificação varia de objeto para objeto."
   },
   {
     name: "Liberação de Energia Reversa",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
-    cost: "4 PE + X CE",
-    description: "Cura aliado (d4 de cura por ponto de CE)."
+    cost: "5 PE + X CE",
+    description: "[Padrão] Tier 3 - Requisitos: Nível 11, Autocura. Um aliado adjacente recupera (CE investido)d4 (não pode aumentar)."
   },
   {
     name: "Desintoxicação",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
     cost: "3 PE + 10 CE",
-    description: "Remove veneno, paralisia ou doença."
+    description: "[Padrão] Tier 3 - Requisitos: Nível 12. Usa energia positiva para purificar o sangue. Remove condições físicas como Envenenado, Paralisado (se for veneno/físico) ou Doente."
   },
+  // Tier 4
   {
     name: "Cura Amplificada",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
-    cost: "Passiva",
-    description: "Dado de autocura sobe para d8."
+    cost: "Nenhum",
+    description: "[Passivo] Tier 4 - Requisitos: Nível 14, Autocura. O dado de autocura aumenta de d6 para d8."
   },
   {
     name: "Canalizar Energia Reversa",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
     cost: "10 PE + X CE",
-    description: "Imbui ataque para causar dobro de dano em maldições."
+    description: "[Movimento] Tier 4 - Requisitos: Nível 16, Liberação. Seu próximo ataque corpo-a-corpo contra uma maldição causa 3x o dano do ataque."
   },
   {
     name: "Cura em Grupo",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
-    cost: "5 PE + X CE",
-    description: "Cura aliados em raio de 2m (d4 por CE)."
+    cost: "8 PE + X CE (mín. 20)",
+    description: "[Completa] Tier 4 - Requisitos: Nível 15, Liberação e Cura Amplificada. Todos os aliados num raio de 2m recuperam (CE investido)d4 de vida."
   },
   {
     name: "Fluxo Constante",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
-    cost: "Igual Autocura",
-    description: "[Livre] Realiza Autocura no início do turno."
+    cost: "Mesmo da Autocura",
+    description: "[Nenhuma] Tier 4 - Requisitos: Nível 18, Cura Amplificada. Uma vez por turno, você pode usar Autocura como uma Ação de Movimento no início da sua vez, pagando apenas o custo em CE."
   },
+  // Tier 5
   {
     name: "Regeneração Aprimorada",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
-    cost: "15 PE + 20 CE",
-    description: "Regenera membros perdidos."
+    cost: "15 PE",
+    description: "[Padrão] Tier 5 - Requisitos: Nível 20, Fluxo Constante. Permite regenerar membros perdidos."
+  },
+  {
+    name: "Recuperação de Técnica",
+    category: "Habilidades Amaldiçoadas",
+    subCategory: "Energia Reversa",
+    cost: "50 PE",
+    description: "[Completa] Tier 5 - Requisitos: Nível 20, Regeneração Aprimorada. Você explode a parte o seu cérebro onde fica guardada sua técnica amaldiçoada e regenera ela com Energia Reversa, retirando a condição Exaustão de Técnica."
   }
 ];
