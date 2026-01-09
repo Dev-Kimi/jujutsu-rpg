@@ -192,6 +192,17 @@ export const parseAndRollDice = (diceStr: string): { total: number, text: string
 };
 
 /**
+ * Calculates the PE cost for maintaining a domain expansion per round.
+ * Cost is typically 15 PE per round after the initial activation.
+ */
+export const calculateDomainCost = (round: number): number => {
+  // First round is free (activation cost is paid upfront)
+  // Subsequent rounds cost 15 PE each
+  if (round <= 1) return 0;
+  return 15;
+};
+
+/**
  * Determines the CE Limit (Durability) of an item.
  * Mundane Weapons = 2 CE.
  * Cursed Tools = Determined by Grade in description/name.
