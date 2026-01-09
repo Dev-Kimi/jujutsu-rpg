@@ -42,6 +42,7 @@ type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' |
 type ViewMode = 'menu' | 'creator' | 'sheet';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
+const APP_VERSION = '1.0.1'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -764,6 +765,13 @@ const App: React.FC = () => {
         </div>
       </main>
       )}
+      
+      {/* Version Footer */}
+      <footer className="fixed bottom-1 left-0 right-0 text-center pointer-events-none z-0">
+        <span className="text-[9px] text-slate-950/15 font-mono select-none opacity-30">
+          v{APP_VERSION}
+        </span>
+      </footer>
     </div>
   );
 };
