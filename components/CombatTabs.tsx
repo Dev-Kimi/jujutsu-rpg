@@ -568,36 +568,40 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
         {/* Visual Roll Result Notification (Bottom Right) */}
         {lastResult && activeRollResult === 'combat' && (
-          <div className="fixed bottom-6 right-6 z-50 w-72 bg-neutral-900 border border-neutral-800 rounded-sm shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
+          <div className="fixed bottom-6 right-6 z-50 w-72 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
              {/* Accent Line */}
-             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${lastResult.isDamageTaken ? 'bg-red-600' : 'bg-pink-600'}`}></div>
+             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${lastResult.isDamageTaken ? 'bg-red-500' : 'bg-curse-500'}`}></div>
 
-             <div className="p-4 pl-6 relative">
+             <div className="p-4 pl-6 relative bg-gradient-to-br from-slate-900 to-slate-950">
                 <button 
                   onClick={() => { setLastResult(null); setActiveRollResult(null); }} 
-                  className="absolute top-2 right-2 text-neutral-500 hover:text-white transition-colors"
+                  className="absolute top-2 right-2 text-slate-500 hover:text-white transition-colors p-1 hover:bg-slate-800 rounded"
                 >
                    <X size={16} />
                 </button>
 
                 {lastResult.weaponBroken && (
-                    <div className="absolute top-2 left-6 bg-red-600 text-white text-[9px] font-bold px-1.5 rounded flex items-center gap-1">
+                    <div className="absolute top-2 left-6 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1 border border-red-700">
                        <Hammer size={8} /> QUEBROU
                     </div>
                 )}
 
-                <div className="flex items-center gap-3 mb-2 pt-2">
-                   <div className={lastResult.isDamageTaken ? 'text-red-600' : 'text-pink-600'}>
-                      <Hexagon size={28} fill="currentColor" />
+                <div className="flex items-center gap-3 mb-3 pt-1">
+                   <div className={`p-2 rounded-lg border ${lastResult.isDamageTaken ? 'bg-red-900/30 border-red-800/50' : 'bg-curse-900/30 border-curse-800/50'}`}>
+                      {lastResult.isDamageTaken ? (
+                        <Shield size={20} className="text-red-400" />
+                      ) : (
+                        <Sword size={20} className="text-curse-400" />
+                      )}
                    </div>
-                   <h3 className="font-bold text-white text-lg leading-none truncate pr-4">{lastResult.title || "Resultado"}</h3>
+                   <h3 className="font-bold text-white text-base leading-tight truncate pr-4">{lastResult.title || "Resultado"}</h3>
                 </div>
 
-                <div className="flex justify-between items-end border-t border-neutral-800 pt-2 mt-2">
-                   <span className="text-neutral-500 font-mono text-[10px] tracking-tighter truncate max-w-[60%]">{lastResult.detail}</span>
-                   <div className="flex items-center gap-2">
-                      <span className="text-neutral-600 text-sm font-bold">=</span>
-                      <div className={`text-4xl font-black leading-none ${lastResult.isDamageTaken ? 'text-red-500' : 'text-white'}`}>
+                <div className="flex justify-between items-end border-t border-slate-800 pt-3 mt-2 gap-3">
+                   <span className="text-slate-400 font-mono text-xs tracking-tighter break-words leading-relaxed max-w-[60%]">{lastResult.detail}</span>
+                   <div className="flex items-baseline gap-2 shrink-0">
+                      <span className="text-slate-600 text-lg font-bold">=</span>
+                      <div className={`text-3xl font-black leading-none ${lastResult.isDamageTaken ? 'text-red-400' : 'text-curse-400'}`}>
                         {lastResult.total}
                       </div>
                    </div>
