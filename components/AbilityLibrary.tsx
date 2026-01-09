@@ -164,7 +164,10 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
                         )}
                      </h3>
                      {expandedId !== ability.name && (
-                       <p className="text-[10px] text-slate-500 truncate max-w-[200px] sm:max-w-xs">{ability.description}</p>
+                       <p className="text-[10px] text-slate-500 truncate max-w-[200px] sm:max-w-xs">
+                         {ability.description?.replace(/\[([^\]]+)\]\s*Tier \d+ - Requisitos: [^.]+\.\s*/, '').substring(0, 60) || ''}
+                         {(ability.description?.replace(/\[([^\]]+)\]\s*Tier \d+ - Requisitos: [^.]+\.\s*/, '').length || 0) > 60 ? '...' : ''}
+                       </p>
                      )}
                    </div>
                 </div>
@@ -193,8 +196,8 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
                      </span>
                      )}
                      {ability.description && ability.description.includes('Requisitos:') && (
-                       <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded text-[10px] font-medium border border-blue-700/50 max-w-xs">
-                         {ability.description.match(/Requisitos: [^.]+(?=\.)/)?.[0] || ''}
+                       <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded text-[10px] font-medium border border-blue-700/50 max-w-xs break-words">
+                         {ability.description.match(/Requisitos: [^.]*\./)?.[0]?.replace(/\.$/, '') || ''}
                      </span>
                      )}
                   </div>
@@ -206,8 +209,13 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
                       </div>
                     )}
                     {/* Extract effect description (everything after the tier/requisitos line) */}
-                    <div className="whitespace-pre-line">
-                      {ability.description.replace(/\[([^\]]+)\]\s*Tier \d+ - Requisitos: [^.]+\.\s*/, '').trim()}
+                    <div className="whitespace-pre-line text-slate-300 leading-relaxed">
+                      {(() => {
+                        const desc = ability.description || '';
+                        // Remove the action type, tier and requisitos part
+                        const cleaned = desc.replace(/\[([^\]]+)\]\s*Tier\s*\d+\s*-\s*Requisitos:\s*[^.]*\.\s*/i, '');
+                        return cleaned.trim() || desc;
+                      })()}
                     </div>
                   </div>
                 </div>
