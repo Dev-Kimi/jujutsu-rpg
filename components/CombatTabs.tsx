@@ -568,26 +568,28 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
         {/* Visual Roll Result Notification (Bottom Right) */}
         {lastResult && activeRollResult === 'combat' && (
-          <div className="fixed bottom-6 right-6 z-50 w-72 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300">
+          <div className={`fixed bottom-6 right-6 z-50 w-72 bg-slate-800 border-2 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300 ${
+            lastResult.isDamageTaken ? 'border-red-600' : 'border-slate-700'
+          }`}>
              {/* Accent Line */}
              <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${lastResult.isDamageTaken ? 'bg-red-500' : 'bg-curse-500'}`}></div>
 
-             <div className="p-4 pl-6 relative bg-gradient-to-br from-slate-900 to-slate-950">
+             <div className="p-4 pl-6 relative bg-gradient-to-br from-slate-800 to-slate-900">
                 <button 
                   onClick={() => { setLastResult(null); setActiveRollResult(null); }} 
-                  className="absolute top-2 right-2 text-slate-500 hover:text-white transition-colors p-1 hover:bg-slate-800 rounded"
+                  className="absolute top-2 right-2 text-slate-400 hover:text-white transition-colors p-1 hover:bg-slate-700 rounded z-10"
                 >
                    <X size={16} />
                 </button>
 
                 {lastResult.weaponBroken && (
-                    <div className="absolute top-2 left-6 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1 border border-red-700">
+                    <div className="absolute top-2 left-6 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1 border border-red-700 z-10">
                        <Hammer size={8} /> QUEBROU
                     </div>
                 )}
 
                 <div className="flex items-center gap-3 mb-3 pt-1">
-                   <div className={`p-2 rounded-lg border ${lastResult.isDamageTaken ? 'bg-red-900/30 border-red-800/50' : 'bg-curse-900/30 border-curse-800/50'}`}>
+                   <div className={`p-2 rounded-lg border ${lastResult.isDamageTaken ? 'bg-red-900/40 border-red-700/60' : 'bg-curse-900/40 border-curse-700/60'}`}>
                       {lastResult.isDamageTaken ? (
                         <Shield size={20} className="text-red-400" />
                       ) : (
@@ -597,10 +599,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                    <h3 className="font-bold text-white text-base leading-tight truncate pr-4">{lastResult.title || "Resultado"}</h3>
                 </div>
 
-                <div className="flex justify-between items-end border-t border-slate-800 pt-3 mt-2 gap-3">
-                   <span className="text-slate-400 font-mono text-xs tracking-tighter break-words leading-relaxed max-w-[60%]">{lastResult.detail}</span>
+                <div className="flex justify-between items-end border-t border-slate-700 pt-3 mt-2 gap-3">
+                   <span className="text-slate-300 font-mono text-xs tracking-tighter break-words leading-relaxed max-w-[60%]">{lastResult.detail}</span>
                    <div className="flex items-baseline gap-2 shrink-0">
-                      <span className="text-slate-600 text-lg font-bold">=</span>
+                      <span className="text-slate-500 text-lg font-bold">=</span>
                       <div className={`text-3xl font-black leading-none ${lastResult.isDamageTaken ? 'text-red-400' : 'text-curse-400'}`}>
                         {lastResult.total}
                       </div>
