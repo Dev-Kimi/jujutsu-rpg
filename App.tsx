@@ -103,12 +103,8 @@ const App: React.FC = () => {
   // Current Dynamic Stats
   const [currentStats, setCurrentStats] = useState<CurrentStats>({ pv: 0, ce: 0, pe: 0 });
 
-  // Turn Action State
-  const [actionState, setActionState] = useState<ActionState>({
-    standard: true,
-    movement: 2,
-    reactionPenalty: 0
-  });
+  // Shared state to control which roll result is shown (skill or combat)
+  const [activeRollResult, setActiveRollResult] = useState<'skill' | 'combat' | null>(null);
 
   // Domain Expansion State
   const [domainActive, setDomainActive] = useState(false);
@@ -169,11 +165,11 @@ const App: React.FC = () => {
     });
 
     // Reset temporary states for new session
-    setActionState({ standard: true, movement: 2, reactionPenalty: 0 });
     setDomainActive(false);
     setActiveBuffs([]);
     setActiveTab('combat');
     setViewMode('sheet');
+    setActiveRollResult(null);
   };
 
   const handleStartCreation = () => {
@@ -633,7 +629,8 @@ const App: React.FC = () => {
                 currentStats={currentStats}
                 consumePE={consumePE}
                 consumeCE={consumeCE}
-                actionState={actionState} // Passed for penalty logic
+                activeRollResult={activeRollResult}
+                setActiveRollResult={setActiveRollResult}
              />
           </section>
 
@@ -673,8 +670,8 @@ const App: React.FC = () => {
                     consumePE={consumePE}
                     activeBuffs={activeBuffs}
                     onConsumeBuffs={handleConsumeBuffs}
-                    actionState={actionState} // Shared state
-                    setActionState={setActionState} // Updater
+                    activeRollResult={activeRollResult}
+                    setActiveRollResult={setActiveRollResult}
                     onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
                   />
                )}
