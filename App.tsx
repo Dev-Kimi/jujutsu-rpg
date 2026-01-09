@@ -499,7 +499,7 @@ const App: React.FC = () => {
   const borderColor = domainActive ? "border-curse-500/50" : "border-slate-800";
 
   return (
-    <div className={`min-h-screen ${bgClass} text-slate-200 font-sans selection:bg-curse-500/30 transition-colors duration-1000 relative`}>
+    <div className={`min-h-screen ${bgClass} text-slate-200 font-sans selection:bg-curse-500/30 transition-colors duration-150 relative`}>
       {/* Modal Integration */}
       {showAbilityLibrary && (
         <AbilityLibrary 
@@ -518,11 +518,11 @@ const App: React.FC = () => {
       )}
 
       {/* Header */}
-      <header className={`sticky top-0 z-30 backdrop-blur-md border-b ${borderColor} bg-slate-950/80 px-4 py-3 flex justify-between items-center transition-colors duration-1000`}>
+      <header className={`sticky top-0 z-30 backdrop-blur-md border-b ${borderColor} bg-slate-950/80 px-4 py-3 flex justify-between items-center transition-colors duration-150`}>
         <div className="flex items-center gap-4">
           <button 
              onClick={handleBackToMenu}
-             className="bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white p-2 rounded-lg border border-slate-700 flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors"
+             className="bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white p-2 rounded-lg border border-slate-700 flex items-center gap-2 text-xs font-bold uppercase tracking-wider transition-colors duration-100"
              title="Salvar e Voltar"
           >
              <LogOut size={16} /> <span className="hidden sm:inline">Menu</span>
@@ -555,7 +555,7 @@ const App: React.FC = () => {
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`flex-1 py-2 px-2 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all whitespace-nowrap flex justify-center items-center gap-1
+                        className={`flex-1 py-2 px-2 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all duration-100 whitespace-nowrap flex justify-center items-center gap-1
                         ${activeTab === tab 
                             ? 'bg-curse-600 text-white shadow-lg shadow-curse-900/50' 
                             : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}
@@ -626,9 +626,9 @@ const App: React.FC = () => {
             </div>
 
             {/* Domain Expansion Control */}
-            <section className={`rounded-xl border ${borderColor} p-4 transition-all duration-500 ${domainActive ? 'bg-curse-950/30' : 'bg-slate-900/50'}`}>
+            <section className={`rounded-xl border ${borderColor} p-4 transition-all duration-150 ${domainActive ? 'bg-curse-950/30' : 'bg-slate-900/50'}`}>
               <div className="flex items-center gap-2 mb-4">
-                 <Skull size={20} className={domainActive ? "text-curse-400 animate-bounce" : "text-slate-600"} />
+                 <Skull size={20} className={domainActive ? "text-curse-400" : "text-slate-600"} />
                  <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Controle de Domínio</h2>
               </div>
               
@@ -638,7 +638,7 @@ const App: React.FC = () => {
                     <button
                       key={cost}
                       onClick={() => toggleDomain(cost)}
-                      className="py-2 px-1 bg-slate-950 border border-slate-800 hover:border-curse-500 text-slate-400 hover:text-white rounded-lg text-xs font-mono transition-colors"
+                      className="py-2 px-1 bg-slate-950 border border-slate-800 hover:border-curse-500 text-slate-400 hover:text-white rounded-lg text-xs font-mono transition-colors duration-100"
                     >
                       Ativar ({cost})
                     </button>
@@ -691,7 +691,7 @@ const App: React.FC = () => {
                  <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`flex-1 py-2 px-2 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all whitespace-nowrap flex justify-center items-center gap-1
+                    className={`flex-1 py-2 px-2 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all duration-100 whitespace-nowrap flex justify-center items-center gap-1
                       ${activeTab === tab 
                         ? 'bg-curse-600 text-white shadow-lg shadow-curse-900/50' 
                         : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}
@@ -708,7 +708,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-100">
                {activeTab === 'combat' && (
                   <CombatTabs 
                     char={character}
