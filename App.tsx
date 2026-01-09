@@ -42,7 +42,7 @@ type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' |
 type ViewMode = 'menu' | 'creator' | 'sheet';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
-const APP_VERSION = '1.0.7'; // Update this when you deploy changes
+const APP_VERSION = '1.0.8'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -72,6 +72,7 @@ const App: React.FC = () => {
 
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Track if we're still checking auth state
 
   // Helper: load savedCharacters from Firestore users/{uid}
   const loadUserCharacters = async (uid: string): Promise<Character[]> => {
@@ -104,6 +105,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
+      setIsCheckingAuth(false); // Mark auth check as complete
       
       // When user logs in, load their characters from Firebase
       if (user) {
@@ -466,6 +468,12 @@ const App: React.FC = () => {
   // --- RENDER ---
 
   // If not logged in, show Auth screen
+  // Show nothing while checking auth state to avoid flashing login screen
+  if (isCheckingAuth) {
+    return null; // Or a minimal loading screen if preferred
+  }
+
+  // Only show Auth screen if we've checked and confirmed no user
   if (!currentUser) {
     return <Auth />;
   }
