@@ -185,7 +185,7 @@ export const SkillList: React.FC<SkillListProps> = ({
       
       {/* Visual Roll Result Notification */}
       {rollResult && activeRollResult === 'skill' && (
-        <div className={`fixed bottom-6 right-6 z-50 w-80 bg-slate-800 border-2 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300 ${
+        <div className={`fixed bottom-6 right-6 z-50 w-80 bg-slate-800 border-2 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-100 ${
           rollResult.isCritical ? 'border-emerald-500 glow-critical' : 
           rollResult.isFailure ? 'border-red-500 glow-failure' : 
           'border-slate-700'
@@ -271,7 +271,7 @@ export const SkillList: React.FC<SkillListProps> = ({
           return (
             <div 
               key={skill.id} 
-              className={`grid grid-cols-[1fr_60px_60px_40px_40px] gap-1 items-center px-3 py-1 border-b border-slate-800/30 text-xs hover:bg-white/5 transition-colors group
+              className={`grid grid-cols-[1fr_60px_60px_40px_40px] gap-1 items-center px-3 py-1 border-b border-slate-800/30 text-xs hover:bg-white/5 transition-colors duration-75 group
                 ${idx % 2 === 0 ? 'bg-transparent' : 'bg-slate-950/20'}
               `}
             >
@@ -280,7 +280,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                 onClick={() => handleRoll(skill.name, skill.value, otherBonus, llBonus, skill.attribute)}
                 className="flex items-center gap-2 overflow-hidden text-left"
               >
-                 <Dices size={12} className="text-curse-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                 <Dices size={12} className="text-curse-400 opacity-0 group-hover:opacity-100 transition-opacity duration-75 shrink-0" />
                  
                  <div className="min-w-0 flex-1">
                    {isCustom ? (
@@ -359,7 +359,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                 {isCustom && !readOnly && (
                   <button 
                     onClick={() => onRemoveSkill(skill.id)}
-                    className="absolute inset-0 bg-slate-900 flex items-center justify-center text-red-500 opacity-0 group-hover/trash:opacity-100 transition-opacity"
+                    className="absolute inset-0 bg-slate-900 flex items-center justify-center text-red-500 opacity-0 group-hover/trash:opacity-100 transition-opacity duration-75"
                   >
                     <Trash2 size={12} />
                   </button>
