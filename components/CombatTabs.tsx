@@ -328,14 +328,14 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       <div className="flex border-b border-slate-800 mb-4">
         <button 
           onClick={() => { setActiveTab('physical'); reset(); }}
-          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors border-b-2
+          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
             ${activeTab === 'physical' ? 'border-curse-500 text-white bg-slate-800/30' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
         >
           <Sword size={16} /> <span className="hidden sm:inline">Ataque</span>
         </button>
         <button 
           onClick={() => { setActiveTab('technique'); reset(); }}
-          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors border-b-2
+          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
             ${activeTab === 'technique' ? 'border-curse-500 text-curse-300 bg-curse-900/10' : 'border-transparent text-slate-400 hover:text-slate-200'}
             ${isHR ? 'opacity-50 cursor-not-allowed' : ''}
           `}
@@ -345,7 +345,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         </button>
         <button 
           onClick={() => { setActiveTab('defense'); reset(); }}
-          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors border-b-2
+          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
             ${activeTab === 'defense' ? 'border-blue-500 text-blue-300 bg-blue-900/10' : 'border-transparent text-slate-400 hover:text-slate-200'}
             ${isHR ? 'opacity-50 cursor-not-allowed' : ''}
           `}
@@ -558,7 +558,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         <button 
           onClick={handleRoll}
           disabled={(!isHR && invested <= 0 && activeTab !== 'physical') || (activeTab === 'technique' && !hasTechniques)} 
-          className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+          className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
              ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
           `}
         >
@@ -568,7 +568,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
         {/* Visual Roll Result Notification (Bottom Right) */}
         {lastResult && activeRollResult === 'combat' && (
-          <div className={`fixed bottom-6 right-6 z-50 w-72 bg-slate-800 border-2 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-300 ${
+          <div className={`fixed bottom-6 right-6 z-50 w-72 bg-slate-800 border-2 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-100 ${
             lastResult.isDamageTaken ? 'border-red-600' : 'border-slate-700'
           }`}>
              {/* Accent Line */}
