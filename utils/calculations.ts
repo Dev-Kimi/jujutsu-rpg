@@ -49,72 +49,117 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
 };
 
 export const rollDice = (sides: number, count: number): number => {
-  let total = 0;
+  let sum = 0;
   for (let i = 0; i < count; i++) {
-    total += Math.floor(Math.random() * sides) + 1;
+    sum += Math.floor(Math.random() * sides) + 1;
   }
-  return total;
+  return sum;
 };
 
-export const calculateDomainCost = (round: number): number => {
-  if (round <= 2) return 0;
-  return 5 + 5 * (round - 2);
+/**
+ * Extract critical threshold from weapon critical string (e.g., "19-20 / x2" returns 19, "x2" returns 20)
+ */
+export const getCriticalThreshold = (criticalStr: string): number => {
+  if (!criticalStr) return 20; // Default critical on 20
+  
+  const match = criticalStr.match(/(\d+)-20/);
+  if (match) {
+    return parseInt(match[1]);
+  }
+  
+  return 20; // Default: critical on 20
 };
 
-export const parseAbilityCost = (costStr: string) => {
-  if (!costStr) return { pe: 0, ce: 0, isVariable: false };
+/**
+ * Get critical threshold for a weapon item
+ */
+export const getWeaponCriticalThreshold = (weaponItem: Item | undefined): number => {
+  if (!weaponItem) return 20;
+  
+  // Check if it's a known mundane weapon
+  const mundaneWeapon = MUNDANE_WEAPONS.find(mw => 
+    weaponItem.name.toLowerCase().includes(mw.name.toLowerCase())
+  );
+  
+  if (mundaneWeapon) {
+    return getCriticalThreshold(mundaneWeapon.critical);
+  }
+  
+  // Check description for critical info
+  const descMatch = weaponItem.description.match(/cr[ií]tico[:\s]+(\d+)-20/i);
+  if (descMatch) {
+    return parseInt(descMatch[1]);
+  }
+  
+  return 20; // Default
+};
 
-  // Normalize string
+export const parseAbilityCost = (costStr: string): { pe: number, ce: number } => {
+  let pe = 0;
+  let ce = 0;
+  
+  if (!costStr) return { pe: 0, ce: 0 };
+  
   const lower = costStr.toLowerCase();
-
-  // Detect fixed numbers
-  const peMatch = lower.match(/(\d+)\s*pe/);
-  const ceMatch = lower.match(/(\d+)\s*ce/);
-
-  const pe = peMatch ? parseInt(peMatch[1]) : 0;
-  const ce = ceMatch ? parseInt(ceMatch[1]) : 0;
-
-  // Detect variable indicators
-  // Matches "X", "Varia", "Variable", "Todo", "+" without a number following immediately in a fixed context implies variable addition
-  const isVariable = /x|varia|var|todo|\+/i.test(lower);
-
-  return { pe, ce, isVariable };
+  
+  // Check for "Passivo" or "Passiva"
+  if (lower.includes("passivo") || lower.includes("passiva")) {
+    return { pe: 0, ce: 0 };
+  }
+  
+  // Extract PE values
+  const peMatches = lower.match(/(\d+)\s*pe/g);
+  if (peMatches) {
+    pe = peMatches.reduce((sum, match) => {
+      const val = parseInt(match);
+      return sum + (isNaN(val) ? 0 : val);
+    }, 0);
+  }
+  
+  // Extract CE values
+  const ceMatches = lower.match(/(\d+)\s*ce/g);
+  if (ceMatches) {
+    ce = ceMatches.reduce((sum, match) => {
+      const val = parseInt(match);
+      return sum + (isNaN(val) ? 0 : val);
+    }, 0);
+  }
+  
+  // Handle variable costs (X PE, X CE)
+  if (lower.includes("x pe") || lower.includes("xpe")) {
+    pe = 1; // Placeholder for variable
+  }
+  if (lower.includes("x ce") || lower.includes("xce")) {
+    ce = 1; // Placeholder for variable
+  }
+  
+  return { pe, ce };
 };
 
-// Helper to extract numeric bonuses from descriptions
-export const parseAbilityEffect = (description: string) => {
+export const parseAbilityEffect = (description: string): { attack: number, defense: number } => {
+  let attack = 0;
+  let defense = 0;
+  
   if (!description) return { attack: 0, defense: 0 };
   
-  const lower = description.toLowerCase();
+  // Look for patterns like "+X em ataque" or "+X em defesa"
+  const attackMatch = description.match(/\+(\d+)\s*(?:em\s*)?(?:ataque|attack)/i);
+  if (attackMatch) {
+    attack = parseInt(attackMatch[1]) || 0;
+  }
   
-  // Regex to find "+X no ataque/acerto" or "+X ataque"
-  const atkMatch = lower.match(/\+(\d+)\s+(?:no\s+)?(?:próximo\s+)?(?:ataque|acerto|dano)/);
-  // Regex to find "+X na defesa" or "+X defesa"
-  const defMatch = lower.match(/\+(\d+)\s+(?:na\s+)?(?:próxima\s+)?(?:defesa|esquiva|bloqueio)/);
-
-  return {
-    attack: atkMatch ? parseInt(atkMatch[1]) : 0,
-    defense: defMatch ? parseInt(defMatch[1]) : 0
-  };
+  const defenseMatch = description.match(/\+(\d+)\s*(?:em\s*)?(?:defesa|defense)/i);
+  if (defenseMatch) {
+    defense = parseInt(defenseMatch[1]) || 0;
+  }
+  
+  return { attack, defense };
 };
 
-// Helper to detect if ability requires a skill check
 export const parseAbilitySkillTrigger = (description: string): string | null => {
-  if (!description) return null;
-  const lower = description.toLowerCase();
-  
-  // Pattern 1: "Teste de [Skill]" or "Teste [Skill]" or "Rolagem de [Skill]"
-  // Captures "atletismo" from "teste de atletismo"
-  const testMatch = lower.match(/(?:teste|rolagem)(?:\s+de)?\s+([a-zA-Z\u00C0-\u00FF]+)/i);
-  
-  if (testMatch && testMatch[1]) {
-    // Ignore common non-skill words if necessary, but generally this works
-    return testMatch[1];
-  }
+  // Look for patterns like "vs Nome da Perícia" or "em Nome da Perícia"
+  const vsMatch = description.match(/vs\s+([A-Za-záàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ\s]+?)(?:\.|,|$)/i);
 
-  // Pattern 2: "[Skill] vs [Something]"
-  // Captures "tática" from "tática vs luta" or "luta vs reflexos"
-  const vsMatch = lower.match(/([a-zA-Z\u00C0-\u00FF]+)\s+vs/i);
 
   if (vsMatch && vsMatch[1]) {
     return vsMatch[1];
