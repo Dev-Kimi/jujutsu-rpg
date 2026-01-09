@@ -767,7 +767,7 @@ const App: React.FC = () => {
       )}
       
       {/* Version Footer */}
-      <footer className="fixed bottom-2 left-0 right-0 text-center pointer-events-none z-10">
+      <footer className="fixed bottom-2 right-2 pointer-events-none z-10">
         <span className="text-[10px] text-slate-700/60 font-mono select-none">
           v{APP_VERSION}
         </span>
