@@ -92,11 +92,11 @@
       }
 
       .glow-critical {
-        animation: glow-green 1.5s ease-in-out infinite;
+        animation: glow-green 0.8s ease-in-out infinite;
       }
 
       .glow-failure {
-        animation: glow-red 1.5s ease-in-out infinite;
+        animation: glow-red 0.8s ease-in-out infinite;
       }
 
       @keyframes pulse-glow-green {
@@ -124,13 +124,54 @@
       }
 
       .text-glow-critical {
-        animation: pulse-glow-green 1.5s ease-in-out infinite;
+        animation: pulse-glow-green 0.8s ease-in-out infinite;
         color: #22c55e !important;
       }
 
       .text-glow-failure {
-        animation: pulse-glow-red 1.5s ease-in-out infinite;
+        animation: pulse-glow-red 0.8s ease-in-out infinite;
         color: #ef4444 !important;
+      }
+
+      /* Fast transitions globally - make all hovers and transitions quick */
+      *, *::before, *::after {
+        transition-duration: 75ms !important;
+        transition-timing-function: ease-out !important;
+        animation-duration: 100ms !important;
+      }
+
+      /* Exception: keep longer durations only when explicitly specified */
+      [class*="duration-300"] {
+        transition-duration: 150ms !important;
+        animation-duration: 150ms !important;
+      }
+      
+      [class*="duration-500"] {
+        transition-duration: 200ms !important;
+        animation-duration: 200ms !important;
+      }
+      
+      [class*="duration-700"],
+      [class*="duration-1000"] {
+        transition-duration: 200ms !important;
+        animation-duration: 200ms !important;
+      }
+      
+      /* Keep critical/failure glows at reasonable speed but faster */
+      .glow-critical,
+      .glow-failure,
+      .text-glow-critical,
+      .text-glow-failure {
+        animation-duration: 0.8s !important;
+      }
+      
+      /* Remove pulse and bounce animations or make them faster */
+      .animate-pulse {
+        animation-duration: 1s !important;
+      }
+      
+      .animate-bounce {
+        animation-duration: 0.6s !important;
       }
     </style>
     <script type="importmap">
