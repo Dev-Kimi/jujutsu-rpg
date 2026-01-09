@@ -19,7 +19,7 @@ import { CampaignManager } from './components/CampaignManager';
 // Firebase auth imports
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import Auth from './components/Auth';
 import UserMenu from './components/UserMenu';
 
@@ -72,13 +72,22 @@ const App: React.FC = () => {
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-    });
-    return () => unsub();
-  }, []);
-  
+  // Helper: load savedCharacters from Firestore users/{uid}
+  const loadUserCharacters = async (uid: string): Promise<Character[]> => {
+    try {
+      const userRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return (userData.savedCharacters as Character[]) || [];
+      }
+      return [];
+    } catch (err) {
+      console.error('Erro ao carregar savedCharacters do Firestore', err);
+      return [];
+    }
+  };
+
   // Helper: persist savedCharacters to Firestore users/{uid}
   const persistUserCharacters = async (chars: Character[]) => {
     try {
@@ -89,6 +98,44 @@ const App: React.FC = () => {
       console.error('Erro ao persistir savedCharacters no Firestore', err);
     }
   };
+
+  // Load characters from Firebase when user logs in
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      
+      // When user logs in, load their characters from Firebase
+      if (user) {
+        const firebaseChars = await loadUserCharacters(user.uid);
+        
+        if (firebaseChars.length > 0) {
+          // Merge Firebase characters with localStorage (Firebase has priority)
+          const localChars = (() => {
+            if (typeof window !== 'undefined') {
+              const saved = localStorage.getItem(STORAGE_KEY);
+              try {
+                return saved ? JSON.parse(saved) : [];
+              } catch (e) {
+                return [];
+              }
+            }
+            return [];
+          })();
+          
+          // Merge strategy: Firebase characters take priority, but keep local characters that don't exist in Firebase
+          const firebaseIds = new Set(firebaseChars.map(c => c.id));
+          const mergedChars = [
+            ...firebaseChars, // Firebase characters first (priority)
+            ...localChars.filter((c: Character) => !firebaseIds.has(c.id)) // Add local-only characters
+          ];
+          
+          setSavedCharacters(mergedChars);
+          // This will trigger the useEffect that saves to localStorage and syncs back to Firebase
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Save List to LocalStorage whenever it changes (and persist to Firestore)
   useEffect(() => {
