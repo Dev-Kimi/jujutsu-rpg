@@ -272,32 +272,32 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
            </p>
            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
              {/* Manipulação */}
-             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4 flex flex-col">
-               <div className="flex items-center justify-between mb-4">
-                 <div className="flex items-center gap-2">
-                   <Zap size={18} className="text-purple-400" />
-                   <span className="text-sm font-bold text-slate-300">Manipulação</span>
+             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4 flex flex-col min-h-[120px]">
+               <div className="flex items-start justify-between mb-3 flex-shrink-0">
+                 <div className="flex items-center gap-2 min-w-0">
+                   <Zap size={18} className="text-purple-400 flex-shrink-0" />
+                   <span className="text-sm font-bold text-slate-300 truncate">Manipulação</span>
                  </div>
-                 <span className="text-lg font-bold font-mono text-curse-400">
+                 <span className="text-lg font-bold font-mono text-curse-400 flex-shrink-0 ml-2">
                    Nv. {aptitudeLevels.manipulacao || 0}
                  </span>
                </div>
-               <div className="flex items-center gap-2 mt-auto">
+               <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-800">
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('manipulacao', Math.max(0, (aptitudeLevels.manipulacao || 0) - 1))}
                    disabled={!onUpdateAptitude || (aptitudeLevels.manipulacao || 0) === 0}
-                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors border border-slate-700 hover:border-red-700"
+                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors border border-slate-700 hover:border-red-700 flex-shrink-0"
                    title="Diminuir nível"
                  >
                    <Minus size={14} />
                  </button>
-                 <div className="flex-1 text-center text-xs text-slate-400 leading-tight px-2">
+                 <div className="flex-1 text-center text-xs text-slate-400 leading-tight px-2 min-w-0 break-words">
                    {actualUsedAptitude} / {resources.totalAptitude} pts
                  </div>
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('manipulacao', (aptitudeLevels.manipulacao || 0) + 1)}
                    disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
-                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700"
+                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700 flex-shrink-0"
                    title="Aumentar nível"
                  >
                    <Plus size={14} />
@@ -306,32 +306,32 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
              </div>
 
              {/* Barreiras */}
-             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4 flex flex-col">
-               <div className="flex items-center justify-between mb-4">
-                 <div className="flex items-center gap-2">
-                   <Shield size={18} className="text-blue-400" />
-                   <span className="text-sm font-bold text-slate-300">Barreiras</span>
+             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4 flex flex-col min-h-[120px]">
+               <div className="flex items-start justify-between mb-3 flex-shrink-0">
+                 <div className="flex items-center gap-2 min-w-0">
+                   <Shield size={18} className="text-blue-400 flex-shrink-0" />
+                   <span className="text-sm font-bold text-slate-300 truncate">Barreiras</span>
                  </div>
-                 <span className="text-lg font-bold font-mono text-curse-400">
+                 <span className="text-lg font-bold font-mono text-curse-400 flex-shrink-0 ml-2">
                    Nv. {aptitudeLevels.barreiras || 0}
                  </span>
                </div>
-               <div className="flex items-center gap-2 mt-auto">
+               <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-800">
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('barreiras', Math.max(0, (aptitudeLevels.barreiras || 0) - 1))}
                    disabled={!onUpdateAptitude || (aptitudeLevels.barreiras || 0) === 0}
-                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors border border-slate-700 hover:border-red-700"
+                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors border border-slate-700 hover:border-red-700 flex-shrink-0"
                    title="Diminuir nível"
                  >
                    <Minus size={14} />
                  </button>
-                 <div className="flex-1 text-center text-xs text-slate-400 leading-tight px-2">
+                 <div className="flex-1 text-center text-xs text-slate-400 leading-tight px-2 min-w-0 break-words">
                    {actualUsedAptitude} / {resources.totalAptitude} pts
                  </div>
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('barreiras', (aptitudeLevels.barreiras || 0) + 1)}
                    disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
-                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700"
+                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700 flex-shrink-0"
                    title="Aumentar nível"
                  >
                    <Plus size={14} />
@@ -340,32 +340,32 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
              </div>
 
              {/* Energia Reversa */}
-             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4 flex flex-col">
-               <div className="flex items-center justify-between mb-4">
-                 <div className="flex items-center gap-2">
-                   <Heart size={18} className="text-emerald-400" />
-                   <span className="text-sm font-bold text-slate-300">Energia Reversa</span>
+             <div className="bg-slate-900/50 rounded-lg border border-slate-800 p-4 flex flex-col min-h-[120px]">
+               <div className="flex items-start justify-between mb-3 flex-shrink-0">
+                 <div className="flex items-center gap-2 min-w-0">
+                   <Heart size={18} className="text-emerald-400 flex-shrink-0" />
+                   <span className="text-sm font-bold text-slate-300 truncate">Energia Reversa</span>
                  </div>
-                 <span className="text-lg font-bold font-mono text-curse-400">
+                 <span className="text-lg font-bold font-mono text-curse-400 flex-shrink-0 ml-2">
                    Nv. {aptitudeLevels.energiaReversa || 0}
                  </span>
                </div>
-               <div className="flex items-center gap-2 mt-auto">
+               <div className="flex items-center gap-2 mt-auto pt-2 border-t border-slate-800">
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('energiaReversa', Math.max(0, (aptitudeLevels.energiaReversa || 0) - 1))}
                    disabled={!onUpdateAptitude || (aptitudeLevels.energiaReversa || 0) === 0}
-                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors border border-slate-700 hover:border-red-700"
+                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-red-400 transition-colors border border-slate-700 hover:border-red-700 flex-shrink-0"
                    title="Diminuir nível"
                  >
                    <Minus size={14} />
                  </button>
-                 <div className="flex-1 text-center text-xs text-slate-400 leading-tight px-2">
+                 <div className="flex-1 text-center text-xs text-slate-400 leading-tight px-2 min-w-0 break-words">
                    {actualUsedAptitude} / {resources.totalAptitude} pts
                  </div>
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('energiaReversa', (aptitudeLevels.energiaReversa || 0) + 1)}
                    disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
-                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700"
+                   className="p-1.5 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700 flex-shrink-0"
                    title="Aumentar nível"
                  >
                    <Plus size={14} />
