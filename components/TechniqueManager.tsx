@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Technique, SubTechnique } from '../types';
-import { Zap, Plus, Trash2, ChevronDown, ChevronRight, Wand2, Book, Sparkles } from 'lucide-react';
+import { Zap, Plus, Trash2, ChevronDown, ChevronRight, Wand2, Book, Sparkles, BookOpen } from 'lucide-react';
 
 interface TechniqueManagerProps {
   techniques: Technique[];
   onAdd: (technique: Technique) => void;
   onUpdate: (id: string, field: keyof Technique, value: any) => void;
   onRemove: (id: string) => void;
+  onOpenLibrary?: () => void;
 }
 
-export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, onAdd, onUpdate, onRemove }) => {
+export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, onAdd, onUpdate, onRemove, onOpenLibrary }) => {
   const [expandedTechniqueId, setExpandedTechniqueId] = useState<string | null>(null);
   const [expandedSubTechniqueId, setExpandedSubTechniqueId] = useState<string | null>(null);
 
@@ -79,12 +80,23 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, 
         <h3 className="font-bold text-slate-300 uppercase tracking-wider text-sm flex items-center gap-2">
            <Wand2 size={16} className="text-curse-400" /> Técnicas Inatas
         </h3>
-        <button 
-          onClick={handleCreateNewTechnique}
-          className="flex items-center gap-1 text-xs bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
-        >
-          <Plus size={14} /> Nova Técnica
-        </button>
+        <div className="flex gap-2">
+          {onOpenLibrary && (
+            <button 
+              onClick={onOpenLibrary}
+              className="flex items-center gap-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+              title="Abrir biblioteca de técnicas"
+            >
+              <BookOpen size={14} /> Biblioteca
+            </button>
+          )}
+          <button 
+            onClick={handleCreateNewTechnique}
+            className="flex items-center gap-1 text-xs bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+          >
+            <Plus size={14} /> Nova
+          </button>
+        </div>
       </div>
 
       {/* List */}
