@@ -11,6 +11,8 @@ interface InventoryListProps {
   onRemove: (id: string) => void;
   readOnly?: boolean;
   onOpenLibrary?: () => void;
+  equippedWeapons?: string[];
+  onToggleEquip?: (weaponId: string) => void;
 }
 
 type ItemCategory = 'Arma' | 'Munição' | 'Proteção' | 'Geral';
@@ -175,7 +177,7 @@ const EditMundaneWeaponModal: React.FC<{
   );
 };
 
-export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUpdate, onRemove, readOnly, onOpenLibrary }) => {
+export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUpdate, onRemove, readOnly, onOpenLibrary, equippedWeapons = [], onToggleEquip }) => {
   const [activeTab, setActiveTab] = useState<'my-items' | 'catalog'>('my-items');
   const [catalogSection, setCatalogSection] = useState<'weapons' | 'cursed'>('weapons');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -341,8 +343,11 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
               const categoryMatch = item.description.match(/Categoria:\s*([^|]+)/i);
               const typeMatch = item.description.match(/Tipo:\s*([^|]+)/i);
               const spacesMatch = item.description.match(/Espaços:\s*(\d+)/i);
+              const isWeapon = damageMatch !== null;
+              const isEquipped = equippedWeapons.includes(item.id);
+
               return (
-                <div key={item.id} className={`bg-slate-950 border rounded-lg overflow-hidden group animate-in slide-in-from-left-2 duration-300 ${item.isBroken ? 'border-red-900/50 opacity-70' : 'border-slate-800'}`}>
+                <div key={item.id} className={`bg-slate-950 border rounded-lg overflow-hidden group animate-in slide-in-from-left-2 duration-300 ${item.isBroken ? 'border-red-900/50 opacity-70' : 'border-slate-800'} ${isEquipped ? 'border-orange-500/50 bg-slate-900/80' : ''}`}>
 
                   {/* Header - Always Visible */}
                   <div className="p-3">
@@ -368,6 +373,9 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                       <div className="flex-1 min-w-0">
                         <div className={`text-sm font-bold ${item.isBroken ? 'text-red-500 line-through' : 'text-slate-200'}`}>
                           {item.name}
+                          {isEquipped && (
+                            <span className="ml-2 text-xs text-orange-400 font-normal">(Equipada)</span>
+                          )}
                         </div>
 
                         {/* Quick Info - Always visible */}
@@ -390,22 +398,40 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                         </div>
                       </div>
 
-                      {/* Edit Button */}
-                      <button
-                        onClick={() => setEditingItem(item)}
-                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded transition-all flex items-center gap-1 text-xs"
-                        title="Editar"
-                      >
-                        <Edit2 size={14} />
-                      </button>
+                      {/* Action Buttons */}
+                      <div className="flex gap-1">
+                        {/* Equip Button - Only for weapons */}
+                        {isWeapon && onToggleEquip && (
+                          <button
+                            onClick={() => onToggleEquip(item.id)}
+                            className={`p-1.5 rounded transition-all text-xs ${
+                              isEquipped
+                                ? 'bg-orange-600 hover:bg-orange-500 text-white'
+                                : 'opacity-0 group-hover:opacity-100 bg-slate-800 text-slate-400 hover:bg-slate-600 hover:text-white'
+                            }`}
+                            title={isEquipped ? 'Desequipar' : 'Equipar'}
+                          >
+                            <Sword size={14} />
+                          </button>
+                        )}
 
-                      {/* Delete */}
-                      <button
-                        onClick={() => onRemove(item.id)}
-                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1 hover:bg-red-950/30 rounded transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                        {/* Edit Button */}
+                        <button
+                          onClick={() => setEditingItem(item)}
+                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-white p-1.5 hover:bg-slate-800 rounded transition-all flex items-center gap-1 text-xs"
+                          title="Editar"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          onClick={() => onRemove(item.id)}
+                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1 hover:bg-red-950/30 rounded transition-all"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -786,15 +812,28 @@ const EditItemModal: React.FC<{
     // Check if this is a catalog item being edited (should be added to inventory)
     if (item.id.startsWith('catalog-') || item.id.startsWith('cursed-')) {
       // Add as new item to inventory
-      onAdd({
+      const newItem: Partial<Item> = {
         name: editForm.name,
         description: description
-      });
+      };
+
+      // Add attack skill for weapons
+      if (editForm.category === 'Arma' && editForm.attackSkill) {
+        newItem.attackSkill = editForm.attackSkill;
+      }
+
+      onAdd(newItem);
       onNotify?.(`"${editForm.name}" adicionado ao inventário!`, 'success');
     } else {
       // Update existing inventory item
       onUpdate(item.id, 'name', editForm.name);
       onUpdate(item.id, 'description', description);
+
+      // Update attack skill for weapons
+      if (editForm.category === 'Arma') {
+        onUpdate(item.id, 'attackSkill', editForm.attackSkill || 'Luta');
+      }
+
       onNotify?.(`"${editForm.name}" atualizado!`, 'success');
     }
     onClose();
@@ -860,6 +899,26 @@ const EditItemModal: React.FC<{
               </select>
             </div>
           </div>
+
+          {/* Attack Skill - Only for weapons */}
+          {activeCategory === 'Arma' && (
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Perícia de Ataque</label>
+              <select
+                value={editForm.attackSkill || 'Luta'}
+                onChange={(e) => setEditForm(prev => ({ ...prev, attackSkill: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="Luta">Luta</option>
+                <option value="Pontaria">Pontaria</option>
+                <option value="Atletismo">Atletismo</option>
+                <option value="Furtividade">Furtividade</option>
+                <option value="Percepção">Percepção</option>
+                <option value="Intimidação">Intimidação</option>
+              </select>
+              <p className="text-[9px] text-slate-500 mt-1">Perícia usada para rolar ataques com esta arma</p>
+            </div>
+          )}
 
           {/* Category-specific fields */}
           {activeCategory === 'Arma' && (
