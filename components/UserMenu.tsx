@@ -1,34 +1,28 @@
 import React from 'react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase';
 import type { User } from 'firebase/auth';
 
-type Props = { user: User | null };
+type Props = { 
+  user: User | null;
+  onProfileClick: () => void;
+};
 
-export default function UserMenu({ user }: Props) {
+export default function UserMenu({ user, onProfileClick }: Props) {
   if (!user) return null;
 
-  const nameOrEmail = user.displayName || user.email || 'Usuário';
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-    } catch (err) {
-      console.error('Erro ao deslogar:', err);
-      alert('Erro ao deslogar.');
-    }
-  };
+  // Get first letter for avatar fallback
+  const firstLetter = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
 
   return (
-    <div className="fixed top-3 right-3 z-50 flex items-center gap-3">
-      <div className="hidden sm:block text-sm text-slate-300 font-medium">{nameOrEmail}</div>
-      <button
-        onClick={handleSignOut}
-        className="bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white p-2 rounded-lg border border-slate-700 text-xs font-bold uppercase tracking-wider transition-colors"
-        title="Deslogar"
-      >
-        Deslogar
-      </button>
-    </div>
+    <button
+      onClick={onProfileClick}
+      className="w-10 h-10 rounded-full overflow-hidden border-2 border-slate-700 hover:border-curse-500 transition-all duration-100 bg-slate-800 flex items-center justify-center"
+      title="Ver perfil"
+    >
+      {user.photoURL ? (
+        <img src={user.photoURL} alt="Perfil" className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-white font-bold text-sm">{firstLetter}</span>
+      )}
+    </button>
   );
 }
