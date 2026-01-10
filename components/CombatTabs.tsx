@@ -36,19 +36,24 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const [invested, setInvested] = useState<number>(1);
   const [weaponDamageInput, setWeaponDamageInput] = useState<number>(0); // For manual override
   const [selectedWeaponId, setSelectedWeaponId] = useState<string>('unarmed');
+  const [selectedTechniqueId, setSelectedTechniqueId] = useState<string>('');
+  const [techniqueDie, setTechniqueDie] = useState<string>('1d6');
   
   const [incomingDamage, setIncomingDamage] = useState<number>(0);
-  const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string } | null>(null);
+  const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, isCritical?: boolean } | null>(null);
 
-  // Identify weapons from inventory
-  const inventoryWeapons = char.inventory.filter(item => {
-      // 1. Check against Mundane Weapons List by Name
-      const isMundane = MUNDANE_WEAPONS.some(mw => mw.name === item.name);
-      // 2. Check description for "Dano: XdY" pattern (created by Catalog)
-      const hasDamagePattern = /Dano:\s*\d+d\d+/i.test(item.description);
-      
-      return isMundane || hasDamagePattern;
-  });
+    // Identify equipped weapons from inventory
+    const equippedWeapons = char.inventory.filter(item => {
+        // Must be equipped
+        if (!char.equippedWeapons?.includes(item.id)) return false;
+
+        // 1. Check against Mundane Weapons List by Name
+        const isMundane = MUNDANE_WEAPONS.some(mw => mw.name === item.name);
+        // 2. Check description for "Dano: XdY" pattern (created by Catalog)
+        const hasDamagePattern = /Dano:\s*\d+d\d+/i.test(item.description);
+
+        return isMundane || hasDamagePattern;
+    });
 
   const getWeaponDamageString = (item: Item): string => {
       // Try to find "Dano: 1d6" in description first
@@ -95,6 +100,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     let weaponBroken = false;
     let rollTitle = "Ataque";
     let loggedRolls: number[] = []; // Store rolls for logging
+    let attackRoll = 0;
+    let attackRollDetail = "";
+    let isCritical = false;
 
     const isHR = char.origin === Origin.RestricaoCelestial;
 
@@ -104,19 +112,50 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       let baseDamageText = "";
       let currentWeaponItem: Item | undefined;
 
-      // Determine Weapon Damage
+      // Determine Weapon and Attack Skill
       if (selectedWeaponId === 'unarmed') {
          baseDamageValue = weaponDamageInput;
          baseDamageText = `${weaponDamageInput}`;
          rollTitle = "Ataque Desarmado";
+
+         // Unarmed uses Luta skill
+         const lutaSkill = char.skills.find(s => s.name === 'Luta');
+         if (lutaSkill) {
+           attackRoll = rollDice(20, 1) + lutaSkill.value;
+           attackRollDetail = `1d20 + ${lutaSkill.value} (Luta)`;
+         } else {
+           attackRoll = rollDice(20, 1);
+           attackRollDetail = "1d20";
+         }
       } else {
-         currentWeaponItem = inventoryWeapons.find(w => w.id === selectedWeaponId);
+         currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
          if (currentWeaponItem) {
              const diceStr = getWeaponDamageString(currentWeaponItem);
              const roll = parseAndRollDice(diceStr);
              baseDamageValue = roll.total;
              baseDamageText = `${roll.total}`;
              rollTitle = currentWeaponItem.name;
+
+             // Use weapon's attack skill (default to Luta)
+             const attackSkillName = currentWeaponItem.attackSkill || 'Luta';
+             const attackSkill = char.skills.find(s => s.name === attackSkillName);
+
+             if (attackSkill) {
+               attackRoll = rollDice(20, 1) + attackSkill.value;
+               attackRollDetail = `1d20 + ${attackSkill.value} (${attackSkillName})`;
+             } else {
+               attackRoll = rollDice(20, 1);
+               attackRollDetail = "1d20";
+             }
+
+             // Check for critical hit
+             const criticalThreshold = getWeaponCriticalThreshold(currentWeaponItem);
+             if (attackRoll >= criticalThreshold) {
+               isCritical = true;
+               const multiplier = getWeaponCriticalMultiplier(currentWeaponItem);
+               baseDamageValue *= multiplier;
+               baseDamageText = `${baseDamageText} × ${multiplier} (Crítico!)`;
+             }
          }
       }
 
@@ -251,7 +290,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         onConsumeBuffs(relevantBuffs);
     }
 
-    setLastResult({ total, detail, isDamageTaken, weaponBroken, title: rollTitle });
+    setLastResult({ total, detail, isDamageTaken, weaponBroken, title: rollTitle, attackRoll, attackRollDetail, isCritical });
     setActiveRollResult('combat'); // Set active roll result to combat, which will hide skill results
 
     // Log to campaign if campaignId is provided
@@ -279,13 +318,36 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   // Determine current limit description for UI
   const getCurrentWeaponLimit = () => {
       if (activeTab !== 'physical' || selectedWeaponId === 'unarmed') return null;
-      const weapon = inventoryWeapons.find(w => w.id === selectedWeaponId);
+      const weapon = equippedWeapons.find(w => w.id === selectedWeaponId);
       if (!weapon) return null;
       return getWeaponCELimit(weapon);
   };
   const weaponLimit = getCurrentWeaponLimit();
   const currentCostCE = Math.ceil(invested / 2);
   const willBreak = weaponLimit !== null && currentCostCE > weaponLimit;
+
+  const getWeaponCriticalThreshold = (weapon: Item): number => {
+    // Try to find "Crítico: X" in description
+    const match = weapon.description.match(/Crítico:\s*(\d+)/i);
+    if (match) return parseInt(match[1]);
+
+    // Fallback to catalog data
+    const catalogItem = MUNDANE_WEAPONS.find(w => w.name === weapon.name);
+    if (catalogItem) {
+      const criticalMatch = catalogItem.critical.match(/(\d+)/);
+      return criticalMatch ? parseInt(criticalMatch[1]) : 20;
+    }
+
+    return 20; // Default critical threshold
+  };
+
+  const getWeaponCriticalMultiplier = (weapon: Item): number => {
+    // Try to find multiplier in description (x2, x3, x4)
+    const match = weapon.description.match(/×\s*(\d+)/i) || weapon.description.match(/x\s*(\d+)/i);
+    if (match) return parseInt(match[1]);
+
+    return 2; // Default critical multiplier
+  };
 
   return (
     <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-xl p-4">
@@ -375,7 +437,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                       className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-9 pr-2 text-sm text-white focus:border-curse-500 focus:outline-none appearance-none"
                     >
                       <option value="unarmed">Desarmado / Manual</option>
-                      {inventoryWeapons.map(w => {
+                      {equippedWeapons.map(w => {
                         const dmg = getWeaponDamageString(w);
                         const isDisabled = w.isBroken;
                         return (
@@ -455,15 +517,18 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         </div>
 
         {/* Action Button */}
-        <button 
+        <button
           onClick={handleRoll}
-          disabled={!isHR && invested <= 0 && activeTab !== 'physical'} 
+          disabled={!isHR && invested <= 0 && activeTab !== 'physical'}
           className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
              ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
           `}
         >
           {activeTab === 'defense' ? <ArrowRight size={20} /> : <Dices size={20} />}
-          {activeTab === 'defense' ? 'Calcular Dano Final' : willBreak ? 'Atacar e Quebrar Arma' : 'Rolagem de Ataque'}
+          {activeTab === 'defense' ? 'Calcular Dano Final' :
+           willBreak ? 'Atacar e Quebrar Arma' :
+           activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
+           'Ataque Desarmado'}
         </button>
 
         {/* Visual Roll Result Notification (Bottom Right) */}
@@ -498,6 +563,23 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                    </div>
                    <h3 className="font-bold text-white text-base leading-tight truncate pr-4">{lastResult.title || "Resultado"}</h3>
                 </div>
+
+                {/* Attack Roll Display (only for physical attacks) */}
+                {lastResult.attackRoll !== undefined && (
+                  <div className="flex justify-between items-center border-t border-slate-700 pt-3 mt-2 gap-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Dices size={16} className={`text-emerald-400 ${lastResult.isCritical ? 'animate-pulse' : ''}`} />
+                      <span className="text-slate-300 font-medium">Ataque:</span>
+                      <span className="text-slate-300 font-mono">{lastResult.attackRollDetail}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-lg ${lastResult.isCritical ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                        {lastResult.attackRoll}
+                        {lastResult.isCritical && <span className="text-xs ml-1 text-yellow-300">CRÍTICO!</span>}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-end border-t border-slate-700 pt-3 mt-2 gap-3">
                    <span className="text-slate-300 font-mono text-xs tracking-tighter break-words leading-relaxed max-w-[60%]">{lastResult.detail}</span>
