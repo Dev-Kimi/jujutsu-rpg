@@ -16,6 +16,7 @@ import { CharacterCreator } from './components/CharacterCreator';
 import { CharacterAttributes } from './components/CharacterAttributes';
 import { CampaignManager } from './components/CampaignManager';
 import { TechniqueLibrary } from './components/TechniqueLibrary';
+import { InventoryLibrary } from './components/InventoryLibrary';
 
 // Firebase auth imports
 import { auth, db } from './firebase';
@@ -45,7 +46,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.2.0'; // Update this when you deploy changes
+const APP_VERSION = '1.3.0'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -55,6 +56,7 @@ const App: React.FC = () => {
   // This prevents loading wrong user's data on account switch
   const [savedCharacters, setSavedCharacters] = useState<Character[]>([]);
   const [userTechniques, setUserTechniques] = useState<Technique[]>([]); // Global technique library for user
+  const [userInventoryItems, setUserInventoryItems] = useState<Item[]>([]); // Global inventory library for user
 
   const [character, setCharacter] = useState<Character>(getInitialChar());
   
@@ -64,6 +66,7 @@ const App: React.FC = () => {
   const [showAbilityLibrary, setShowAbilityLibrary] = useState(false);
   const [abilityLibraryCategory, setAbilityLibraryCategory] = useState<string>('Combatente');
   const [showTechniqueLibrary, setShowTechniqueLibrary] = useState(false);
+  const [showInventoryLibrary, setShowInventoryLibrary] = useState(false);
 
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
@@ -133,6 +136,22 @@ const App: React.FC = () => {
     }
   };
 
+  // Helper: load user's inventory library from Firestore
+  const loadUserInventoryItems = async (uid: string): Promise<Item[]> => {
+    try {
+      const userRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return (userData.userInventoryItems as Item[]) || [];
+      }
+      return [];
+    } catch (err) {
+      console.error('Erro ao carregar itens do usuário do Firestore', err);
+      return [];
+    }
+  };
+
   // Helper: persist savedCharacters to Firestore users/{uid}
   const persistUserCharacters = async (chars: Character[]) => {
     try {
@@ -152,6 +171,17 @@ const App: React.FC = () => {
       await setDoc(userRef, { userTechniques: techniques }, { merge: true });
     } catch (err) {
       console.error('Erro ao persistir técnicas do usuário no Firestore', err);
+    }
+  };
+
+  // Helper: persist user's inventory library to Firestore
+  const persistUserInventoryItems = async (items: Item[]) => {
+    try {
+      if (!auth.currentUser) return;
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await setDoc(userRef, { userInventoryItems: items }, { merge: true });
+    } catch (err) {
+      console.error('Erro ao persistir itens do usuário no Firestore', err);
     }
   };
 
@@ -178,6 +208,7 @@ const App: React.FC = () => {
         // Load characters from Firebase for current user
         const firebaseChars = await loadUserCharacters(user.uid);
         const firebaseTechniques = await loadUserTechniques(user.uid);
+        const firebaseInventoryItems = await loadUserInventoryItems(user.uid);
         
         // Check localStorage for same user's data (in case Firebase is empty but we have local data)
         let localChars: Character[] = [];
@@ -210,8 +241,9 @@ const App: React.FC = () => {
           setSavedCharacters([]);
         }
 
-        // Load user techniques
+        // Load user techniques and inventory items
         setUserTechniques(firebaseTechniques);
+        setUserInventoryItems(firebaseInventoryItems);
         
         // Update localStorage UID to current user
         localStorage.setItem(STORAGE_UID_KEY, user.uid);
@@ -221,6 +253,7 @@ const App: React.FC = () => {
         // User logged out - clear everything
         setSavedCharacters([]);
         setUserTechniques([]);
+        setUserInventoryItems([]);
         setCharacter(getInitialChar());
         setViewMode('menu');
         // Don't clear localStorage here as user might log back in quickly
@@ -264,6 +297,19 @@ const App: React.FC = () => {
       });
     }
   }, [userTechniques, currentUser, isLoadingCharacters]);
+
+  // Save user inventory items to Firestore whenever they change
+  useEffect(() => {
+    if (isLoadingCharacters) {
+      return;
+    }
+    
+    if (currentUser) {
+      persistUserInventoryItems(userInventoryItems).catch(err => {
+        console.error("Erro ao persistir itens no Firestore:", err);
+      });
+    }
+  }, [userInventoryItems, currentUser, isLoadingCharacters]);
 
   // Derived Stats based on Character
   const stats = calculateDerivedStats(character);
@@ -543,6 +589,24 @@ const App: React.FC = () => {
     setShowTechniqueLibrary(false);
   };
 
+  // User library inventory handlers
+  const handleAddItemToLibrary = (item: Item) => {
+    setUserInventoryItems(prev => [...prev, item]);
+  };
+
+  const handleUpdateItemInLibrary = (id: string, field: keyof Item, value: any) => {
+    setUserInventoryItems(prev => prev.map(i => i.id === id ? { ...i, [field]: value } : i));
+  };
+
+  const handleRemoveItemFromLibrary = (id: string) => {
+    setUserInventoryItems(prev => prev.filter(i => i.id !== id));
+  };
+
+  const handleAddItemToCharacter = (item: Item) => {
+    handleArrayAdd('inventory', undefined, item);
+    setShowInventoryLibrary(false);
+  };
+
   const handleAddAbilityFromLibrary = (ability: Partial<Ability>) => {
     const newAbility: Ability = {
        id: Math.random().toString(36).substring(2, 9),
@@ -689,6 +753,17 @@ const App: React.FC = () => {
           onRemoveFromLibrary={handleRemoveTechniqueFromLibrary}
           onAddToCharacter={handleAddTechniqueToCharacter}
           onClose={() => setShowTechniqueLibrary(false)}
+        />
+      )}
+
+      {showInventoryLibrary && (
+        <InventoryLibrary 
+          userItems={userInventoryItems}
+          onAddToLibrary={handleAddItemToLibrary}
+          onUpdateInLibrary={handleUpdateItemInLibrary}
+          onRemoveFromLibrary={handleRemoveItemFromLibrary}
+          onAddToCharacter={handleAddItemToCharacter}
+          onClose={() => setShowInventoryLibrary(false)}
         />
       )}
 
@@ -929,6 +1004,7 @@ const App: React.FC = () => {
                    onAdd={(template) => handleArrayAdd('inventory', undefined, template)}
                    onUpdate={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
                    onRemove={(id) => handleArrayRemove('inventory', id)}
+                   onOpenLibrary={() => setShowInventoryLibrary(true)}
                  />
                )}
                {activeTab === 'progression' && (
