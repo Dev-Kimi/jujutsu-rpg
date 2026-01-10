@@ -6,7 +6,8 @@ import {
   GoogleAuthProvider, 
   signInWithPopup,
   linkWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -21,6 +22,12 @@ export default function Auth() {
   const [googleUser, setGoogleUser] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  
+  // State for password reset
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const ensureUserDoc = async (uid: string, email?: string) => {
     try {
@@ -137,6 +144,29 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!resetEmail || !resetEmail.includes('@')) {
+      setError("Por favor, insira um e-mail válido");
+      return;
+    }
+
+    try {
+      setError('');
+      setSuccessMessage('');
+      await sendPasswordResetEmail(auth, resetEmail);
+      setResetSent(true);
+      setSuccessMessage(`E-mail de recuperação enviado para ${resetEmail}`);
+    } catch (err: any) {
+      if (err.code === 'auth/user-not-found') {
+        setError("Não encontramos uma conta com este e-mail");
+      } else if (err.code === 'auth/invalid-email') {
+        setError("E-mail inválido");
+      } else {
+        setError("Erro ao enviar e-mail: " + (err.message || err));
+      }
+    }
+  };
+
   // Close password setup if user logs out
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -157,6 +187,7 @@ export default function Auth() {
         </p>
 
         {error && <div className="bg-red-900/30 text-red-400 p-3 rounded mb-4 text-sm border border-red-900">{error}</div>}
+        {successMessage && <div className="bg-emerald-900/30 text-emerald-400 p-3 rounded mb-4 text-sm border border-emerald-900">{successMessage}</div>}
 
         <form onSubmit={handleAuth} className="space-y-4">
           <input 
@@ -171,6 +202,21 @@ export default function Auth() {
             className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-white focus:border-purple-500 outline-none transition-colors duration-100"
             value={password} onChange={e => setPassword(e.target.value)}
           />
+          
+          {!isRegistering && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotPassword(true);
+                  setResetEmail(email); // Pre-fill with current email if any
+                }}
+                className="text-xs text-purple-400 hover:text-purple-300 underline transition-colors duration-100"
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
+          )}
           
           <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded transition-colors duration-100 shadow-lg shadow-purple-900/20">
             {isRegistering ? 'CADASTRAR' : 'ENTRAR'}
@@ -235,6 +281,89 @@ export default function Auth() {
                 DEFINIR SENHA
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-md bg-slate-900 p-8 rounded-xl border border-slate-800 shadow-2xl">
+            <button
+              onClick={() => {
+                setShowForgotPassword(false);
+                setResetSent(false);
+                setResetEmail('');
+                setError('');
+                setSuccessMessage('');
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors duration-100"
+            >
+              ✕
+            </button>
+
+            <h2 className="text-2xl font-black text-center text-white mb-2">Recuperar Senha</h2>
+            {!resetSent ? (
+              <>
+                <p className="text-center text-slate-400 mb-6 text-sm">
+                  Digite seu e-mail para receber um código de redefinição de senha
+                </p>
+
+                {error && <div className="bg-red-900/30 text-red-400 p-3 rounded mb-4 text-sm border border-red-900">{error}</div>}
+
+                <div className="space-y-4">
+                  <input 
+                    type="email" 
+                    placeholder="Seu e-mail" 
+                    className="w-full bg-slate-950 border border-slate-800 rounded p-3 text-white focus:border-purple-500 outline-none transition-colors duration-100"
+                    value={resetEmail} 
+                    onChange={e => setResetEmail(e.target.value)}
+                    autoFocus
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleForgotPassword();
+                      }
+                    }}
+                  />
+                  
+                  <button 
+                    onClick={handleForgotPassword}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded transition-colors duration-100 shadow-lg shadow-purple-900/20"
+                  >
+                    ENVIAR CÓDIGO
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center space-y-4">
+                  <div className="bg-emerald-900/30 text-emerald-400 p-4 rounded mb-4 text-sm border border-emerald-900">
+                    ✓ E-mail enviado com sucesso!
+                  </div>
+                  <p className="text-slate-300 text-sm leading-relaxed">
+                    Enviamos um e-mail para <strong className="text-white">{resetEmail}</strong> com um link para redefinir sua senha.
+                  </p>
+                  <p className="text-slate-400 text-xs">
+                    Verifique sua caixa de entrada e clique no link para redefinir sua senha.
+                  </p>
+                  <p className="text-slate-500 text-xs">
+                    Não recebeu o e-mail? Verifique sua pasta de spam.
+                  </p>
+                  <button 
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setResetSent(false);
+                      setResetEmail('');
+                      setError('');
+                      setSuccessMessage('');
+                    }}
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded transition-colors duration-100 border border-slate-700 mt-4"
+                  >
+                    FECHAR
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
