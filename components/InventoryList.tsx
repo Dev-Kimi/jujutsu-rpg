@@ -180,6 +180,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
   const [catalogSection, setCatalogSection] = useState<'weapons' | 'cursed'>('weapons');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [editingWeapon, setEditingWeapon] = useState<MundaneWeapon | null>(null);
+  const [showWeaponModal, setShowWeaponModal] = useState(false);
   const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: 'success' | 'error'}>>([]);
   const [customWeapons, setCustomWeapons] = useState<MundaneWeapon[]>(() => {
     // Load custom weapons from localStorage
@@ -253,6 +254,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
     };
     saveCustomWeapons([...customWeapons, newWeapon]);
     showNotification(`"${weapon.name}" adicionada ao catálogo!`, 'success');
+    return newWeapon;
   };
 
   if (readOnly) {
@@ -447,7 +449,10 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                        Nota: Não causam dano a maldições sem habilidade de Imbuir.
                      </div>
                      <button
-                       onClick={() => setEditingWeapon(null)}
+                       onClick={() => {
+                         setEditingWeapon(null);
+                         setShowWeaponModal(true);
+                       }}
                        className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
                        title="Criar nova arma mundana"
                      >
@@ -487,7 +492,10 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                            </div>
                            <div className="flex justify-end gap-1">
                               <button
-                                onClick={() => setEditingWeapon(w)}
+                                onClick={() => {
+                                  setEditingWeapon(w);
+                                  setShowWeaponModal(true);
+                                }}
                                 className="p-1.5 bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded transition-colors opacity-0 group-hover:opacity-100"
                                 title="Editar arma no catálogo"
                               >
@@ -537,7 +545,10 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                            </div>
                            <div className="flex justify-end gap-1">
                               <button
-                                onClick={() => setEditingWeapon(w)}
+                                onClick={() => {
+                                  setEditingWeapon(w);
+                                  setShowWeaponModal(true);
+                                }}
                                 className="p-1.5 bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded transition-colors"
                                 title="Editar arma no catálogo"
                               >
@@ -648,13 +659,16 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
       )}
 
       {/* Edit Mundane Weapon Modal */}
-      {editingWeapon !== undefined && (
+      {showWeaponModal && (
         <EditMundaneWeaponModal
           weapon={editingWeapon}
           onSave={updateMundaneWeapon}
           onAdd={addMundaneWeapon}
           onDelete={deleteMundaneWeapon}
-          onClose={() => setEditingWeapon(null)}
+          onClose={() => {
+            setShowWeaponModal(false);
+            setEditingWeapon(null);
+          }}
         />
       )}
 
