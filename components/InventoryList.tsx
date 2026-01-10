@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Item } from '../types';
 import { MUNDANE_WEAPONS, CURSED_TOOL_GRADES } from '../utils/equipmentData';
-import { Plus, Trash2, Package, Minus, Sword, Shield, Info, Coins, Hammer, Zap, BookOpen, AlertTriangle, Edit2, X } from 'lucide-react';
+import { Plus, Trash2, Package, Minus, Sword, Shield, Info, Coins, Hammer, Zap, BookOpen, AlertTriangle, Edit2, X, CheckCircle } from 'lucide-react';
 
 interface InventoryListProps {
   items: Item[];
@@ -15,10 +15,34 @@ interface InventoryListProps {
 
 type ItemCategory = 'Arma' | 'Munição' | 'Proteção' | 'Geral';
 
+// Notification Component
+const Notification: React.FC<{
+  notification: {id: string, message: string, type: 'success' | 'error'};
+  onClose: (id: string) => void;
+}> = ({ notification, onClose }) => {
+  return (
+    <div className={`flex items-center gap-3 p-3 rounded-lg border shadow-lg animate-in slide-in-from-right-2 duration-300 ${
+      notification.type === 'success'
+        ? 'bg-emerald-950/90 border-emerald-800 text-emerald-200'
+        : 'bg-red-950/90 border-red-800 text-red-200'
+    }`}>
+      <CheckCircle size={18} className={notification.type === 'success' ? 'text-emerald-400' : 'text-red-400'} />
+      <span className="text-sm flex-1">{notification.message}</span>
+      <button
+        onClick={() => onClose(notification.id)}
+        className="text-slate-400 hover:text-white transition-colors"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+};
+
 export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUpdate, onRemove, readOnly, onOpenLibrary }) => {
   const [activeTab, setActiveTab] = useState<'my-items' | 'catalog'>('my-items');
   const [catalogSection, setCatalogSection] = useState<'weapons' | 'cursed'>('weapons');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: 'success' | 'error'}>>([]);
 
   const handleQty = (id: string, current: number, delta: number) => {
     onUpdate(id, 'quantity', Math.max(0, current + delta));
@@ -29,6 +53,17 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
       name: name,
       description: description
     });
+    showNotification(`"${name}" adicionado ao inventário!`, 'success');
+  };
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setNotifications(prev => [...prev, { id, message, type }]);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
   };
 
   if (readOnly) {
@@ -55,7 +90,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
   }
 
   return (
-    <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[500px] flex flex-col">
+    <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[500px] flex flex-col relative">
       
       {/* Main Tab Switcher */}
       <div className="flex border-b border-slate-800 bg-slate-950">
@@ -342,8 +377,20 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
           onUpdate={onUpdate}
           onAdd={onAdd}
           onClose={() => setEditingItem(null)}
+          onNotify={showNotification}
         />
       )}
+
+      {/* Notifications */}
+      <div className="absolute top-4 right-4 z-50 space-y-2 max-w-sm">
+        {notifications.map(notification => (
+          <Notification
+            key={notification.id}
+            notification={notification}
+            onClose={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
+          />
+        ))}
+      </div>
     </div>
   );
 };
@@ -354,7 +401,8 @@ const EditItemModal: React.FC<{
   onUpdate: (id: string, field: keyof Item, value: any) => void;
   onAdd: (item: Partial<Item>) => void;
   onClose: () => void;
-}> = ({ item, onUpdate, onAdd, onClose }) => {
+  onNotify?: (message: string, type?: 'success' | 'error') => void;
+}> = ({ item, onUpdate, onAdd, onClose, onNotify }) => {
   const [activeCategory, setActiveCategory] = useState<ItemCategory>('Arma');
   const [editForm, setEditForm] = useState(() => {
     // Parse existing item data
@@ -451,10 +499,12 @@ const EditItemModal: React.FC<{
         name: editForm.name,
         description: description
       });
+      onNotify?.(`"${editForm.name}" adicionado ao inventário!`, 'success');
     } else {
       // Update existing inventory item
       onUpdate(item.id, 'name', editForm.name);
       onUpdate(item.id, 'description', description);
+      onNotify?.(`"${editForm.name}" atualizado!`, 'success');
     }
     onClose();
   };
