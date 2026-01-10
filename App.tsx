@@ -38,6 +38,7 @@ const getInitialChar = (): Character => ({
   abilities: [],
   techniques: [],
   inventory: [],
+  equippedWeapons: [],
   aptitudes: {} // Initialize empty aptitudes
 });
 
@@ -46,7 +47,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.3.9'; // Update this when you deploy changes
+const APP_VERSION = '1.4.0'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -533,6 +534,20 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleToggleEquipWeapon = (weaponId: string) => {
+    setCharacter(prev => {
+      const isEquipped = prev.equippedWeapons.includes(weaponId);
+      const newEquippedWeapons = isEquipped
+        ? prev.equippedWeapons.filter(id => id !== weaponId)
+        : [...prev.equippedWeapons, weaponId];
+
+      return {
+        ...prev,
+        equippedWeapons: newEquippedWeapons
+      };
+    });
+  };
+
   const handleAddSkill = () => {
     const newSkill: Skill = { id: Math.random().toString(36).substring(2, 9), name: "Nova Perícia", value: 0 };
     setCharacter(prev => ({ ...prev, skills: [...prev.skills, newSkill] }));
@@ -999,13 +1014,15 @@ const App: React.FC = () => {
                  />
                )}
                {activeTab === 'inventory' && (
-                 <InventoryList 
-                   items={character.inventory}
-                   onAdd={(template) => handleArrayAdd('inventory', undefined, template)}
-                   onUpdate={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
-                   onRemove={(id) => handleArrayRemove('inventory', id)}
-                   onOpenLibrary={() => setShowInventoryLibrary(true)}
-                 />
+                <InventoryList
+                  items={character.inventory}
+                  onAdd={(template) => handleArrayAdd('inventory', undefined, template)}
+                  onUpdate={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                  onRemove={(id) => handleArrayRemove('inventory', id)}
+                  onOpenLibrary={() => setShowInventoryLibrary(true)}
+                  equippedWeapons={character.equippedWeapons}
+                  onToggleEquip={handleToggleEquipWeapon}
+                />
                )}
                {activeTab === 'progression' && (
                   <LevelUpSummary char={character} onUpdateAptitude={handleAptitudeUpdate} />
