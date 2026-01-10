@@ -89,11 +89,12 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                 <BookOpen size={14} /> Biblioteca
               </button>
             )}
-            <button 
-              onClick={() => onAdd()}
+            <button
+              onClick={() => setActiveTab('catalog')}
               className="flex items-center gap-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+              title="Ver catálogo de itens disponíveis"
             >
-              <Plus size={14} /> Novo
+              <Plus size={14} /> Novo Item
             </button>
           </div>
 
@@ -228,31 +229,48 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                       <div></div>
                    </div>
 
-                   {MUNDANE_WEAPONS.map(w => (
-                      <div key={w.id} className="bg-slate-900 border border-slate-800 rounded-lg p-2 grid grid-cols-[2fr_1fr_1fr_40px] gap-2 items-center hover:border-slate-600 transition-colors">
-                         <div>
-                            <div className="text-sm font-bold text-slate-200">{w.name}</div>
-                            <div className="text-[10px] text-slate-500 flex items-center gap-1">
-                               {w.type === 'Distância' ? <Info size={10}/> : <Sword size={10}/>} {w.type}
-                            </div>
-                         </div>
-                         <div className="text-center font-mono font-bold text-slate-300 text-xs bg-slate-950/50 py-1 rounded">
-                            {w.baseDamage}
-                         </div>
-                         <div className="text-center font-mono text-slate-400 text-xs">
-                            {w.critical}
-                         </div>
-                         <div className="flex justify-end">
-                            <button 
-                              onClick={() => handleAddToInventory(w.name, `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type}`)}
-                              className="p-1.5 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded transition-colors"
-                              title="Adicionar ao Inventário"
-                            >
-                               <Plus size={16} />
-                            </button>
-                         </div>
-                      </div>
-                   ))}
+                   {MUNDANE_WEAPONS.map(w => {
+                      // Convert catalog item to full Item format for editing
+                      const catalogItem: Item = {
+                        id: `catalog-${w.id}`,
+                        name: w.name,
+                        quantity: 1,
+                        description: `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type} | Categoria: Arma | Tipo de Arma: ${w.type === 'Distância' ? 'À Distância' : 'Corpo a Corpo'} | Empunhadura: Uma Mão | Multiplicador: 2 | Tipo de Dano: ${w.type === 'Distância' ? 'Perfurante' : 'Cortante'} | Alcance: ${w.type === 'Distância' ? '30m' : '-'} | Durabilidade: 5 CE | Grau: Mundana | Espaços: 1`
+                      };
+
+                      return (
+                        <div key={w.id} className="bg-slate-900 border border-slate-800 rounded-lg p-2 grid grid-cols-[2fr_1fr_1fr_80px] gap-2 items-center hover:border-slate-600 transition-colors group">
+                           <div>
+                              <div className="text-sm font-bold text-slate-200">{w.name}</div>
+                              <div className="text-[10px] text-slate-500 flex items-center gap-1">
+                                 {w.type === 'Distância' ? <Info size={10}/> : <Sword size={10}/>} {w.type}
+                              </div>
+                           </div>
+                           <div className="text-center font-mono font-bold text-slate-300 text-xs bg-slate-950/50 py-1 rounded">
+                              {w.baseDamage}
+                           </div>
+                           <div className="text-center font-mono text-slate-400 text-xs">
+                              {w.critical}
+                           </div>
+                           <div className="flex justify-end gap-1">
+                              <button
+                                onClick={() => setEditingItem(catalogItem)}
+                                className="p-1.5 bg-slate-800 text-slate-400 hover:bg-slate-600 hover:text-white rounded transition-colors opacity-0 group-hover:opacity-100"
+                                title="Editar e adicionar ao inventário"
+                              >
+                                 <Edit2 size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleAddToInventory(w.name, `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type}`)}
+                                className="p-1.5 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded transition-colors"
+                                title="Adicionar ao Inventário"
+                              >
+                                 <Plus size={14} />
+                              </button>
+                           </div>
+                        </div>
+                      );
+                   })}
                 </div>
              )}
 
@@ -266,32 +284,50 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                       </p>
                    </div>
 
-                   {CURSED_TOOL_GRADES.map((grade, idx) => (
-                      <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-curse-500/30 transition-colors">
-                         <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-950/30">
-                            <h4 className="font-bold text-curse-300 text-sm flex items-center gap-2">
-                               <Hammer size={14} /> {grade.grade}
-                            </h4>
-                            <span className="text-xs font-mono text-emerald-400 flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                               <Coins size={10} /> {grade.price}
-                            </span>
-                         </div>
-                         <div className="p-3 text-xs space-y-2">
-                            <div className="flex items-start gap-2">
-                               <span className="bg-curse-950/40 text-curse-200 px-1.5 rounded border border-curse-500/20 whitespace-nowrap flex items-center gap-1">
-                                  <Zap size={10} /> {grade.durabilityCost}
-                               </span>
-                               <span className="text-slate-400">{grade.effect}</span>
-                            </div>
-                            <button 
-                               onClick={() => handleAddToInventory(`Ferramenta ${grade.grade}`, `Durabilidade: ${grade.durabilityCost} | Efeito: ${grade.effect} | Valor: ${grade.price}`)}
-                               className="w-full mt-2 py-1.5 bg-slate-800 hover:bg-curse-700 text-slate-400 hover:text-white rounded flex items-center justify-center gap-2 transition-colors font-bold uppercase tracking-wider text-[10px]"
-                            >
-                               <Plus size={12} /> Adicionar Modelo
-                            </button>
-                         </div>
-                      </div>
-                   ))}
+                   {CURSED_TOOL_GRADES.map((grade, idx) => {
+                      // Convert cursed tool to full Item format for editing
+                      const cursedItem: Item = {
+                        id: `cursed-${idx}`,
+                        name: `Ferramenta ${grade.grade}`,
+                        quantity: 1,
+                        description: `Durabilidade: ${grade.durabilityCost} | Efeito: ${grade.effect} | Valor: ${grade.price} | Categoria: Geral | Grau: ${grade.grade} | Espaços: 1`
+                      };
+
+                      return (
+                        <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-curse-500/30 transition-colors group">
+                           <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-950/30">
+                              <h4 className="font-bold text-curse-300 text-sm flex items-center gap-2">
+                                 <Hammer size={14} /> {grade.grade}
+                              </h4>
+                              <span className="text-xs font-mono text-emerald-400 flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                                 <Coins size={10} /> {grade.price}
+                              </span>
+                           </div>
+                           <div className="p-3 text-xs space-y-2">
+                              <div className="flex items-start gap-2">
+                                 <span className="bg-curse-950/40 text-curse-200 px-1.5 rounded border border-curse-500/20 whitespace-nowrap flex items-center gap-1">
+                                    <Zap size={10} /> {grade.durabilityCost}
+                                 </span>
+                                 <span className="text-slate-400">{grade.effect}</span>
+                              </div>
+                              <div className="flex gap-2">
+                                 <button
+                                    onClick={() => setEditingItem(cursedItem)}
+                                    className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded flex items-center justify-center gap-2 transition-colors font-bold uppercase tracking-wider text-[10px]"
+                                 >
+                                    <Edit2 size={10} /> Editar
+                                 </button>
+                                 <button
+                                    onClick={() => handleAddToInventory(`Ferramenta ${grade.grade}`, `Durabilidade: ${grade.durabilityCost} | Efeito: ${grade.effect} | Valor: ${grade.price}`)}
+                                    className="flex-1 py-1.5 bg-slate-800 hover:bg-curse-700 text-slate-400 hover:text-white rounded flex items-center justify-center gap-2 transition-colors font-bold uppercase tracking-wider text-[10px]"
+                                 >
+                                    <Plus size={10} /> Adicionar
+                                 </button>
+                              </div>
+                           </div>
+                        </div>
+                      );
+                   })}
                 </div>
              )}
 
@@ -304,6 +340,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
         <EditItemModal
           item={editingItem}
           onUpdate={onUpdate}
+          onAdd={onAdd}
           onClose={() => setEditingItem(null)}
         />
       )}
@@ -315,8 +352,9 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
 const EditItemModal: React.FC<{
   item: Item;
   onUpdate: (id: string, field: keyof Item, value: any) => void;
+  onAdd: (item: Partial<Item>) => void;
   onClose: () => void;
-}> = ({ item, onUpdate, onClose }) => {
+}> = ({ item, onUpdate, onAdd, onClose }) => {
   const [activeCategory, setActiveCategory] = useState<ItemCategory>('Arma');
   const [editForm, setEditForm] = useState(() => {
     // Parse existing item data
@@ -406,8 +444,18 @@ const EditItemModal: React.FC<{
       description = `${editForm.description} | Categoria: Geral | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
     }
 
-    onUpdate(item.id, 'name', editForm.name);
-    onUpdate(item.id, 'description', description);
+    // Check if this is a catalog item being edited (should be added to inventory)
+    if (item.id.startsWith('catalog-') || item.id.startsWith('cursed-')) {
+      // Add as new item to inventory
+      onAdd({
+        name: editForm.name,
+        description: description
+      });
+    } else {
+      // Update existing inventory item
+      onUpdate(item.id, 'name', editForm.name);
+      onUpdate(item.id, 'description', description);
+    }
     onClose();
   };
 
