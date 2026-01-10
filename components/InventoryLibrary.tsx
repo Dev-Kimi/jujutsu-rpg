@@ -37,11 +37,11 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
     weaponType: 'Corpo a Corpo',
     grip: 'Leve',
     damage: '1d4',
-    secondaryDamage: '',
     critical: '20',
     multiplier: '2',
     damageType: 'Balístico',
     range: '-',
+    durability: '5',
     // Armor fields
     defense: '0',
     // General fields
@@ -58,11 +58,11 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
       weaponType: 'Corpo a Corpo',
       grip: 'Leve',
       damage: '1d4',
-      secondaryDamage: '',
       critical: '20',
       multiplier: '2',
       damageType: 'Balístico',
       range: '-',
+      durability: '5',
       defense: '0',
       description: ''
     });
@@ -73,7 +73,7 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
     
     // Build description based on category
     if (newItemForm.category === 'Arma') {
-      description = `Proficiência: ${newItemForm.proficiency} | Tipo: ${newItemForm.weaponType} | Empunhadura: ${newItemForm.grip} | Dano: ${newItemForm.damage}${newItemForm.secondaryDamage ? ` + ${newItemForm.secondaryDamage}` : ''} | Crítico: ${newItemForm.critical} (x${newItemForm.multiplier}) | Tipo de Dano: ${newItemForm.damageType}${newItemForm.range !== '-' ? ` | Alcance: ${newItemForm.range}` : ''} | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
+      description = `Proficiência: ${newItemForm.proficiency} | Tipo: ${newItemForm.weaponType} | Empunhadura: ${newItemForm.grip} | Dano: ${newItemForm.damage} | Crítico: ${newItemForm.critical} (x${newItemForm.multiplier}) | Tipo de Dano: ${newItemForm.damageType}${newItemForm.range !== '-' ? ` | Alcance: ${newItemForm.range}` : ''} | Durabilidade: ${newItemForm.durability} CE | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
     } else if (newItemForm.category === 'Proteção') {
       description = `Defesa: +${newItemForm.defense} (Redução de Dano) | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
     } else if (newItemForm.category === 'Munição') {
@@ -382,7 +382,7 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Empunhadura</label>
                       <select
@@ -405,19 +405,9 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
                         placeholder="1d6"
                       />
                     </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dano Sec.</label>
-                      <input 
-                        type="text"
-                        value={newItemForm.secondaryDamage}
-                        onChange={(e) => setNewItemForm(prev => ({ ...prev, secondaryDamage: e.target.value }))}
-                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-                        placeholder="1d4"
-                      />
-                    </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-4 gap-3">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Crítico*</label>
                       <input 
@@ -436,6 +426,17 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
                         onChange={(e) => setNewItemForm(prev => ({ ...prev, multiplier: e.target.value }))}
                         className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                         placeholder="2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Durabilidade*</label>
+                      <input 
+                        type="text"
+                        value={newItemForm.durability}
+                        onChange={(e) => setNewItemForm(prev => ({ ...prev, durability: e.target.value }))}
+                        className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                        placeholder="5 CE"
+                        title="Limite de CE que pode ser investido antes da arma quebrar"
                       />
                     </div>
                     <div>
