@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Item } from '../types';
-import { MUNDANE_WEAPONS, CURSED_TOOL_GRADES } from '../utils/equipmentData';
+import { MUNDANE_WEAPONS, CURSED_TOOL_GRADES, MundaneWeapon } from '../utils/equipmentData';
 import { Plus, Trash2, Package, Minus, Sword, Shield, Info, Coins, Hammer, Zap, BookOpen, AlertTriangle, Edit2, X, CheckCircle } from 'lucide-react';
 
 interface InventoryListProps {
@@ -38,11 +38,154 @@ const Notification: React.FC<{
   );
 };
 
+// Edit Mundane Weapon Modal Component
+const EditMundaneWeaponModal: React.FC<{
+  weapon: MundaneWeapon | null;
+  onSave: (weapon: MundaneWeapon) => void;
+  onAdd: (weapon: Omit<MundaneWeapon, 'id'>) => void;
+  onDelete: (weaponId: string) => void;
+  onClose: () => void;
+}> = ({ weapon, onSave, onAdd, onDelete, onClose }) => {
+  const [formData, setFormData] = useState({
+    name: weapon?.name || '',
+    baseDamage: weapon?.baseDamage || '1d6',
+    critical: weapon?.critical || '20',
+    type: weapon?.type || 'Corpo a Corpo' as 'Corpo a Corpo' | 'Distância'
+  });
+
+  const handleSave = () => {
+    if (!formData.name.trim()) return;
+
+    if (weapon) {
+      // Update existing weapon
+      onSave({
+        ...weapon,
+        ...formData
+      });
+    } else {
+      // Add new weapon
+      onAdd(formData);
+    }
+    onClose();
+  };
+
+  const handleDelete = () => {
+    if (weapon && weapon.id.startsWith('custom-')) {
+      if (confirm(`Remover "${weapon.name}" do catálogo personalizado?`)) {
+        onDelete(weapon.id);
+        onClose();
+      }
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+
+        {/* Modal Header */}
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl">
+          <h3 className="text-lg font-bold text-white">
+            {weapon ? 'Editar Arma Mundana' : 'Nova Arma Mundana'}
+          </h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors duration-100">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Form Content */}
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome da Arma</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              placeholder="Ex: Espada Longa"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo</label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value as 'Corpo a Corpo' | 'Distância' }))}
+              className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="Corpo a Corpo">Corpo a Corpo</option>
+              <option value="Distância">Distância</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dano Base</label>
+              <input
+                type="text"
+                value={formData.baseDamage}
+                onChange={(e) => setFormData(prev => ({ ...prev, baseDamage: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                placeholder="1d8"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Crítico</label>
+              <input
+                type="text"
+                value={formData.critical}
+                onChange={(e) => setFormData(prev => ({ ...prev, critical: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                placeholder="20"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-800 bg-slate-950 rounded-b-2xl flex justify-between items-center">
+          <div>
+            {weapon && weapon.id.startsWith('custom-') && (
+              <button
+                onClick={handleDelete}
+                className="px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded transition-colors duration-100"
+              >
+                <Trash2 size={14} className="inline mr-1" />
+                Remover
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-slate-400 hover:text-white transition-colors duration-100 font-bold"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!formData.name.trim()}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors duration-100 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {weapon ? 'Salvar' : 'Adicionar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUpdate, onRemove, readOnly, onOpenLibrary }) => {
   const [activeTab, setActiveTab] = useState<'my-items' | 'catalog'>('my-items');
   const [catalogSection, setCatalogSection] = useState<'weapons' | 'cursed'>('weapons');
   const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editingWeapon, setEditingWeapon] = useState<MundaneWeapon | null>(null);
   const [notifications, setNotifications] = useState<Array<{id: string, message: string, type: 'success' | 'error'}>>([]);
+  const [customWeapons, setCustomWeapons] = useState<MundaneWeapon[]>(() => {
+    // Load custom weapons from localStorage
+    const saved = localStorage.getItem('customMundaneWeapons');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const handleQty = (id: string, current: number, delta: number) => {
     onUpdate(id, 'quantity', Math.max(0, current + delta));
@@ -64,6 +207,52 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 3000);
+  };
+
+  const saveCustomWeapons = (weapons: MundaneWeapon[]) => {
+    setCustomWeapons(weapons);
+    localStorage.setItem('customMundaneWeapons', JSON.stringify(weapons));
+  };
+
+  const updateMundaneWeapon = (weaponId: string, updates: Partial<MundaneWeapon>) => {
+    const allWeapons = [...MUNDANE_WEAPONS, ...customWeapons];
+    const weaponIndex = allWeapons.findIndex(w => w.id === weaponId);
+
+    if (weaponIndex >= 0) {
+      const weapon = allWeapons[weaponIndex];
+      const updatedWeapon = { ...weapon, ...updates };
+
+      if (weaponId.startsWith('custom-')) {
+        // Update custom weapon
+        const customIndex = customWeapons.findIndex(w => w.id === weaponId);
+        const newCustomWeapons = [...customWeapons];
+        newCustomWeapons[customIndex] = updatedWeapon;
+        saveCustomWeapons(newCustomWeapons);
+      } else {
+        // Convert to custom weapon
+        const newCustomWeapon = { ...updatedWeapon, id: `custom-${Date.now()}` };
+        saveCustomWeapons([...customWeapons, newCustomWeapon]);
+      }
+
+      showNotification(`"${updatedWeapon.name}" atualizada!`, 'success');
+    }
+  };
+
+  const deleteMundaneWeapon = (weaponId: string) => {
+    if (weaponId.startsWith('custom-')) {
+      const newCustomWeapons = customWeapons.filter(w => w.id !== weaponId);
+      saveCustomWeapons(newCustomWeapons);
+      showNotification('Arma removida do catálogo personalizado!', 'success');
+    }
+  };
+
+  const addMundaneWeapon = (weapon: Omit<MundaneWeapon, 'id'>) => {
+    const newWeapon: MundaneWeapon = {
+      ...weapon,
+      id: `custom-${Date.now()}`
+    };
+    saveCustomWeapons([...customWeapons, newWeapon]);
+    showNotification(`"${weapon.name}" adicionada ao catálogo!`, 'success');
   };
 
   if (readOnly) {
@@ -253,8 +442,17 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
              {/* WEAPONS LIST */}
              {catalogSection === 'weapons' && (
                 <div className="space-y-2 animate-in fade-in duration-300">
-                   <div className="text-[10px] text-slate-500 px-2 pb-2 italic text-center">
-                     Nota: Não causam dano a maldições sem habilidade de Imbuir.
+                   <div className="flex justify-between items-center px-2 pb-2">
+                     <div className="text-[10px] text-slate-500 italic">
+                       Nota: Não causam dano a maldições sem habilidade de Imbuir.
+                     </div>
+                     <button
+                       onClick={() => setEditingWeapon(null)}
+                       className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+                       title="Criar nova arma mundana"
+                     >
+                       <Plus size={14} /> Nova Arma
+                     </button>
                    </div>
                    
                    <div className="grid grid-cols-[2fr_1fr_1fr_40px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-500 uppercase">
@@ -264,8 +462,8 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                       <div></div>
                    </div>
 
+                   {/* Original Mundane Weapons */}
                    {MUNDANE_WEAPONS.map(w => {
-                      // Convert catalog item to full Item format for editing
                       const catalogItem: Item = {
                         id: `catalog-${w.id}`,
                         name: w.name,
@@ -289,6 +487,13 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                            </div>
                            <div className="flex justify-end gap-1">
                               <button
+                                onClick={() => setEditingWeapon(w)}
+                                className="p-1.5 bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded transition-colors opacity-0 group-hover:opacity-100"
+                                title="Editar arma no catálogo"
+                              >
+                                 <Edit2 size={14} />
+                              </button>
+                              <button
                                 onClick={() => setEditingItem(catalogItem)}
                                 className="p-1.5 bg-slate-800 text-slate-400 hover:bg-slate-600 hover:text-white rounded transition-colors opacity-0 group-hover:opacity-100"
                                 title="Editar e adicionar ao inventário"
@@ -301,6 +506,67 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                                 title="Adicionar ao Inventário"
                               >
                                  <Plus size={14} />
+                              </button>
+                           </div>
+                        </div>
+                      );
+                   })}
+
+                   {/* Custom Mundane Weapons */}
+                   {customWeapons.map(w => {
+                      const catalogItem: Item = {
+                        id: `catalog-${w.id}`,
+                        name: w.name,
+                        quantity: 1,
+                        description: `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type} | Categoria: Arma | Tipo de Arma: ${w.type === 'Distância' ? 'À Distância' : 'Corpo a Corpo'} | Empunhadura: Uma Mão | Multiplicador: 2 | Tipo de Dano: ${w.type === 'Distância' ? 'Perfurante' : 'Cortante'} | Alcance: ${w.type === 'Distância' ? '30m' : '-'} | Durabilidade: 5 CE | Grau: Mundana | Espaços: 1`
+                      };
+
+                      return (
+                        <div key={w.id} className="bg-slate-950 border border-emerald-800/50 rounded-lg p-2 grid grid-cols-[2fr_1fr_1fr_110px] gap-2 items-center hover:border-emerald-600/70 transition-colors group">
+                           <div>
+                              <div className="text-sm font-bold text-emerald-200">{w.name}</div>
+                              <div className="text-[10px] text-emerald-500/70 flex items-center gap-1">
+                                 {w.type === 'Distância' ? <Info size={10}/> : <Sword size={10}/>} {w.type} • Personalizada
+                              </div>
+                           </div>
+                           <div className="text-center font-mono font-bold text-emerald-300 text-xs bg-slate-950/50 py-1 rounded">
+                              {w.baseDamage}
+                           </div>
+                           <div className="text-center font-mono text-emerald-400 text-xs">
+                              {w.critical}
+                           </div>
+                           <div className="flex justify-end gap-1">
+                              <button
+                                onClick={() => setEditingWeapon(w)}
+                                className="p-1.5 bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded transition-colors"
+                                title="Editar arma no catálogo"
+                              >
+                                 <Edit2 size={12} />
+                              </button>
+                              <button
+                                onClick={() => setEditingItem(catalogItem)}
+                                className="p-1.5 bg-slate-800 text-slate-400 hover:bg-slate-600 hover:text-white rounded transition-colors"
+                                title="Editar e adicionar ao inventário"
+                              >
+                                 <Edit2 size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleAddToInventory(w.name, `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type}`)}
+                                className="p-1.5 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded transition-colors"
+                                title="Adicionar ao Inventário"
+                              >
+                                 <Plus size={12} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Remover "${w.name}" do catálogo personalizado?`)) {
+                                    deleteMundaneWeapon(w.id);
+                                  }
+                                }}
+                                className="p-1.5 bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white rounded transition-colors"
+                                title="Remover do catálogo"
+                              >
+                                 <Trash2 size={12} />
                               </button>
                            </div>
                         </div>
@@ -378,6 +644,17 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
           onAdd={onAdd}
           onClose={() => setEditingItem(null)}
           onNotify={showNotification}
+        />
+      )}
+
+      {/* Edit Mundane Weapon Modal */}
+      {editingWeapon !== undefined && (
+        <EditMundaneWeaponModal
+          weapon={editingWeapon}
+          onSave={updateMundaneWeapon}
+          onAdd={addMundaneWeapon}
+          onDelete={deleteMundaneWeapon}
+          onClose={() => setEditingWeapon(null)}
         />
       )}
 
