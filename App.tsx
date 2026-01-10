@@ -47,7 +47,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.4.0'; // Update this when you deploy changes
+const APP_VERSION = '1.4.1'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -535,17 +535,22 @@ const App: React.FC = () => {
   };
 
   const handleToggleEquipWeapon = (weaponId: string) => {
-    setCharacter(prev => {
-      const isEquipped = prev.equippedWeapons.includes(weaponId);
-      const newEquippedWeapons = isEquipped
-        ? prev.equippedWeapons.filter(id => id !== weaponId)
-        : [...prev.equippedWeapons, weaponId];
+    try {
+      setCharacter(prev => {
+        const isEquipped = prev.equippedWeapons.includes(weaponId);
+        const newEquippedWeapons = isEquipped
+          ? prev.equippedWeapons.filter(id => id !== weaponId)
+          : [...prev.equippedWeapons, weaponId];
 
-      return {
-        ...prev,
-        equippedWeapons: newEquippedWeapons
-      };
-    });
+        return {
+          ...prev,
+          equippedWeapons: newEquippedWeapons
+        };
+      });
+    } catch (error) {
+      console.error('Error toggling weapon equip:', error);
+      alert('Erro ao equipar/desequipar arma. Tente novamente.');
+    }
   };
 
   const handleAddSkill = () => {
