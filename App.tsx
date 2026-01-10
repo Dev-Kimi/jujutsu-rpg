@@ -15,6 +15,7 @@ import { CharacterSelection } from './components/CharacterSelection';
 import { CharacterCreator } from './components/CharacterCreator';
 import { CharacterAttributes } from './components/CharacterAttributes';
 import { CampaignManager } from './components/CampaignManager';
+import { TechniqueLibrary } from './components/TechniqueLibrary';
 
 // Firebase auth imports
 import { auth, db } from './firebase';
@@ -44,7 +45,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.1.0'; // Update this when you deploy changes
+const APP_VERSION = '1.2.0'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -53,6 +54,7 @@ const App: React.FC = () => {
   // Data State - Don't initialize from localStorage, wait for Firebase
   // This prevents loading wrong user's data on account switch
   const [savedCharacters, setSavedCharacters] = useState<Character[]>([]);
+  const [userTechniques, setUserTechniques] = useState<Technique[]>([]); // Global technique library for user
 
   const [character, setCharacter] = useState<Character>(getInitialChar());
   
@@ -61,6 +63,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('combat');
   const [showAbilityLibrary, setShowAbilityLibrary] = useState(false);
   const [abilityLibraryCategory, setAbilityLibraryCategory] = useState<string>('Combatente');
+  const [showTechniqueLibrary, setShowTechniqueLibrary] = useState(false);
 
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
@@ -114,6 +117,22 @@ const App: React.FC = () => {
     }
   };
 
+  // Helper: load user's technique library from Firestore
+  const loadUserTechniques = async (uid: string): Promise<Technique[]> => {
+    try {
+      const userRef = doc(db, 'users', uid);
+      const userDoc = await getDoc(userRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        return (userData.userTechniques as Technique[]) || [];
+      }
+      return [];
+    } catch (err) {
+      console.error('Erro ao carregar técnicas do usuário do Firestore', err);
+      return [];
+    }
+  };
+
   // Helper: persist savedCharacters to Firestore users/{uid}
   const persistUserCharacters = async (chars: Character[]) => {
     try {
@@ -122,6 +141,17 @@ const App: React.FC = () => {
       await setDoc(userRef, { savedCharacters: chars, email: auth.currentUser.email || null }, { merge: true });
     } catch (err) {
       console.error('Erro ao persistir savedCharacters no Firestore', err);
+    }
+  };
+
+  // Helper: persist user's technique library to Firestore
+  const persistUserTechniques = async (techniques: Technique[]) => {
+    try {
+      if (!auth.currentUser) return;
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      await setDoc(userRef, { userTechniques: techniques }, { merge: true });
+    } catch (err) {
+      console.error('Erro ao persistir técnicas do usuário no Firestore', err);
     }
   };
 
@@ -147,6 +177,7 @@ const App: React.FC = () => {
         
         // Load characters from Firebase for current user
         const firebaseChars = await loadUserCharacters(user.uid);
+        const firebaseTechniques = await loadUserTechniques(user.uid);
         
         // Check localStorage for same user's data (in case Firebase is empty but we have local data)
         let localChars: Character[] = [];
@@ -178,6 +209,9 @@ const App: React.FC = () => {
           // Both empty - start fresh
           setSavedCharacters([]);
         }
+
+        // Load user techniques
+        setUserTechniques(firebaseTechniques);
         
         // Update localStorage UID to current user
         localStorage.setItem(STORAGE_UID_KEY, user.uid);
@@ -186,6 +220,7 @@ const App: React.FC = () => {
       } else {
         // User logged out - clear everything
         setSavedCharacters([]);
+        setUserTechniques([]);
         setCharacter(getInitialChar());
         setViewMode('menu');
         // Don't clear localStorage here as user might log back in quickly
@@ -216,6 +251,19 @@ const App: React.FC = () => {
       });
     }
   }, [savedCharacters, currentUser, isLoadingCharacters]);
+
+  // Save user techniques to Firestore whenever they change
+  useEffect(() => {
+    if (isLoadingCharacters) {
+      return;
+    }
+    
+    if (currentUser) {
+      persistUserTechniques(userTechniques).catch(err => {
+        console.error("Erro ao persistir técnicas no Firestore:", err);
+      });
+    }
+  }, [userTechniques, currentUser, isLoadingCharacters]);
 
   // Derived Stats based on Character
   const stats = calculateDerivedStats(character);
@@ -464,6 +512,7 @@ const App: React.FC = () => {
     setCharacter(prev => ({ ...prev, [field]: [...prev[field], newItem] }));
   };
 
+  // Character technique handlers
   const handleAddTechnique = (technique: Technique) => {
     setCharacter(prev => ({ ...prev, techniques: [...prev.techniques, technique] }));
   };
@@ -473,7 +522,25 @@ const App: React.FC = () => {
   };
 
   const handleTechniqueRemove = (id: string) => {
-     setCharacter(prev => ({ ...prev, techniques: prev.techniques.filter(t => t.id !== id) }));
+    setCharacter(prev => ({ ...prev, techniques: prev.techniques.filter(t => t.id !== id) }));
+  };
+
+  // User library technique handlers
+  const handleAddTechniqueToLibrary = (technique: Technique) => {
+    setUserTechniques(prev => [...prev, technique]);
+  };
+
+  const handleUpdateTechniqueInLibrary = (id: string, field: keyof Technique, value: any) => {
+    setUserTechniques(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
+
+  const handleRemoveTechniqueFromLibrary = (id: string) => {
+    setUserTechniques(prev => prev.filter(t => t.id !== id));
+  };
+
+  const handleAddTechniqueToCharacter = (technique: Technique) => {
+    handleAddTechnique(technique);
+    setShowTechniqueLibrary(false);
   };
 
   const handleAddAbilityFromLibrary = (ability: Partial<Ability>) => {
@@ -611,6 +678,17 @@ const App: React.FC = () => {
            char={character} 
            setChar={setCharacter} 
            onClose={() => setShowEditor(false)} 
+        />
+      )}
+
+      {showTechniqueLibrary && (
+        <TechniqueLibrary 
+          userTechniques={userTechniques}
+          onAddToLibrary={handleAddTechniqueToLibrary}
+          onUpdateInLibrary={handleUpdateTechniqueInLibrary}
+          onRemoveFromLibrary={handleRemoveTechniqueFromLibrary}
+          onAddToCharacter={handleAddTechniqueToCharacter}
+          onClose={() => setShowTechniqueLibrary(false)}
         />
       )}
 
@@ -842,6 +920,7 @@ const App: React.FC = () => {
                     onAdd={handleAddTechnique}
                     onUpdate={handleTechniqueUpdate}
                     onRemove={handleTechniqueRemove}
+                    onOpenLibrary={() => setShowTechniqueLibrary(true)}
                  />
                )}
                {activeTab === 'inventory' && (
