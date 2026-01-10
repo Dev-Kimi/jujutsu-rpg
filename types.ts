@@ -57,6 +57,7 @@ export interface Item {
   quantity: number;
   description: string;
   isBroken?: boolean; // New field for durability mechanics
+  attackSkill?: string; // Perícia usada para ataques com esta arma (default: Luta)
 }
 
 export interface AptitudeLevels {
@@ -71,12 +72,13 @@ export interface Character {
   imageUrl?: string; // New field for avatar image
   level: number;
   origin: Origin;
-  characterClass: CharacterClass; 
+  characterClass: CharacterClass;
   attributes: Attributes;
   skills: Skill[];
   abilities: Ability[];
   techniques: Technique[];
   inventory: Item[];
+  equippedWeapons: string[]; // IDs das armas equipadas
   aptitudes?: AptitudeLevels; // Níveis de aptidão em categorias de Habilidades Amaldiçoadas
 }
 
