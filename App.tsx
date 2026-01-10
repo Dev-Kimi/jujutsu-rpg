@@ -44,7 +44,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.0.5'; // Update this when you deploy changes
+const APP_VERSION = '1.1.0'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -67,6 +67,35 @@ const App: React.FC = () => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Track if we're still checking auth state
   const [isLoadingCharacters, setIsLoadingCharacters] = useState(false); // Track if we're loading characters from Firebase
 
+  // Helper: migrate old technique format to new format
+  const migrateTechniques = (techniques: any[]): Technique[] => {
+    if (!techniques || techniques.length === 0) return [];
+    
+    return techniques.map(tech => {
+      // Check if it's already in new format (has subTechniques array)
+      if (tech.subTechniques && Array.isArray(tech.subTechniques)) {
+        return tech as Technique;
+      }
+      
+      // Old format - convert to new format
+      return {
+        id: tech.id || Math.random().toString(36).substring(2, 9),
+        name: tech.name || "Técnica Inata",
+        category: tech.category || "Inata",
+        description: tech.description || "",
+        subTechniques: []
+      } as Technique;
+    });
+  };
+
+  // Helper: migrate a single character's techniques
+  const migrateCharacter = (char: Character): Character => {
+    return {
+      ...char,
+      techniques: migrateTechniques(char.techniques || [])
+    };
+  };
+
   // Helper: load savedCharacters from Firestore users/{uid}
   const loadUserCharacters = async (uid: string): Promise<Character[]> => {
     try {
@@ -74,7 +103,9 @@ const App: React.FC = () => {
       const userDoc = await getDoc(userRef);
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        return (userData.savedCharacters as Character[]) || [];
+        const chars = (userData.savedCharacters as Character[]) || [];
+        // Migrate all characters
+        return chars.map(migrateCharacter);
       }
       return [];
     } catch (err) {
