@@ -19,6 +19,7 @@ interface SkillListProps {
   setActiveRollResult: (type: 'skill' | 'combat' | null) => void;
   readOnly?: boolean;
   campaignId?: string; // Optional campaign ID for logging rolls
+  allowRollsWhenReadOnly?: boolean; // Allow rolling dice even when readOnly (for GM viewing other players)
 }
 
 const TRAINING_LEVELS = [
@@ -41,7 +42,8 @@ export const SkillList: React.FC<SkillListProps> = ({
   activeRollResult,
   setActiveRollResult,
   readOnly,
-  campaignId
+  campaignId,
+  allowRollsWhenReadOnly = false
 }) => {
   const [rollResult, setRollResult] = useState<{ name: string, total: number, breakdown: string, isCritical?: boolean, isFailure?: boolean } | null>(null);
   const [filter, setFilter] = useState('');
@@ -278,7 +280,10 @@ export const SkillList: React.FC<SkillListProps> = ({
               {/* Name (Roll) */}
               <button 
                 onClick={() => handleRoll(skill.name, skill.value, otherBonus, llBonus, skill.attribute)}
-                className="flex items-center gap-2 overflow-hidden text-left hover:text-curse-400 transition-colors duration-100"
+                disabled={readOnly && !allowRollsWhenReadOnly}
+                className={`flex items-center gap-2 overflow-hidden text-left hover:text-curse-400 transition-colors duration-100 ${
+                  readOnly && !allowRollsWhenReadOnly ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                  <Dices size={12} className="text-curse-400 opacity-0 group-hover:opacity-100 transition-opacity duration-100 shrink-0" />
                  
