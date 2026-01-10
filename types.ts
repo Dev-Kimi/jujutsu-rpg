@@ -34,10 +34,21 @@ export interface Ability {
   description: string;
 }
 
-export interface Technique extends Ability {
-  damageDie: DieType; // The multiplier (d6, d8, d10, etc.)
-  element: string; // Flavour/Type (Fire, Water, etc.)
-  range: string;
+// Nova estrutura para sub-técnicas individuais
+export interface SubTechnique {
+  id: string;
+  name: string;
+  description: string;
+  usage: string; // Modo de usar (ação padrão, reação, etc.)
+}
+
+// Técnica agora é um conjunto com conceito principal e sub-habilidades
+export interface Technique {
+  id: string;
+  name: string; // Conceito principal da técnica
+  category: string;
+  description: string; // Descrição geral do conceito
+  subTechniques: SubTechnique[]; // Habilidades individuais dentro do conceito
 }
 
 export interface Item {
@@ -46,6 +57,12 @@ export interface Item {
   quantity: number;
   description: string;
   isBroken?: boolean; // New field for durability mechanics
+}
+
+export interface AptitudeLevels {
+  manipulacao?: number; // Nível de aptidão em Manipulação (1-5 ou similar)
+  barreiras?: number; // Nível de aptidão em Barreiras
+  energiaReversa?: number; // Nível de aptidão em Energia Reversa
 }
 
 export interface Character {
@@ -60,6 +77,7 @@ export interface Character {
   abilities: Ability[];
   techniques: Technique[];
   inventory: Item[];
+  aptitudes?: AptitudeLevels; // Níveis de aptidão em categorias de Habilidades Amaldiçoadas
 }
 
 export interface DerivedStats {
