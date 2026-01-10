@@ -22,6 +22,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import Auth from './components/Auth';
 import UserMenu from './components/UserMenu';
+import UserProfile from './components/UserProfile';
 
 // Helper to generate a fresh character state (Fallback only)
 const getInitialChar = (): Character => ({
@@ -39,7 +40,7 @@ const getInitialChar = (): Character => ({
 });
 
 type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' | 'campaigns';
-type ViewMode = 'menu' | 'creator' | 'sheet';
+type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
@@ -517,23 +518,41 @@ const App: React.FC = () => {
     return <Auth />;
   }
 
+  if (viewMode === 'profile') {
+    if (!currentUser) {
+      setViewMode('menu');
+      return null;
+    }
+    return <UserProfile user={currentUser} onBack={() => setViewMode('menu')} />;
+  }
+
   if (viewMode === 'menu') {
      return (
-        <CharacterSelection 
-           savedCharacters={savedCharacters}
-           onSelect={handleSelectCharacter}
-           onCreate={handleStartCreation}
-           onDelete={handleDeleteCharacter}
-        />
+        <>
+          <div className="fixed top-3 right-3 z-50">
+            <UserMenu user={currentUser} onProfileClick={() => setViewMode('profile')} />
+          </div>
+          <CharacterSelection 
+             savedCharacters={savedCharacters}
+             onSelect={handleSelectCharacter}
+             onCreate={handleStartCreation}
+             onDelete={handleDeleteCharacter}
+          />
+        </>
      );
   }
 
   if (viewMode === 'creator') {
      return (
-        <CharacterCreator 
-           onFinish={handleFinishCreation}
-           onCancel={() => setViewMode('menu')}
-        />
+        <>
+          <div className="fixed top-3 right-3 z-50">
+            <UserMenu user={currentUser} onProfileClick={() => setViewMode('profile')} />
+          </div>
+          <CharacterCreator 
+             onFinish={handleFinishCreation}
+             onCancel={() => setViewMode('menu')}
+          />
+        </>
      );
   }
 
@@ -590,7 +609,7 @@ const App: React.FC = () => {
 
         {/* Right area: user menu */}
         <div className="flex items-center gap-4">
-          <UserMenu user={currentUser} />
+          <UserMenu user={currentUser} onProfileClick={() => setViewMode('profile')} />
         </div>
       </header>
 
