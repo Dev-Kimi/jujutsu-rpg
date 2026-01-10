@@ -43,7 +43,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.1.1'; // Update this when you deploy changes
+const APP_VERSION = '1.0.3'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -64,6 +64,7 @@ const App: React.FC = () => {
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Track if we're still checking auth state
+  const [isLoadingCharacters, setIsLoadingCharacters] = useState(false); // Track if we're loading characters from Firebase
 
   // Helper: load savedCharacters from Firestore users/{uid}
   const loadUserCharacters = async (uid: string): Promise<Character[]> => {
@@ -99,6 +100,8 @@ const App: React.FC = () => {
       setIsCheckingAuth(false); // Mark auth check as complete
       
       if (user) {
+        setIsLoadingCharacters(true); // Mark that we're loading characters
+        
         // Check if localStorage has data from a different user
         const storedUid = localStorage.getItem(STORAGE_UID_KEY);
         if (storedUid && storedUid !== user.uid) {
@@ -113,12 +116,41 @@ const App: React.FC = () => {
         // Load characters from Firebase for current user
         const firebaseChars = await loadUserCharacters(user.uid);
         
-        // Only use Firebase data, don't merge with localStorage
-        // This ensures we get the correct user's data
-        setSavedCharacters(firebaseChars);
+        // Check localStorage for same user's data (in case Firebase is empty but we have local data)
+        let localChars: Character[] = [];
+        const currentStoredUid = localStorage.getItem(STORAGE_UID_KEY);
+        if (!currentStoredUid || currentStoredUid === user.uid) {
+          try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+              localChars = JSON.parse(saved);
+            }
+          } catch (e) {
+            console.error("Failed to parse local characters", e);
+          }
+        }
+        
+        // Priority: Firebase > localStorage (for same user)
+        // If Firebase has data, use it. Otherwise, use localStorage and sync to Firebase
+        if (firebaseChars.length > 0) {
+          // Firebase has data - use it
+          setSavedCharacters(firebaseChars);
+        } else if (localChars.length > 0) {
+          // Firebase is empty but we have local data - use local and sync to Firebase
+          setSavedCharacters(localChars);
+          // Sync to Firebase immediately (but don't wait - do it in background)
+          persistUserCharacters(localChars).catch(err => {
+            console.error("Erro ao sincronizar personagens locais para Firebase:", err);
+          });
+        } else {
+          // Both empty - start fresh
+          setSavedCharacters([]);
+        }
         
         // Update localStorage UID to current user
         localStorage.setItem(STORAGE_UID_KEY, user.uid);
+        
+        setIsLoadingCharacters(false); // Mark loading as complete
       } else {
         // User logged out - clear everything
         setSavedCharacters([]);
@@ -132,6 +164,11 @@ const App: React.FC = () => {
 
   // Save List to LocalStorage whenever it changes (and persist to Firestore)
   useEffect(() => {
+    // Don't save if we're still loading characters (prevents overwriting with empty array)
+    if (isLoadingCharacters) {
+      return;
+    }
+    
     // Only save to localStorage if we have a current user
     // This prevents saving data from wrong user
     if (currentUser) {
@@ -141,10 +178,12 @@ const App: React.FC = () => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(savedCharacters));
         localStorage.setItem(STORAGE_UID_KEY, currentUser.uid);
       }
-      // Always persist to Firestore
-      persistUserCharacters(savedCharacters);
+      // Always persist to Firestore (unless we're loading)
+      persistUserCharacters(savedCharacters).catch(err => {
+        console.error("Erro ao persistir personagens no Firestore:", err);
+      });
     }
-  }, [savedCharacters, currentUser]);
+  }, [savedCharacters, currentUser, isLoadingCharacters]);
 
   // Derived Stats based on Character
   const stats = calculateDerivedStats(character);
