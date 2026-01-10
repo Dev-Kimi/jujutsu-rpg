@@ -343,7 +343,15 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
               const categoryMatch = item.description.match(/Categoria:\s*([^|]+)/i);
               const typeMatch = item.description.match(/Tipo:\s*([^|]+)/i);
               const spacesMatch = item.description.match(/Espaços:\s*(\d+)/i);
-              const isWeapon = damageMatch !== null;
+
+              // Check if item is a weapon (has damage dice or is categorized as weapon)
+              const isWeapon = damageMatch !== null ||
+                              (categoryMatch && categoryMatch[1].trim() === 'Arma') ||
+                              item.name.toLowerCase().includes('espada') ||
+                              item.name.toLowerCase().includes('faca') ||
+                              item.name.toLowerCase().includes('bastão') ||
+                              item.name.toLowerCase().includes('karambit');
+
               const isEquipped = equippedWeapons.includes(item.id);
 
               return (
@@ -486,11 +494,11 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                      </button>
                    </div>
                    
-                   <div className="grid grid-cols-[2fr_1fr_1fr_40px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-500 uppercase">
+                   <div className="grid grid-cols-[2fr_1fr_1fr_80px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-500 uppercase">
                       <div>Nome</div>
                       <div className="text-center">Dano</div>
                       <div className="text-center">Crítico</div>
-                      <div></div>
+                      <div className="text-center">Ações</div>
                    </div>
 
                    {/* Original Mundane Weapons */}
@@ -516,60 +524,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                            <div className="text-center font-mono text-slate-400 text-xs">
                               {w.critical}
                            </div>
-                           <div className="flex justify-end gap-1">
-                              <button
-                                onClick={() => {
-                                  setEditingWeapon(w);
-                                  setShowWeaponModal(true);
-                                }}
-                                className="p-1.5 bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded transition-colors opacity-0 group-hover:opacity-100"
-                                title="Editar arma no catálogo"
-                              >
-                                 <Edit2 size={14} />
-                              </button>
-                              <button
-                                onClick={() => setEditingItem(catalogItem)}
-                                className="p-1.5 bg-slate-800 text-slate-400 hover:bg-slate-600 hover:text-white rounded transition-colors opacity-0 group-hover:opacity-100"
-                                title="Editar e adicionar ao inventário"
-                              >
-                                 <Edit2 size={14} />
-                              </button>
-                              <button
-                                onClick={() => handleAddToInventory(w.name, `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type}`)}
-                                className="p-1.5 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded transition-colors"
-                                title="Adicionar ao Inventário"
-                              >
-                                 <Plus size={14} />
-                              </button>
-                           </div>
-                        </div>
-                      );
-                   })}
-
-                   {/* Custom Mundane Weapons */}
-                   {customWeapons.map(w => {
-                      const catalogItem: Item = {
-                        id: `catalog-${w.id}`,
-                        name: w.name,
-                        quantity: 1,
-                        description: `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type} | Categoria: Arma | Tipo de Arma: ${w.type === 'Distância' ? 'À Distância' : 'Corpo a Corpo'} | Empunhadura: Uma Mão | Multiplicador: 2 | Tipo de Dano: ${w.type === 'Distância' ? 'Perfurante' : 'Cortante'} | Alcance: ${w.type === 'Distância' ? '30m' : '-'} | Durabilidade: 5 CE | Grau: Mundana | Espaços: 1`
-                      };
-
-                      return (
-                        <div key={w.id} className="bg-slate-950 border border-emerald-800/50 rounded-lg p-2 grid grid-cols-[2fr_1fr_1fr_110px] gap-2 items-center hover:border-emerald-600/70 transition-colors group">
-                           <div>
-                              <div className="text-sm font-bold text-emerald-200">{w.name}</div>
-                              <div className="text-[10px] text-emerald-500/70 flex items-center gap-1">
-                                 {w.type === 'Distância' ? <Info size={10}/> : <Sword size={10}/>} {w.type} • Personalizada
-                              </div>
-                           </div>
-                           <div className="text-center font-mono font-bold text-emerald-300 text-xs bg-slate-950/50 py-1 rounded">
-                              {w.baseDamage}
-                           </div>
-                           <div className="text-center font-mono text-emerald-400 text-xs">
-                              {w.critical}
-                           </div>
-                           <div className="flex justify-end gap-1">
+                           <div className="flex justify-center gap-1">
                               <button
                                 onClick={() => {
                                   setEditingWeapon(w);
@@ -594,6 +549,59 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                               >
                                  <Plus size={12} />
                               </button>
+                           </div>
+                        </div>
+                      );
+                   })}
+
+                   {/* Custom Mundane Weapons */}
+                   {customWeapons.map(w => {
+                      const catalogItem: Item = {
+                        id: `catalog-${w.id}`,
+                        name: w.name,
+                        quantity: 1,
+                        description: `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type} | Categoria: Arma | Tipo de Arma: ${w.type === 'Distância' ? 'À Distância' : 'Corpo a Corpo'} | Empunhadura: Uma Mão | Multiplicador: 2 | Tipo de Dano: ${w.type === 'Distância' ? 'Perfurante' : 'Cortante'} | Alcance: ${w.type === 'Distância' ? '30m' : '-'} | Durabilidade: 5 CE | Grau: Mundana | Espaços: 1`
+                      };
+
+                      return (
+                        <div key={w.id} className="bg-slate-950 border border-emerald-800/50 rounded-lg p-2 grid grid-cols-[2fr_1fr_1fr_80px] gap-2 items-center hover:border-emerald-600/70 transition-colors group">
+                           <div>
+                              <div className="text-sm font-bold text-emerald-200">{w.name}</div>
+                              <div className="text-[10px] text-emerald-500/70 flex items-center gap-1">
+                                 {w.type === 'Distância' ? <Info size={10}/> : <Sword size={10}/>} {w.type} • Personalizada
+                              </div>
+                           </div>
+                           <div className="text-center font-mono font-bold text-emerald-300 text-xs bg-slate-950/50 py-1 rounded">
+                              {w.baseDamage}
+                           </div>
+                           <div className="text-center font-mono text-emerald-400 text-xs">
+                              {w.critical}
+                           </div>
+                           <div className="flex justify-center gap-1">
+                              <button
+                                onClick={() => {
+                                  setEditingWeapon(w);
+                                  setShowWeaponModal(true);
+                                }}
+                                className="p-1.5 bg-blue-900/30 text-blue-400 hover:bg-blue-600 hover:text-white rounded transition-colors"
+                                title="Editar arma no catálogo"
+                              >
+                                 <Edit2 size={10} />
+                              </button>
+                              <button
+                                onClick={() => setEditingItem(catalogItem)}
+                                className="p-1.5 bg-slate-800 text-slate-400 hover:bg-slate-600 hover:text-white rounded transition-colors"
+                                title="Editar e adicionar ao inventário"
+                              >
+                                 <Edit2 size={10} />
+                              </button>
+                              <button
+                                onClick={() => handleAddToInventory(w.name, `Dano: ${w.baseDamage} | Crítico: ${w.critical} | Tipo: ${w.type}`)}
+                                className="p-1.5 bg-emerald-900/30 text-emerald-400 hover:bg-emerald-600 hover:text-white rounded transition-colors"
+                                title="Adicionar ao Inventário"
+                              >
+                                 <Plus size={10} />
+                              </button>
                               <button
                                 onClick={() => {
                                   if (confirm(`Remover "${w.name}" do catálogo personalizado?`)) {
@@ -603,7 +611,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                                 className="p-1.5 bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white rounded transition-colors"
                                 title="Remover do catálogo"
                               >
-                                 <Trash2 size={12} />
+                                 <Trash2 size={10} />
                               </button>
                            </div>
                         </div>
