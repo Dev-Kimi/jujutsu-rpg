@@ -240,7 +240,7 @@ export const SkillList: React.FC<SkillListProps> = ({
       )}
 
       {/* Table Header */}
-      <div className="grid grid-cols-[1fr_60px_60px_40px_40px] gap-1 px-3 py-1.5 text-[9px] font-bold text-slate-600 uppercase tracking-wider bg-slate-950/50 border-b border-slate-800">
+      <div className="grid grid-cols-[1fr_60px_60px_40px_40px] gap-1 px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider bg-slate-950/50 border-b border-slate-800">
         <div className="text-left">Perícia</div>
         <div className="text-center">Dados</div>
         <div className="text-center">Treino</div>
@@ -278,9 +278,9 @@ export const SkillList: React.FC<SkillListProps> = ({
               {/* Name (Roll) */}
               <button 
                 onClick={() => handleRoll(skill.name, skill.value, otherBonus, llBonus, skill.attribute)}
-                className="flex items-center gap-2 overflow-hidden text-left"
+                className="flex items-center gap-2 overflow-hidden text-left hover:text-curse-400 transition-colors duration-100"
               >
-                 <Dices size={12} className="text-curse-400 opacity-0 group-hover:opacity-100 transition-opacity duration-75 shrink-0" />
+                 <Dices size={12} className="text-curse-400 opacity-0 group-hover:opacity-100 transition-opacity duration-100 shrink-0" />
                  
                  <div className="min-w-0 flex-1">
                    {isCustom ? (
@@ -290,36 +290,39 @@ export const SkillList: React.FC<SkillListProps> = ({
                         disabled={readOnly}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => onUpdateSkill(skill.id, 'name', e.target.value)}
-                        className="bg-transparent border-none p-0 text-xs font-medium text-curse-200 w-full focus:ring-0"
+                        className="bg-transparent border-none p-0 text-xs font-medium text-white w-full focus:ring-0"
                       />
                    ) : (
                       <div className="flex items-baseline gap-1">
-                          <span className={`font-medium truncate ${
-                            hasQueuedBuff ? 'text-emerald-400' : 
-                            currentLevel.color
+                          <span className={`font-medium truncate text-white ${
+                            hasQueuedBuff ? 'text-emerald-400' : ''
                           }`}>
                               {skill.name}
                           </span>
-                          {(skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) && <span className="text-[9px] text-slate-600 font-mono">+LL</span>}
+                          {(skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) && <span className="text-[9px] text-slate-500 font-mono">+LL</span>}
                       </div>
                    )}
                  </div>
               </button>
 
               {/* Attr / Dice */}
-              <div className="text-center flex justify-center items-center gap-1">
-                 {isCustom && !readOnly ? (
+              <div className="text-center flex justify-center items-center">
+                 {!readOnly ? (
                     <select
                       value={skill.attribute || ""}
                       onChange={(e) => onUpdateSkill(skill.id, 'attribute', e.target.value)}
-                      className={`w-full bg-transparent text-[10px] text-center cursor-pointer appearance-none focus:outline-none ${currentLevel.color}`}
+                      className="w-full bg-transparent text-xs text-white font-mono text-center cursor-pointer appearance-none focus:outline-none border-none hover:bg-slate-800/50 rounded px-1 py-0.5 transition-colors duration-100"
                     >
-                      <option value="">-</option>
-                      {attributeOptions.map(attr => <option key={attr} value={attr}>{attr}</option>)}
+                      <option value="" className="bg-slate-900 text-slate-300">-</option>
+                      {attributeOptions.map(attr => (
+                        <option key={attr} value={attr} className="bg-slate-900 text-white">
+                          {attr}
+                        </option>
+                      ))}
                     </select>
                  ) : (
-                   <div className={`text-[10px] font-mono ${currentLevel.color}`}>
-                     {skill.attribute} <span className={`${currentLevel.value === 0 ? 'text-slate-600' : 'opacity-70'}`}>({attrVal})</span>
+                   <div className="text-xs font-mono text-white">
+                     {skill.attribute || '-'}
                    </div>
                  )}
               </div>
@@ -330,10 +333,10 @@ export const SkillList: React.FC<SkillListProps> = ({
                     value={skill.value}
                     disabled={readOnly}
                     onChange={(e) => onUpdateSkill(skill.id, 'value', parseInt(e.target.value) || 0)}
-                    className={`bg-transparent text-center text-[10px] font-mono appearance-none focus:outline-none ${currentLevel.color} ${readOnly ? 'opacity-100' : 'cursor-pointer'}`}
+                    className="bg-transparent text-center text-xs font-mono text-white appearance-none focus:outline-none border-none hover:bg-slate-800/50 rounded px-1 py-0.5 transition-colors duration-100 cursor-pointer"
                  >
                     {TRAINING_LEVELS.map(level => (
-                        <option key={level.value} value={level.value} className="bg-slate-900 text-slate-300">
+                        <option key={level.value} value={level.value} className="bg-slate-900 text-white">
                             {level.label}
                         </option>
                     ))}
@@ -347,13 +350,15 @@ export const SkillList: React.FC<SkillListProps> = ({
                     value={otherBonus}
                     readOnly={readOnly}
                     onChange={(e) => onUpdateSkill(skill.id, 'otherValue', parseInt(e.target.value) || 0)}
-                    className={`w-full bg-transparent text-center text-[10px] font-mono p-0 border-none focus:ring-0 ${otherBonus !== 0 ? 'text-yellow-500' : 'text-slate-600'}`}
+                    className={`w-full bg-transparent text-center text-xs font-mono p-0 border-none focus:ring-0 hover:bg-slate-800/50 rounded px-1 py-0.5 transition-colors duration-100 ${
+                      otherBonus !== 0 ? 'text-yellow-400 font-semibold' : 'text-white'
+                    }`}
                     placeholder="0"
                  />
               </div>
 
               {/* Total */}
-              <div className="text-center font-mono font-bold text-slate-400 relative group/trash">
+              <div className="text-center font-mono font-bold text-white relative group/trash">
                 {totalBonus > 0 ? `+${totalBonus}` : totalBonus}
                 
                 {isCustom && !readOnly && (
