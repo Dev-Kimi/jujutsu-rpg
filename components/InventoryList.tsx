@@ -103,65 +103,122 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
               </div>
             )}
 
-            {items.map(item => (
-              <div key={item.id} className={`bg-slate-950 border rounded-lg p-2 flex flex-col gap-2 group animate-in slide-in-from-left-2 duration-300 ${item.isBroken ? 'border-red-900/50 opacity-70' : 'border-slate-800'}`}>
-                <div className="flex items-center gap-3">
-                  {/* Quantity Controls */}
-                  <div className="flex items-center bg-slate-900 rounded border border-slate-800">
+            {items.map(item => {
+              // Parse item data from description
+              const isDamageItem = /Dano:\s*\d+d\d+/i.test(item.description);
+              const damageMatch = item.description.match(/Dano:\s*(\d+d\d+(?:\+\d+)?)/i);
+              const criticalMatch = item.description.match(/Crítico:\s*(\d+)/i);
+              const categoryMatch = item.description.match(/Categoria:\s*([^|]+)/i);
+              const typeMatch = item.description.match(/Tipo:\s*([^|]+)/i);
+              const spacesMatch = item.description.match(/Espaços:\s*(\d+)/i);
+              
+              return (
+                <div key={item.id} className={`bg-slate-950 border rounded-lg overflow-hidden group animate-in slide-in-from-left-2 duration-300 ${item.isBroken ? 'border-red-900/50 opacity-70' : 'border-slate-800'}`}>
+                  
+                  {/* Header - Always Visible */}
+                  <div className="p-2 flex items-center gap-3">
+                    {/* Quantity Controls */}
+                    <div className="flex items-center bg-slate-900 rounded border border-slate-800">
+                      <button 
+                        onClick={() => handleQty(item.id, item.quantity, -1)} 
+                        className="px-2 py-1 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="px-2 text-xs font-mono text-white min-w-[20px] text-center">{item.quantity}</span>
+                      <button 
+                        onClick={() => handleQty(item.id, item.quantity, 1)} 
+                        className="px-2 py-1 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+
+                    {/* Name */}
+                    <div className="flex-1 min-w-0">
+                      <input 
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => onUpdate(item.id, 'name', e.target.value)}
+                        className={`bg-transparent border-none p-0 text-sm font-bold w-full focus:ring-0 ${item.isBroken ? 'text-red-500 line-through' : 'text-slate-200'}`}
+                        placeholder="Nome do Item"
+                      />
+                      
+                      {/* Quick Info - Compact View */}
+                      {isDamageItem && (
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {damageMatch && (
+                            <span className="text-[10px] text-emerald-400 font-mono">
+                              Dano: {damageMatch[1]}
+                            </span>
+                          )}
+                          {criticalMatch && (
+                            <span className="text-[10px] text-purple-400 font-mono">
+                              Crítico: {criticalMatch[1]}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Delete */}
                     <button 
-                      onClick={() => handleQty(item.id, item.quantity, -1)}
-                      className="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                      onClick={() => onRemove(item.id)}
+                      className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 p-1 hover:bg-red-950/30 rounded transition-all"
                     >
-                      <Minus size={12} />
-                    </button>
-                    <span className="w-8 text-center text-xs font-mono font-bold text-slate-200">
-                      {item.quantity}
-                    </span>
-                    <button 
-                      onClick={() => handleQty(item.id, item.quantity, 1)}
-                      className="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                    >
-                      <Plus size={12} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
 
-                  {/* Name Input */}
-                  <input 
-                    type="text"
-                    value={item.name}
-                    onChange={(e) => onUpdate(item.id, 'name', e.target.value)}
-                    placeholder="Nome do Item"
-                    className={`flex-1 bg-transparent border-b border-transparent focus:border-slate-700 focus:outline-none text-sm font-medium placeholder:text-slate-600 pb-0.5 ${item.isBroken ? 'text-red-500 line-through' : 'text-slate-200'}`}
-                  />
-                  
-                  {item.isBroken && (
-                      <div className="text-red-500 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider bg-red-950/30 px-2 py-1 rounded border border-red-900/30">
-                          <AlertTriangle size={10} /> Quebrado
-                          <button 
-                            onClick={() => onUpdate(item.id, 'isBroken', false)} 
-                            className="ml-1 text-slate-400 hover:text-white border-l border-red-900/30 pl-1"
-                            title="Reparar (Debug)"
-                          >
-                             Reparar
-                          </button>
+                  {/* Expanded Details Section */}
+                  <div className="px-2 pb-2 space-y-2 border-t border-slate-800/50 pt-2">
+                    {/* Parsed Info Display */}
+                    {(categoryMatch || typeMatch || spacesMatch) && (
+                      <div className="flex flex-wrap gap-2 text-[10px]">
+                        {categoryMatch && (
+                          <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
+                            Categoria: {categoryMatch[1].trim()}
+                          </span>
+                        )}
+                        {typeMatch && (
+                          <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
+                            Tipo: {typeMatch[1].trim()}
+                          </span>
+                        )}
+                        {spacesMatch && (
+                          <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
+                            Espaços: {spacesMatch[1]}
+                          </span>
+                        )}
                       </div>
-                  )}
+                    )}
+                    
+                    {/* Full Description */}
+                    <textarea 
+                      value={item.description}
+                      onChange={(e) => onUpdate(item.id, 'description', e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded p-2 text-xs text-slate-300 focus:border-emerald-500 focus:outline-none min-h-[60px] w-full resize-y"
+                      placeholder="Descrição (opcional)..."
+                    />
 
-                  <button onClick={() => onRemove(item.id)} className="text-slate-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 size={14} />
-                  </button>
+                    {/* Broken Toggle (Only if weapon pattern detected) */}
+                    {isDamageItem && (
+                      <button 
+                        onClick={() => onUpdate(item.id, 'isBroken', !item.isBroken)}
+                        className={`flex items-center gap-2 text-xs font-bold px-2 py-1 rounded border transition-colors w-full justify-center ${
+                          item.isBroken 
+                            ? 'bg-red-950/30 text-red-400 border-red-900 hover:bg-red-950/50' 
+                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        <Hammer size={12} />
+                        {item.isBroken ? 'QUEBRADA - Clique para Reparar' : 'Marcar como Quebrada'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                
-                {/* Description Input */}
-                <input 
-                  type="text"
-                  value={item.description}
-                  onChange={(e) => onUpdate(item.id, 'description', e.target.value)}
-                  placeholder="Detalhes..."
-                  className="w-full bg-transparent text-xs text-slate-500 focus:text-slate-300 focus:outline-none placeholder:text-slate-800 px-1"
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       ) : (
