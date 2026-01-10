@@ -42,25 +42,16 @@ type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' |
 type ViewMode = 'menu' | 'creator' | 'sheet';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
-const APP_VERSION = '1.1.0'; // Update this when you deploy changes
+const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
+const APP_VERSION = '1.0.3'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
   const [viewMode, setViewMode] = useState<ViewMode>('menu');
 
-  // Data State - Lazy Initialization to prevent overwriting LocalStorage with empty array
-  const [savedCharacters, setSavedCharacters] = useState<Character[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      try {
-        return saved ? JSON.parse(saved) : [];
-      } catch (e) {
-        console.error("Failed to parse characters", e);
-        return [];
-      }
-    }
-    return [];
-  });
+  // Data State - Don't initialize from localStorage, wait for Firebase
+  // This prevents loading wrong user's data on account switch
+  const [savedCharacters, setSavedCharacters] = useState<Character[]>([]);
 
   const [character, setCharacter] = useState<Character>(getInitialChar());
   
@@ -107,34 +98,33 @@ const App: React.FC = () => {
       setCurrentUser(user);
       setIsCheckingAuth(false); // Mark auth check as complete
       
-      // When user logs in, load their characters from Firebase
       if (user) {
+        // Check if localStorage has data from a different user
+        const storedUid = localStorage.getItem(STORAGE_UID_KEY);
+        if (storedUid && storedUid !== user.uid) {
+          // Different user! Clear old data
+          localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(STORAGE_UID_KEY);
+          setSavedCharacters([]);
+          setCharacter(getInitialChar());
+          setViewMode('menu');
+        }
+        
+        // Load characters from Firebase for current user
         const firebaseChars = await loadUserCharacters(user.uid);
         
-        if (firebaseChars.length > 0) {
-          // Merge Firebase characters with localStorage (Firebase has priority)
-          const localChars = (() => {
-            if (typeof window !== 'undefined') {
-              const saved = localStorage.getItem(STORAGE_KEY);
-              try {
-                return saved ? JSON.parse(saved) : [];
-              } catch (e) {
-                return [];
-              }
-            }
-            return [];
-          })();
-          
-          // Merge strategy: Firebase characters take priority, but keep local characters that don't exist in Firebase
-          const firebaseIds = new Set(firebaseChars.map(c => c.id));
-          const mergedChars = [
-            ...firebaseChars, // Firebase characters first (priority)
-            ...localChars.filter((c: Character) => !firebaseIds.has(c.id)) // Add local-only characters
-          ];
-          
-          setSavedCharacters(mergedChars);
-          // This will trigger the useEffect that saves to localStorage and syncs back to Firebase
-        }
+        // Only use Firebase data, don't merge with localStorage
+        // This ensures we get the correct user's data
+        setSavedCharacters(firebaseChars);
+        
+        // Update localStorage UID to current user
+        localStorage.setItem(STORAGE_UID_KEY, user.uid);
+      } else {
+        // User logged out - clear everything
+        setSavedCharacters([]);
+        setCharacter(getInitialChar());
+        setViewMode('menu');
+        // Don't clear localStorage here as user might log back in quickly
       }
     });
     return () => unsub();
@@ -142,10 +132,19 @@ const App: React.FC = () => {
 
   // Save List to LocalStorage whenever it changes (and persist to Firestore)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedCharacters));
-    // Persist after localStorage updated
-    persistUserCharacters(savedCharacters);
-  }, [savedCharacters]);
+    // Only save to localStorage if we have a current user
+    // This prevents saving data from wrong user
+    if (currentUser) {
+      const storedUid = localStorage.getItem(STORAGE_UID_KEY);
+      // Only save if the stored UID matches current user
+      if (!storedUid || storedUid === currentUser.uid) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedCharacters));
+        localStorage.setItem(STORAGE_UID_KEY, currentUser.uid);
+      }
+      // Always persist to Firestore
+      persistUserCharacters(savedCharacters);
+    }
+  }, [savedCharacters, currentUser]);
 
   // Derived Stats based on Character
   const stats = calculateDerivedStats(character);
