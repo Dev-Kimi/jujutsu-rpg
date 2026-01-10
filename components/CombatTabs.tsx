@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sword, Zap, Shield, Dices, ArrowRight, Layers, Wand2, AlertCircle, Crosshair, Hammer, X, Hexagon } from 'lucide-react';
+import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
 import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
@@ -32,14 +32,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   onUpdateInventory,
   campaignId
 }) => {
-  const [activeTab, setActiveTab] = useState<'physical' | 'technique' | 'defense'>('physical');
+  const [activeTab, setActiveTab] = useState<'physical' | 'defense'>('physical');
   const [invested, setInvested] = useState<number>(1);
   const [weaponDamageInput, setWeaponDamageInput] = useState<number>(0); // For manual override
   const [selectedWeaponId, setSelectedWeaponId] = useState<string>('unarmed');
   
-  const [incomingDamage, setIncomingDamage] = useState<number>(0); 
-  const [techniqueDie, setTechniqueDie] = useState<DieType>(DieType.d8);
-  const [selectedTechniqueId, setSelectedTechniqueId] = useState<string>("");
+  const [incomingDamage, setIncomingDamage] = useState<number>(0);
   const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string } | null>(null);
 
   // Identify weapons from inventory
@@ -69,36 +67,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     setIncomingDamage(0);
   };
 
-  // Logic to handle technique selection and die syncing
-  useEffect(() => {
-    if (activeTab === 'technique') {
-        const hasTechniques = char.techniques.length > 0;
-        
-        // If we have techniques but none selected (or selected became invalid), select the first one
-        if (hasTechniques) {
-            const currentIsValid = char.techniques.some(t => t.id === selectedTechniqueId);
-            if (!selectedTechniqueId || !currentIsValid) {
-                setSelectedTechniqueId(char.techniques[0].id);
-                setTechniqueDie(char.techniques[0].damageDie);
-            } else {
-                // If current is valid, ensure die matches (in case it was edited)
-                const tech = char.techniques.find(t => t.id === selectedTechniqueId);
-                if (tech) setTechniqueDie(tech.damageDie);
-            }
-        } else {
-            setSelectedTechniqueId("");
-        }
-    }
-  }, [activeTab, char.techniques, selectedTechniqueId]);
-
-  const handleTechniqueChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newId = e.target.value;
-      setSelectedTechniqueId(newId);
-      const tech = char.techniques.find(t => t.id === newId);
-      if (tech) {
-          setTechniqueDie(tech.damageDie);
-      }
-  };
 
   // --- Calculate Active Buffs ---
   const relevantBuffs = activeBuffs.filter(buff => {
@@ -229,7 +197,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         total = Math.max(0, total - intBonus);
         detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus} - [INT]${intBonus} (10+ CE)`;
       } else {
-        detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus}`;
+      detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus}`;
       }
       
       // Add economia de fluxo reduction to detail if applicable
@@ -251,11 +219,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       total = finalDamage;
       isDamageTaken = true;
       rollTitle = "Dano Final Recebido";
-      
+
       detail = `${incomingDamage} - ${reductionAmount} (Mitigado)`;
     }
 
-    // 2. Add Buffs to Total (If Attack/Technique)
+    // 2. Add Buffs to Total (If Attack)
     if (activeTab !== 'defense') {
        total += totalBuffBonus;
        if (totalBuffBonus > 0) detail += ` + ${totalBuffBonus} (Buffs)`;
@@ -264,7 +232,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     }
 
     // 3. Check TOTAL Resources (Action + Buffs)
-    // Note: actionCostCE for techniques already has Economia de Fluxo reduction applied
     const finalCostPE = actionCostPE + totalBuffCost.pe;
     const finalCostCE = actionCostCE + totalBuffCost.ce;
 
@@ -303,7 +270,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   };
 
   const isHR = char.origin === Origin.RestricaoCelestial;
-  const hasTechniques = char.techniques.length > 0;
 
   let maxInvest = stats.LL;
   if (isHR && activeTab === 'physical') {
@@ -323,7 +289,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
   return (
     <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-xl p-4">
-      
+
       {/* Tabs Header */}
       <div className="flex border-b border-slate-800 mb-4">
         <button 
@@ -332,16 +298,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             ${activeTab === 'physical' ? 'border-curse-500 text-white bg-slate-800/30' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
         >
           <Sword size={16} /> <span className="hidden sm:inline">Ataque</span>
-        </button>
-        <button 
-          onClick={() => { setActiveTab('technique'); reset(); }}
-          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
-            ${activeTab === 'technique' ? 'border-curse-500 text-curse-300 bg-curse-900/10' : 'border-transparent text-slate-400 hover:text-slate-200'}
-            ${isHR ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
-          disabled={isHR}
-        >
-          <Zap size={16} /> <span className="hidden sm:inline">Técnica</span>
         </button>
         <button 
           onClick={() => { setActiveTab('defense'); reset(); }}
@@ -378,30 +334,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         <div className="flex justify-between text-xs uppercase tracking-widest text-slate-500 font-bold">
           <span>
             {activeTab === 'physical' && "Reforço Corporal / Físico"}
-            {activeTab === 'technique' && "Técnica Inata"}
             {activeTab === 'defense' && "Calculadora de Dano"}
           </span>
           <div className="text-right">
-            {activeTab === 'technique' && (() => {
-              const hasEconomiaFluxo = char.abilities.some(ability => 
-                ability.name === "Economia de Fluxo" && ability.category === "Feiticeiro"
-              );
-              const economiaReduction = hasEconomiaFluxo ? char.attributes.INT : 0;
-              const finalCost = Math.max(1, invested - economiaReduction); // Minimum cost of 1 CE
-              const displayCost = economiaReduction > 0 ? `${invested} - ${economiaReduction} = ${finalCost}` : invested;
-              
-              return (
-                <span className={currentStats.ce < finalCost && !isHR ? "text-red-500" : "text-curse-400"}>
-                  Custo Ação: {displayCost} CE
-                  {economiaReduction > 0 && <span className="text-emerald-400 text-[10px] normal-case"> (Economia de Fluxo)</span>}
-                </span>
-              );
-            })()}
-            {activeTab !== 'technique' && (
-              <span className={currentStats.ce < currentCostCE && !isHR ? "text-red-500" : "text-curse-400"}>
-                {isHR && activeTab === 'physical' ? 'Custo: 0 (Passivo)' : `Custo Ação: ${currentCostCE} CE`}
-              </span>
-            )}
+            <span className={currentStats.ce < currentCostCE && !isHR ? "text-red-500" : "text-curse-400"}>
+              {isHR && activeTab === 'physical' ? 'Custo: 0 (Passivo)' : `Custo Ação: ${currentCostCE} CE`}
+            </span>
           </div>
         </div>
 
@@ -465,47 +403,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              </div>
           )}
 
-          {activeTab === 'technique' && (
-             <div className="space-y-4">
-                {/* Technique Selection Dropdown OR Empty State */}
-                {!hasTechniques ? (
-                    <div className="bg-slate-950 border border-dashed border-slate-700 rounded-xl p-6 text-center">
-                        <AlertCircle className="mx-auto text-slate-600 mb-2" size={24} />
-                        <p className="text-sm text-slate-400 font-bold mb-1">Nenhuma Técnica Disponível</p>
-                        <p className="text-xs text-slate-600">Vá até a aba "Técnicas" para criar sua primeira técnica inata.</p>
-                    </div>
-                ) : (
-                    <div>
-                        <label className="block text-xs text-slate-400 mb-1">Selecionar Técnica</label>
-                        <div className="relative">
-                            <Wand2 className="absolute left-3 top-1/2 -translate-y-1/2 text-curse-400" size={14} />
-                            <select 
-                                value={selectedTechniqueId}
-                                onChange={handleTechniqueChange}
-                                className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-9 pr-2 text-sm text-white focus:border-curse-500 focus:outline-none appearance-none"
-                            >
-                                {char.techniques.map(tech => (
-                                    <option key={tech.id} value={tech.id}>
-                                        {tech.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        
-                        {/* Auto-detected Die Display */}
-                        <div className="mt-3 bg-slate-950/50 border border-slate-800 rounded-lg p-2 flex items-center justify-between">
-                            <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Dado da Técnica</span>
-                            <span className="font-mono font-black text-curse-300 text-sm">d{techniqueDie}</span>
-                        </div>
-                    </div>
-                )}
-             </div>
-          )}
-
           {!isHR && (
-            <div className={activeTab === 'technique' && !hasTechniques ? "opacity-50 pointer-events-none filter grayscale" : ""}>
+            <div>
                 <label className="block text-xs text-slate-400 mb-1">
-                  {activeTab === 'technique' && `Energia Investida (Max Saída: ${stats.LL})`}
                   {activeTab === 'physical' && `Dados de Reforço (Max LL: ${stats.LL})`}
                   {activeTab === 'defense' && `Pontos de Redução (Max LL: ${stats.LL})`}
                 </label>
@@ -557,7 +457,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         {/* Action Button */}
         <button 
           onClick={handleRoll}
-          disabled={(!isHR && invested <= 0 && activeTab !== 'physical') || (activeTab === 'technique' && !hasTechniques)} 
+          disabled={!isHR && invested <= 0 && activeTab !== 'physical'} 
           className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
              ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
           `}
