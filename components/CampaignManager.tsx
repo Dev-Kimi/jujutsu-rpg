@@ -29,6 +29,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   const [editingAsGM, setEditingAsGM] = useState(false);
   const [editingParticipant, setEditingParticipant] = useState<CampaignParticipant | null>(null);
   const [showDiceLog, setShowDiceLog] = useState(false);
+  const [activeRollResult, setActiveRollResult] = useState<'skill' | 'combat' | null>(null);
 
   // 1. Fetch Campaigns
   useEffect(() => {
@@ -451,6 +452,9 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                     onRemoveSkill={editingAsGM ? handleRemoveSkillAsGM : () => {}} 
                     readOnly={isReadOnly}
                     campaignId={selectedCampaign?.id}
+                    allowRollsWhenReadOnly={editingAsGM && isReadOnly}
+                    activeRollResult={activeRollResult}
+                    setActiveRollResult={setActiveRollResult}
                   />
                </section>
 
