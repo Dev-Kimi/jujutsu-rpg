@@ -400,7 +400,8 @@ const App: React.FC = () => {
       ...prev,
       skills: prev.skills.map(s => {
         if (s.id !== id) return s;
-        if (s.isBase && (field === 'name' || field === 'attribute')) return s;
+        // Permite trocar atributo das perícias base; apenas bloqueia renomear
+        if (s.isBase && field === 'name') return s;
         return { ...s, [field]: value };
       })
     }));
