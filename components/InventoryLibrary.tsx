@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Item } from '../types';
 import { Search, Plus, X, BookOpen, Trash2, Edit2, Package, Sword, Shield, Zap, Box } from 'lucide-react';
-import { ItemFormModal, ItemFormState, ItemCategory, buildItemDescription, parseItemToForm, formDefaults } from './ItemFormModal';
 
 interface InventoryLibraryProps {
   userItems: Item[];
@@ -23,43 +22,76 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
   onClose 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeCategory, setActiveCategory] = useState<ItemCategory>('Arma');
-  const [formModalOpen, setFormModalOpen] = useState(false);
-  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
-  const [formInitial, setFormInitial] = useState<ItemFormState>(formDefaults);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<ItemCategory>('Arma');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const openCreateModal = () => {
-    setFormMode('create');
-    setFormInitial({ ...formDefaults, category: activeCategory });
-    setFormModalOpen(true);
+  // Form states for new item creation
+  const [newItemForm, setNewItemForm] = useState({
+    name: '',
+    category: activeCategory,
+    grade: 'Mundana',
+    spaces: 1,
+    // Weapon fields
+    proficiency: 'Armas Simples',
+    weaponType: 'Corpo a Corpo',
+    grip: 'Leve',
+    damage: '1d4',
+    critical: '20',
+    multiplier: '2',
+    damageType: 'Balístico',
+    range: '-',
+    durability: '5',
+    // Armor fields
+    defense: '0',
+    // General fields
+    description: ''
+  });
+
+  const resetForm = () => {
+    setNewItemForm({
+      name: '',
+      category: activeCategory,
+      grade: 'Mundana',
+      spaces: 1,
+      proficiency: 'Armas Simples',
+      weaponType: 'Corpo a Corpo',
+      grip: 'Leve',
+      damage: '1d4',
+      critical: '20',
+      multiplier: '2',
+      damageType: 'Balístico',
+      range: '-',
+      durability: '5',
+      defense: '0',
+      description: ''
+    });
   };
 
-  const openEditModal = (item: Item) => {
-    setFormMode('edit');
-    setEditingItemId(item.id);
-    setFormInitial(parseItemToForm(item));
-    setFormModalOpen(true);
-  };
-
-  const handleSaveForm = (form: ItemFormState) => {
-    const description = buildItemDescription(form);
-    if (formMode === 'create') {
-      const newItem: Item = {
-        id: Math.random().toString(36).substring(2, 9),
-        name: form.name || 'Novo Item',
-        quantity: 1,
-        description
-      };
-      onAddToLibrary(newItem);
-    } else if (formMode === 'edit' && editingItemId) {
-      const existing = userItems.find(i => i.id === editingItemId);
-      if (!existing) return;
-      onUpdateInLibrary(editingItemId, 'name', form.name);
-      onUpdateInLibrary(editingItemId, 'description', description);
+  const handleCreateItem = () => {
+    let description = '';
+    
+    // Build description based on category
+    if (newItemForm.category === 'Arma') {
+      description = `Proficiência: ${newItemForm.proficiency} | Tipo: ${newItemForm.weaponType} | Empunhadura: ${newItemForm.grip} | Dano: ${newItemForm.damage} | Crítico: ${newItemForm.critical} (x${newItemForm.multiplier}) | Tipo de Dano: ${newItemForm.damageType}${newItemForm.range !== '-' ? ` | Alcance: ${newItemForm.range}` : ''} | Durabilidade: ${newItemForm.durability} CE | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
+    } else if (newItemForm.category === 'Proteção') {
+      description = `Defesa: +${newItemForm.defense} (Redução de Dano) | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
+    } else if (newItemForm.category === 'Munição') {
+      description = `${newItemForm.description} | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
+    } else {
+      description = `${newItemForm.description} | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
     }
-    setFormModalOpen(false);
-    setEditingItemId(null);
+
+    const newItem: Item = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: newItemForm.name || 'Novo Item',
+      quantity: 1,
+      description: description
+    };
+
+    onAddToLibrary(newItem);
+    setShowCreateModal(false);
+    resetForm();
   };
 
   const handleAddToCharacter = (item: Item) => {
@@ -115,7 +147,7 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
               />
             </div>
             <button 
-              onClick={openCreateModal}
+              onClick={() => { setShowCreateModal(true); resetForm(); }}
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg transition-colors duration-100 font-bold text-sm whitespace-nowrap"
             >
               <Plus size={16} /> Novo Item
