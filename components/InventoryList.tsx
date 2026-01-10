@@ -10,9 +10,10 @@ interface InventoryListProps {
   onUpdate: (id: string, field: keyof Item, value: any) => void;
   onRemove: (id: string) => void;
   readOnly?: boolean;
+  onOpenLibrary?: () => void;
 }
 
-export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUpdate, onRemove, readOnly }) => {
+export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUpdate, onRemove, readOnly, onOpenLibrary }) => {
   const [activeTab, setActiveTab] = useState<'my-items' | 'catalog'>('my-items');
   const [catalogSection, setCatalogSection] = useState<'weapons' | 'cursed'>('weapons');
 
@@ -75,12 +76,21 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
 
       {activeTab === 'my-items' ? (
         <>
-          <div className="p-3 border-b border-slate-800 flex justify-end bg-slate-900/50">
+          <div className="p-3 border-b border-slate-800 flex justify-end gap-2 bg-slate-900/50">
+            {onOpenLibrary && (
+              <button 
+                onClick={onOpenLibrary}
+                className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+                title="Abrir biblioteca de itens"
+              >
+                <BookOpen size={14} /> Biblioteca
+              </button>
+            )}
             <button 
               onClick={() => onAdd()}
-              className="flex items-center gap-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded transition-colors font-bold"
+              className="flex items-center gap-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
             >
-              <Plus size={14} /> Novo Item Vazio
+              <Plus size={14} /> Novo
             </button>
           </div>
 
