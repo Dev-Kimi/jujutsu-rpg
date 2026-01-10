@@ -13,6 +13,46 @@ interface InventoryLibraryProps {
 
 type ItemCategory = 'Arma' | 'Munição' | 'Proteção' | 'Geral';
 
+// Helper function to parse item data from description
+const parseItemFromDescription = (item: Item): any => {
+  const desc = item.description;
+  const gradeMatch = desc.match(/Grau:\s*([^|]+)/i);
+  const spacesMatch = desc.match(/Espaços:\s*(\d+)/i);
+  const proficiencyMatch = desc.match(/Proficiência:\s*([^|]+)/i);
+  const weaponTypeMatch = desc.match(/Tipo:\s*([^|]+)/i);
+  const gripMatch = desc.match(/Empunhadura:\s*([^|]+)/i);
+  const damageMatch = desc.match(/Dano:\s*([^|]+)/i);
+  const criticalMatch = desc.match(/Crítico:\s*([^|]+)/i);
+  const multiplierMatch = desc.match(/x(\d+)/i);
+  const damageTypeMatch = desc.match(/Tipo de Dano:\s*([^|]+)/i);
+  const rangeMatch = desc.match(/Alcance:\s*([^|]+)/i);
+  const durabilityMatch = desc.match(/Durabilidade:\s*(\d+)/i);
+  const defenseMatch = desc.match(/Defesa:\s*\+(\d+)/i);
+
+  // Determine category from description content
+  let category: ItemCategory = 'Geral';
+  if (damageMatch) category = 'Arma';
+  else if (defenseMatch) category = 'Proteção';
+  else if (desc.toLowerCase().includes('munição')) category = 'Munição';
+
+  return {
+    category,
+    grade: gradeMatch ? gradeMatch[1].trim() : 'Mundana',
+    spaces: spacesMatch ? parseInt(spacesMatch[1]) : 1,
+    proficiency: proficiencyMatch ? proficiencyMatch[1].trim() : 'Armas Simples',
+    weaponType: weaponTypeMatch ? weaponTypeMatch[1].trim() : 'Corpo a Corpo',
+    grip: gripMatch ? gripMatch[1].trim() : 'Leve',
+    damage: damageMatch ? damageMatch[1].trim() : '1d4',
+    critical: criticalMatch ? criticalMatch[1].trim() : '20',
+    multiplier: multiplierMatch ? multiplierMatch[1] : '2',
+    damageType: damageTypeMatch ? damageTypeMatch[1].trim() : 'Balístico',
+    range: rangeMatch ? rangeMatch[1].trim() : '-',
+    durability: durabilityMatch ? durabilityMatch[1] : '5',
+    defense: defenseMatch ? defenseMatch[1] : '0',
+    description: desc.split('|')[0]?.trim() || desc
+  };
+};
+
 export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({ 
   userItems, 
   onAddToLibrary, 
@@ -51,7 +91,7 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
   const resetForm = () => {
     setNewItemForm({
       name: '',
-      category: activeCategory,
+      category: 'Arma',
       grade: 'Mundana',
       spaces: 1,
       proficiency: 'Armas Simples',
@@ -66,11 +106,12 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
       defense: '0',
       description: ''
     });
+    setEditingItemId(null);
   };
 
-  const handleCreateItem = () => {
+  const handleSaveItem = () => {
     let description = '';
-    
+
     // Build description based on category
     if (newItemForm.category === 'Arma') {
       description = `Proficiência: ${newItemForm.proficiency} | Tipo: ${newItemForm.weaponType} | Empunhadura: ${newItemForm.grip} | Dano: ${newItemForm.damage} | Crítico: ${newItemForm.critical} (x${newItemForm.multiplier}) | Tipo de Dano: ${newItemForm.damageType}${newItemForm.range !== '-' ? ` | Alcance: ${newItemForm.range}` : ''} | Durabilidade: ${newItemForm.durability} CE | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
@@ -82,15 +123,23 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
       description = `${newItemForm.description} | Grau: ${newItemForm.grade} | Espaços: ${newItemForm.spaces}`;
     }
 
-    const newItem: Item = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: newItemForm.name || 'Novo Item',
-      quantity: 1,
-      description: description
-    };
+    if (editingItemId) {
+      // Editing existing item
+      onUpdateInLibrary(editingItemId, 'name', newItemForm.name);
+      onUpdateInLibrary(editingItemId, 'description', description);
+    } else {
+      // Creating new item
+      const newItem: Item = {
+        id: Math.random().toString(36).substring(2, 9),
+        name: newItemForm.name || 'Novo Item',
+        quantity: 1,
+        description: description
+      };
+      onAddToLibrary(newItem);
+    }
 
-    onAddToLibrary(newItem);
     setShowCreateModal(false);
+    setEditingItemId(null);
     resetForm();
   };
 
@@ -175,97 +224,60 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
           <div className="space-y-3">
             {filteredItems.map(item => (
               <div key={item.id} className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
-                
-                {editingItemId === item.id ? (
-                  // Edit Mode
-                  <div className="p-4 space-y-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome do Item</label>
-                      <input 
-                        type="text"
-                        value={item.name}
-                        onChange={(e) => onUpdateInLibrary(item.id, 'name', e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-                        placeholder="Ex: Espada Lendária"
-                      />
+                <div className="p-3 flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package size={14} className="text-emerald-400 shrink-0" />
+                      <h3 className="font-bold text-white text-sm truncate">{item.name}</h3>
+                      {item.quantity > 1 && (
+                        <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
+                          x{item.quantity}
+                        </span>
+                      )}
                     </div>
-                    
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Quantidade Padrão</label>
-                      <input 
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) => onUpdateInLibrary(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-                        min="1"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição</label>
-                      <textarea 
-                        value={item.description}
-                        onChange={(e) => onUpdateInLibrary(item.id, 'description', e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-300 focus:border-emerald-500 focus:outline-none min-h-[80px]"
-                        placeholder="Descreva o item, seus efeitos, dano, propriedades, etc..."
-                      />
-                    </div>
+                    <p className="text-xs text-slate-400 line-clamp-2">{item.description}</p>
 
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-800/50">
-                      <button 
-                        onClick={() => setEditingItemId(null)}
-                        className="text-xs text-slate-400 hover:text-white px-3 py-1 rounded hover:bg-slate-800 transition-colors duration-100"
-                      >
-                        Concluir
-                      </button>
-                      <button 
+                    <div className="flex gap-2 mt-2">
+                      <button
                         onClick={() => {
-                          if (confirm(`Excluir "${item.name}" da biblioteca?`)) {
-                            onRemoveFromLibrary(item.id);
-                            if (editingItemId === item.id) setEditingItemId(null);
-                          }
+                          // Populate form with item data for editing
+                          const parsed = parseItemFromDescription(item);
+                          setNewItemForm({
+                            name: item.name,
+                            category: parsed.category,
+                            grade: parsed.grade,
+                            spaces: parsed.spaces,
+                            proficiency: parsed.proficiency,
+                            weaponType: parsed.weaponType,
+                            grip: parsed.grip,
+                            damage: parsed.damage,
+                            critical: parsed.critical,
+                            multiplier: parsed.multiplier,
+                            damageType: parsed.damageType,
+                            range: parsed.range,
+                            durability: parsed.durability,
+                            defense: parsed.defense,
+                            description: parsed.description
+                          });
+                          setActiveCategory(parsed.category);
+                          setEditingItemId(item.id);
+                          setShowCreateModal(true);
                         }}
-                        className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 px-3 py-1 rounded hover:bg-red-950/30 transition-colors duration-100"
+                        className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors duration-100"
                       >
-                        <Trash2 size={12} /> Excluir
+                        <Edit2 size={10} /> Editar
                       </button>
                     </div>
                   </div>
-                ) : (
-                  // View Mode
-                  <div className="p-3 flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Package size={14} className="text-emerald-400 shrink-0" />
-                        <h3 className="font-bold text-white text-sm truncate">{item.name}</h3>
-                        {item.quantity > 1 && (
-                          <span className="text-[10px] text-slate-500 bg-slate-800 px-1.5 py-0.5 rounded">
-                            x{item.quantity}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-400 line-clamp-2">{item.description}</p>
-                      
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          onClick={() => setEditingItemId(item.id)}
-                          className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-800 transition-colors duration-100"
-                        >
-                          <Edit2 size={10} /> Editar
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={() => handleAddToCharacter(item)}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors duration-100 shrink-0 flex items-center gap-1"
-                      title="Adicionar no inventário atual"
-                    >
-                      <Plus size={12} /> Add
-                    </button>
-                  </div>
-                )}
 
+                  <button
+                    onClick={() => handleAddToCharacter(item)}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors duration-100 shrink-0 flex items-center gap-1"
+                    title="Adicionar no inventário atual"
+                  >
+                    <Plus size={12} /> Add
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -287,8 +299,8 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
             
             {/* Modal Header */}
             <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl">
-              <h3 className="text-lg font-bold text-white">Novo Item</h3>
-              <button onClick={() => { setShowCreateModal(false); resetForm(); }} className="text-slate-400 hover:text-white transition-colors duration-100">
+              <h3 className="text-lg font-bold text-white">{editingItemId ? 'Editar Item' : 'Novo Item'}</h3>
+              <button onClick={() => { setShowCreateModal(false); setEditingItemId(null); resetForm(); }} className="text-slate-400 hover:text-white transition-colors duration-100">
                 <X size={20} />
               </button>
             </div>
@@ -506,11 +518,11 @@ export const InventoryLibrary: React.FC<InventoryLibraryProps> = ({
                 Cancelar
               </button>
               <button
-                onClick={handleCreateItem}
+                onClick={handleSaveItem}
                 disabled={!newItemForm.name.trim()}
                 className="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold transition-colors duration-100 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Criar Item
+                {editingItemId ? 'Salvar Alterações' : 'Criar Item'}
               </button>
             </div>
 
