@@ -127,6 +127,12 @@ export interface Campaign {
   description: string;
   gmId: string; // User ID of the Game Master
   participants: CampaignParticipant[];
+  participantIds?: string[];
+  activeCombatActive?: boolean;
+  activeCombatParticipants?: CampaignParticipant[];
+  activeCombatParticipantKeys?: string[];
+  activeCombatStartedAt?: number;
+  activeCombatStartedBy?: string;
   createdAt: number;
 }
 
