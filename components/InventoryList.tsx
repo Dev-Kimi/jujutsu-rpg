@@ -861,10 +861,14 @@ const EditItemModal: React.FC<{
       console.log('Item data to save:', itemData);
       console.log('Item type check:', item.id.startsWith('catalog-'), item.id.startsWith('cursed-'));
 
-      if (item.id.startsWith('catalog-') || item.id.startsWith('cursed-')) {
-        console.log('Adding new item to inventory');
+      // Perform the save operation synchronously
+      console.log('Performing save operation...');
+
+      const isNewItem = item.id.startsWith('catalog-') || item.id.startsWith('cursed-');
+
+      if (isNewItem) {
+        console.log('Adding new item to inventory:', itemData);
         onAdd(itemData);
-        onNotify?.(`"${safeForm.name}" adicionado ao inventário!`, 'success');
       } else {
         console.log('Updating existing item:', item.id);
         onUpdate(item.id, 'name', safeForm.name);
@@ -872,12 +876,23 @@ const EditItemModal: React.FC<{
         if (safeForm.category === 'Arma') {
           onUpdate(item.id, 'attackSkill', safeForm.attackSkill || 'Luta');
         }
-        onNotify?.(`"${safeForm.name}" atualizado!`, 'success');
       }
 
-      console.log('Save completed successfully, closing modal');
-      // Close modal only after successful save
-      setTimeout(() => onClose(), 100);
+      console.log('Save operation completed');
+
+      // Show notification and close modal synchronously
+      const successMessage = `"${safeForm.name}" ${isNewItem ? 'adicionado' : 'atualizado'} ao inventário!`;
+
+      try {
+        onNotify?.(successMessage, 'success');
+        console.log('Notification sent successfully');
+      } catch (notifyError) {
+        console.error('Error sending notification:', notifyError);
+      }
+
+      // Close modal immediately
+      onClose();
+      console.log('Modal closed successfully');
     } catch (error) {
       console.error('Error saving item:', error);
       console.error('Error details:', {
