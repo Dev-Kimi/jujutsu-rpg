@@ -47,7 +47,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.4.1'; // Update this when you deploy changes
+const APP_VERSION = '1.4.2'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -99,7 +99,8 @@ const App: React.FC = () => {
   const migrateCharacter = (char: Character): Character => {
     return {
       ...char,
-      techniques: migrateTechniques(char.techniques || [])
+      techniques: migrateTechniques(char.techniques || []),
+      equippedWeapons: char.equippedWeapons || []
     };
   };
 
@@ -537,10 +538,11 @@ const App: React.FC = () => {
   const handleToggleEquipWeapon = (weaponId: string) => {
     try {
       setCharacter(prev => {
-        const isEquipped = prev.equippedWeapons.includes(weaponId);
+        const equippedWeapons = prev.equippedWeapons || [];
+        const isEquipped = equippedWeapons.includes(weaponId);
         const newEquippedWeapons = isEquipped
-          ? prev.equippedWeapons.filter(id => id !== weaponId)
-          : [...prev.equippedWeapons, weaponId];
+          ? equippedWeapons.filter(id => id !== weaponId)
+          : [...equippedWeapons, weaponId];
 
         return {
           ...prev,
