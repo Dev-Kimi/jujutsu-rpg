@@ -47,7 +47,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.4.5'; // Update this when you deploy changes
+const APP_VERSION = '1.4.6'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -573,7 +573,13 @@ const App: React.FC = () => {
     const id = Math.random().toString(36).substring(2, 9);
     let newItem;
     if (field === 'inventory') {
-      newItem = { id, name: template?.name || "", quantity: 1, description: template?.description || "" } as Item;
+      newItem = {
+        id,
+        name: template?.name || "",
+        quantity: 1,
+        description: template?.description || "",
+        ...(template?.attackSkill && { attackSkill: template.attackSkill })
+      } as Item;
     } else {
       newItem = { id, name: "", cost: "", description: "", category: category || "Combatente" } as Ability;
     }
@@ -642,7 +648,23 @@ const App: React.FC = () => {
   };
 
   const handleArrayUpdate = (field: 'abilities' | 'inventory', id: string, itemField: string, value: any) => {
-    setCharacter(prev => ({ ...prev, [field]: prev[field].map((item: any) => item.id === id ? { ...item, [itemField]: value } : item) }));
+    try {
+      console.log('Updating item:', field, id, itemField, value);
+      setCharacter(prev => ({
+        ...prev,
+        [field]: prev[field].map((item: any) => {
+          if (item.id === id) {
+            const updatedItem = { ...item, [itemField]: value };
+            console.log('Updated item:', updatedItem);
+            return updatedItem;
+          }
+          return item;
+        })
+      }));
+    } catch (error) {
+      console.error('Error updating item:', error, { field, id, itemField, value });
+      alert('Erro ao atualizar item. Tente novamente.');
+    }
   };
 
   const handleArrayRemove = (field: 'abilities' | 'inventory', id: string) => {
