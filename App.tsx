@@ -47,7 +47,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.4.3'; // Update this when you deploy changes
+const APP_VERSION = '1.4.4'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
