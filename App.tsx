@@ -766,19 +766,29 @@ const App: React.FC = () => {
     }));
   };
 
-  const toggleDomain = (initialCost: number) => {
-    if (!domainActive) {
-      if (currentStats.ce < initialCost) {
-        alert("CE Insuficiente para abrir o domínio!");
-        return;
-      }
-      consumeCE(initialCost);
-      setDomainActive(true);
-      setDomainRound(1);
-    } else {
+  const toggleDomain = (ceCost: number, peCost: number, reqLevel: number = 0) => {
+    // Deactivation
+    if (domainActive) {
       setDomainActive(false);
       setDomainRound(0);
+      return;
     }
+
+    // Activation Logic
+    if (character.level < reqLevel) {
+      alert(`Nível insuficiente! Requer nível ${reqLevel}.`);
+      return;
+    }
+
+    if (currentStats.ce < ceCost || currentStats.pe < peCost) {
+      alert(`Recursos insuficientes para Expandir Domínio! Você precisa de ${ceCost} CE e ${peCost} PE.`);
+      return;
+    }
+
+    consumeCE(ceCost);
+    consumePE(peCost);
+    setDomainActive(true);
+    setDomainRound(1);
   };
 
   const advanceDomainRound = () => {
@@ -1012,29 +1022,48 @@ const App: React.FC = () => {
               </div>
               
               {!domainActive ? (
-                <div className="grid grid-cols-3 gap-2">
-                  {[50, 150, 200].map(cost => (
-                    <button
-                      key={cost}
-                      onClick={() => toggleDomain(cost)}
-                      className="py-2 px-1 bg-slate-950 border border-slate-800 hover:border-curse-500 text-slate-400 hover:text-white rounded-lg text-xs font-mono transition-colors duration-100"
-                    >
-                      Ativar ({cost})
-                    </button>
-                  ))}
+                <div className="flex flex-col gap-2">
+                  {[
+                    { label: 'Incompleto', ce: 150, pe: 100, level: 10 },
+                    { label: 'Completo', ce: 250, pe: 150, level: 16 },
+                    { label: 'Aberto', ce: 350, pe: 200, level: 20 },
+                  ].map((opt) => {
+                    const isDisabled = character.level < opt.level;
+                    return (
+                      <button
+                        key={opt.label}
+                        disabled={isDisabled}
+                        onClick={() => toggleDomain(opt.ce, opt.pe, opt.level)}
+                        className={`py-2 px-3 flex justify-between items-center rounded-lg border text-xs font-bold transition-all duration-100
+                          ${isDisabled
+                            ? 'bg-slate-950/50 border-slate-800 text-slate-700 cursor-not-allowed'
+                            : 'bg-slate-950 border-slate-700 hover:border-curse-500 text-slate-300 hover:text-white hover:bg-slate-900'
+                          }
+                        `}
+                        title={isDisabled ? `Requer Nível ${opt.level}` : ""}
+                      >
+                        <span className="uppercase tracking-wide">{opt.label}</span>
+                        {isDisabled ? (
+                           <span className="text-[10px] font-mono text-red-900 bg-red-950/20 px-1 rounded">Lv.{opt.level}</span>
+                        ) : (
+                           <span className="text-[10px] font-mono text-curse-400">{opt.ce} CE / {opt.pe} PE</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                    <div className="flex gap-2">
-                     <button 
+                     <button
                       onClick={advanceDomainRound}
                       className="flex-1 py-3 bg-curse-600 hover:bg-curse-500 text-white font-bold rounded-lg text-sm flex items-center justify-center gap-2"
                      >
                        <Flame size={16} /> Avançar Rodada
                      </button>
                    </div>
-                   <button 
-                    onClick={() => toggleDomain(0)}
+                   <button
+                    onClick={() => toggleDomain(0, 0)}
                     className="w-full py-2 bg-slate-800 text-slate-400 hover:text-white font-bold rounded-lg text-xs uppercase tracking-wider"
                    >
                      Fechar Domínio
