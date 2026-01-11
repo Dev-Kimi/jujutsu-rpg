@@ -130,6 +130,15 @@ export const CharacterSelection: React.FC<CharacterSelectionProps> = ({
            </div>
         )}
 
+        {/* Version Info */}
+        <div className="text-center mt-12">
+          <div className="inline-flex items-center justify-center px-4 py-2 bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-lg">
+            <span className="text-sm text-slate-400 font-mono select-none">
+              Jujutsu RPG v1.4.7
+            </span>
+          </div>
+        </div>
+
       </div>
     </div>
   );
