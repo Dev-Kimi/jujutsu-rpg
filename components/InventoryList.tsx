@@ -723,7 +723,11 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
       {/* Notifications */}
       <div className="absolute top-4 right-4 z-50 space-y-2 max-w-sm">
         {notifications.map(notification => (
-          <Notification key={notification.id} message={notification.message} type={notification.type} onClose={(id) => setNotifications(prev => prev.filter(n => n.id !== id))} />
+          <Notification 
+            key={notification.id} 
+            notification={notification} 
+            onClose={(id) => setNotifications(prev => prev.filter(n => n.id !== id))} 
+          />
         ))}
       </div>
     </div>
