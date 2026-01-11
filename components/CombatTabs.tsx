@@ -578,7 +578,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       {/* Visual Roll Result Notification (Bottom Right) */}
       {lastResult && activeRollResult === 'combat' && (
-        <div className={`fixed bottom-6 right-6 z-50 w-80 bg-slate-950 border shadow-xl overflow-hidden rounded-none ${
+        <div className={`fixed bottom-6 right-6 z-50 w-80 bg-slate-800 border shadow-xl overflow-hidden rounded-none ${
           lastResult.isCritFail ? 'border-red-600' : lastResult.isCritical ? 'border-emerald-500' : 'border-slate-700'
         }`}>
            {/* Accent Line */}
@@ -586,7 +586,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
               lastResult.isCritFail ? 'bg-red-500' : lastResult.isCritical ? 'bg-emerald-500' : 'bg-slate-600'
            }`}></div>
 
-           <div className="p-4 pl-5 relative bg-slate-950">
+           <div className="p-4 pl-5 relative bg-slate-800">
               <button 
                 onClick={() => { setLastResult(null); setActiveRollResult(null); }} 
                 className="absolute top-2 right-2 text-slate-400 hover:text-white p-1 hover:bg-slate-800 z-10"
@@ -619,7 +619,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                         {lastResult.attackRoll}
                       </span>
                       {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
-                        <div className="hidden group-hover:block absolute top-full mt-2 right-0 bg-slate-950 text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-lg whitespace-nowrap z-20">
+                        <div className="hidden group-hover:block absolute top-full mt-2 right-0 bg-slate-800 text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-lg whitespace-nowrap z-20">
                           {lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}
                         </div>
                       )}
@@ -632,11 +632,18 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
               {/* Damage Display */}
               <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3">
-                 <div className="text-slate-400 text-xs font-mono max-w-[60%] truncate">{lastResult.detail}</div>
-                 <div className={`text-3xl font-black leading-none ${
-                   lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-slate-100'
-                 }`}>
-                   {lastResult.damageTotal ?? lastResult.total}
+                 <div className="text-slate-300 text-xs font-mono max-w-[60%] truncate">Dano</div>
+                 <div className="relative group">
+                   <span className={`text-3xl font-black leading-none ${
+                     lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-white'
+                   }`}>
+                     {lastResult.damageTotal ?? lastResult.total}
+                   </span>
+                   {lastResult.detail && (
+                     <div className="hidden group-hover:block absolute top-full mt-2 right-0 bg-slate-800 text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-lg whitespace-nowrap z-20">
+                       {lastResult.detail}
+                     </div>
+                   )}
                  </div>
               </div>
            </div>
