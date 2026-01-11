@@ -21,7 +21,7 @@ import { InventoryLibrary } from './components/InventoryLibrary';
 // Firebase auth imports
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
 import Auth from './components/Auth';
 import UserMenu from './components/UserMenu';
 import UserProfile from './components/UserProfile';
@@ -319,6 +319,9 @@ const App: React.FC = () => {
   // Current Dynamic Stats
   const [currentStats, setCurrentStats] = useState<CurrentStats>({ pv: 0, ce: 0, pe: 0 });
 
+  const [activeCombatCampaignIds, setActiveCombatCampaignIds] = useState<string[]>([]);
+  const lastSavedCombatMirrorRef = useRef<string>('');
+
   // Shared state to control which roll result is shown (skill or combat)
   const [activeRollResult, setActiveRollResult] = useState<'skill' | 'combat' | null>(null);
 
@@ -466,6 +469,71 @@ const App: React.FC = () => {
   const updateStat = (key: keyof CurrentStats, val: number) => {
     setCurrentStats(prev => ({ ...prev, [key]: val }));
   };
+
+  useEffect(() => {
+    if (!currentUser) {
+      setActiveCombatCampaignIds([]);
+      return;
+    }
+    if (!character?.id) {
+      setActiveCombatCampaignIds([]);
+      return;
+    }
+
+    const combatKey = `${currentUser.uid}_${character.id}`;
+    const q = query(
+      collection(db, 'campaigns'),
+      where('activeCombatParticipantKeys', 'array-contains', combatKey)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setActiveCombatCampaignIds(snapshot.docs.map(d => d.id));
+    }, (error) => {
+      console.error('Error listening active combats for current character:', error);
+      setActiveCombatCampaignIds([]);
+    });
+
+    return () => unsubscribe();
+  }, [currentUser, character?.id]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (!character?.id) return;
+    if (activeCombatCampaignIds.length === 0) {
+      lastSavedCombatMirrorRef.current = '';
+      return;
+    }
+
+    const derived = calculateDerivedStats(character);
+    const payload = {
+      userId: currentUser.uid,
+      characterId: character.id,
+      characterName: character.name,
+      level: character.level,
+      imageUrl: character.imageUrl,
+      currentStats,
+      maxStats: { pv: derived.MaxPV, ce: derived.MaxCE, pe: derived.MaxPE },
+      updatedAt: Date.now()
+    };
+
+    const json = JSON.stringify({ payload, activeCombatCampaignIds });
+    if (json === lastSavedCombatMirrorRef.current) return;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const key = `${currentUser.uid}_${character.id}`;
+        for (const campaignId of activeCombatCampaignIds) {
+          const stateRef = doc(db, 'campaigns', campaignId, 'characterStates', key);
+          await setDoc(stateRef, payload, { merge: true });
+        }
+        lastSavedCombatMirrorRef.current = json;
+      } catch (error) {
+        console.error('Error mirroring main sheet state to active combats:', error);
+      }
+    }, 350);
+
+    return () => clearTimeout(timeoutId);
+  }, [activeCombatCampaignIds, character, currentStats, currentUser]);
 
   const consumeCE = (amount: number) => {
     updateStat('ce', Math.max(0, currentStats.ce - amount));
