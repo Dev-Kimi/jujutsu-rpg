@@ -345,12 +345,26 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
               const spacesMatch = item.description.match(/Espaços:\s*(\d+)/i);
 
               // Check if item is a weapon (has damage dice or is categorized as weapon)
-              const isWeapon = damageMatch !== null ||
-                              (categoryMatch && categoryMatch[1].trim() === 'Arma') ||
-                              item.name.toLowerCase().includes('espada') ||
-                              item.name.toLowerCase().includes('faca') ||
-                              item.name.toLowerCase().includes('bastão') ||
-                              item.name.toLowerCase().includes('karambit');
+              const hasWeaponCategory = categoryMatch && (
+                categoryMatch[1].trim() === 'Arma' ||
+                categoryMatch[1].trim().toLowerCase() === 'arma'
+              );
+              const hasWeaponName = item.name.toLowerCase().includes('espada') ||
+                                   item.name.toLowerCase().includes('faca') ||
+                                   item.name.toLowerCase().includes('bastão') ||
+                                   item.name.toLowerCase().includes('karambit') ||
+                                   item.name.toLowerCase().includes('lança') ||
+                                   item.name.toLowerCase().includes('machado') ||
+                                   item.name.toLowerCase().includes('martelo') ||
+                                   item.name.toLowerCase().includes('arco') ||
+                                   item.name.toLowerCase().includes('besta') ||
+                                   item.name.toLowerCase().includes('punhal') ||
+                                   item.name.toLowerCase().includes('adaga');
+              const hasWeaponDescription = /arma/i.test(item.description) ||
+                                          /dano.*\d+d\d+/i.test(item.description) ||
+                                          /tipo.*arma/i.test(item.description);
+
+              const isWeapon = damageMatch !== null || hasWeaponCategory || hasWeaponName || hasWeaponDescription;
 
               const isEquipped = equippedWeapons.includes(item.id);
 
@@ -409,7 +423,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                       {/* Action Buttons */}
                       <div className="flex gap-1">
                         {/* Equip Button - Only for weapons */}
-                        {isWeapon && onToggleEquip && (
+                        {isWeapon && onToggleEquip && item.id && item.isBroken !== true && (
                           <button
                             onClick={() => onToggleEquip(item.id)}
                             className={`p-1.5 rounded transition-all text-xs ${
@@ -418,6 +432,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                                 : 'opacity-0 group-hover:opacity-100 bg-slate-800 text-slate-400 hover:bg-slate-600 hover:text-white'
                             }`}
                             title={isEquipped ? 'Desequipar' : 'Equipar'}
+                            disabled={!item.id}
                           >
                             <Sword size={14} />
                           </button>
