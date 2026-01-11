@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Droplet, Zap, Activity, Skull, Flame, LogOut } from 'lucide-react';
 import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes } from './types';
 import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger } from './utils/calculations';
@@ -47,7 +47,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.4.6'; // Update this when you deploy changes
+const APP_VERSION = '1.4.7'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -564,27 +564,39 @@ const App: React.FC = () => {
     setCharacter(prev => ({ ...prev, skills: prev.skills.filter(s => s.id !== id) }));
   };
 
-  const handleArrayAdd = (field: 'abilities' | 'inventory', category?: string, template?: Partial<Item>) => {
-    if (field === 'abilities') {
-      if (category) setAbilityLibraryCategory(category);
-      setShowAbilityLibrary(true);
-      return;
+  const handleArrayAdd = useCallback((field: 'abilities' | 'inventory', category?: string, template?: Partial<Item>) => {
+    try {
+      if (field === 'abilities') {
+        if (category) setAbilityLibraryCategory(category);
+        setShowAbilityLibrary(true);
+        return;
+      }
+
+      const id = Math.random().toString(36).substring(2, 9);
+      let newItem;
+
+      if (field === 'inventory') {
+        newItem = {
+          id,
+          name: template?.name || "",
+          quantity: 1,
+          description: template?.description || "",
+          ...(template?.attackSkill && { attackSkill: template.attackSkill })
+        } as Item;
+        console.log('Adding new inventory item:', newItem);
+      } else {
+        newItem = { id, name: "", cost: "", description: "", category: category || "Combatente" } as Ability;
+      }
+
+      setCharacter(prev => ({
+        ...prev,
+        [field]: [...(prev[field] || []), newItem]
+      }));
+    } catch (error) {
+      console.error('Error adding item:', error, { field, category, template });
+      alert('Erro ao adicionar item. Tente novamente.');
     }
-    const id = Math.random().toString(36).substring(2, 9);
-    let newItem;
-    if (field === 'inventory') {
-      newItem = {
-        id,
-        name: template?.name || "",
-        quantity: 1,
-        description: template?.description || "",
-        ...(template?.attackSkill && { attackSkill: template.attackSkill })
-      } as Item;
-    } else {
-      newItem = { id, name: "", cost: "", description: "", category: category || "Combatente" } as Ability;
-    }
-    setCharacter(prev => ({ ...prev, [field]: [...prev[field], newItem] }));
-  };
+  }, []);
 
   // Character technique handlers
   const handleAddTechnique = (technique: Technique) => {
@@ -647,25 +659,30 @@ const App: React.FC = () => {
     setShowAbilityLibrary(false);
   };
 
-  const handleArrayUpdate = (field: 'abilities' | 'inventory', id: string, itemField: string, value: any) => {
+  const handleArrayUpdate = useCallback((field: 'abilities' | 'inventory', id: string, itemField: string, value: any) => {
     try {
       console.log('Updating item:', field, id, itemField, value);
-      setCharacter(prev => ({
-        ...prev,
-        [field]: prev[field].map((item: any) => {
+      setCharacter(prev => {
+        const currentItems = prev[field] || [];
+        const updatedItems = currentItems.map((item: any) => {
           if (item.id === id) {
             const updatedItem = { ...item, [itemField]: value };
             console.log('Updated item:', updatedItem);
             return updatedItem;
           }
           return item;
-        })
-      }));
+        });
+
+        return {
+          ...prev,
+          [field]: updatedItems
+        };
+      });
     } catch (error) {
       console.error('Error updating item:', error, { field, id, itemField, value });
       alert('Erro ao atualizar item. Tente novamente.');
     }
-  };
+  }, []);
 
   const handleArrayRemove = (field: 'abilities' | 'inventory', id: string) => {
      setCharacter(prev => ({ ...prev, [field]: prev[field].filter((item: any) => item.id !== id) }));
@@ -1066,9 +1083,11 @@ const App: React.FC = () => {
       
       {/* Version Footer */}
       <footer className="fixed bottom-2 right-2 pointer-events-none z-10">
-        <span className="text-[10px] text-slate-700/60 font-mono select-none">
-          v{APP_VERSION}
-        </span>
+        <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-1 shadow-lg">
+          <span className="text-xs text-slate-300 font-mono select-none font-semibold">
+            Jujutsu RPG v{APP_VERSION}
+          </span>
+        </div>
       </footer>
     </div>
   );
