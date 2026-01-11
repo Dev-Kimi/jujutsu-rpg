@@ -258,6 +258,11 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
     return newWeapon;
   };
 
+  const handleRepair = (item: Item) => {
+    onUpdate(item.id, 'isBroken', false);
+    showNotification(`"${item.name}" reparada!`, 'success');
+  };
+
   if (readOnly) {
     // Simplified Read Only View
     return (
@@ -445,6 +450,17 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
                         >
                           <Edit2 size={14} />
                         </button>
+
+                        {/* Repair Button */}
+                        {item.isBroken && (
+                          <button
+                            onClick={() => handleRepair(item)}
+                            className="opacity-100 text-emerald-400 hover:text-white p-1.5 hover:bg-emerald-900/40 rounded transition-all flex items-center gap-1 text-xs"
+                            title="Reparar"
+                          >
+                            <Hammer size={14} />
+                          </button>
+                        )}
 
                         {/* Delete */}
                         <button
