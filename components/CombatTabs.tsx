@@ -44,25 +44,38 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
     // Identify equipped weapons from inventory
     const equippedWeapons = char.inventory.filter(item => {
-        // Must be equipped
-        if (!char.equippedWeapons?.includes(item.id)) return false;
+        try {
+          // Must be equipped and have valid ID
+          if (!item.id || !char.equippedWeapons?.includes(item.id)) return false;
 
-        // 1. Check against Mundane Weapons List by Name
-        const isMundane = MUNDANE_WEAPONS.some(mw => mw.name === item.name);
-        // 2. Check description for "Dano: XdY" pattern (created by Catalog)
-        const hasDamagePattern = /Dano:\s*\d+d\d+/i.test(item.description);
+          // Must not be broken
+          if (item.isBroken) return false;
 
-        return isMundane || hasDamagePattern;
+          // 1. Check against Mundane Weapons List by Name
+          const isMundane = MUNDANE_WEAPONS.some(mw => mw.name === item.name);
+          // 2. Check description for "Dano: XdY" pattern (created by Catalog)
+          const hasDamagePattern = item.description && /Dano:\s*\d+d\d+/i.test(item.description);
+
+          return isMundane || hasDamagePattern;
+        } catch (error) {
+          console.error('Error filtering equipped weapon:', error, item);
+          return false;
+        }
     });
 
   const getWeaponDamageString = (item: Item): string => {
-      // Try to find "Dano: 1d6" in description first
-      const match = item.description.match(/Dano:\s*(\d+d\d+(?:\+\d+)?)/i);
-      if (match) return match[1];
+      try {
+        // Try to find "Dano: 1d6" in description first
+        const match = item.description?.match(/Dano:\s*(\d+d\d+(?:\+\d+)?)/i);
+        if (match) return match[1];
 
-      // Fallback to Catalog data
-      const catalogItem = MUNDANE_WEAPONS.find(w => w.name === item.name);
-      return catalogItem ? catalogItem.baseDamage : "1d4"; // Fallback default
+        // Fallback to Catalog data
+        const catalogItem = MUNDANE_WEAPONS.find(w => w.name === item.name);
+        return catalogItem ? catalogItem.baseDamage : "1d4"; // Fallback default
+      } catch (error) {
+        console.error('Error getting weapon damage string:', error, item);
+        return "1d4"; // Safe fallback
+      }
   };
 
   const reset = () => {
