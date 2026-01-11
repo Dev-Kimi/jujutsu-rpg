@@ -578,75 +578,98 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       {/* Visual Roll Result Notification (Bottom Right) */}
       {lastResult && activeRollResult === 'combat' && (
-        <div className={`fixed bottom-6 right-6 z-50 w-80 bg-slate-800 border shadow-xl overflow-hidden rounded-none ${
-          lastResult.isCritFail ? 'border-red-600' : lastResult.isCritical ? 'border-emerald-500' : 'border-slate-700'
-        }`}>
-           {/* Accent Line */}
-           <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-              lastResult.isCritFail ? 'bg-red-500' : lastResult.isCritical ? 'bg-emerald-500' : 'bg-slate-600'
-           }`}></div>
+        <div
+          className={`fixed bottom-6 right-6 z-50 w-80 border-2 rounded-lg shadow-2xl bg-[#15131d] overflow-visible ${
+            lastResult.isCritFail
+              ? 'border-red-600'
+              : lastResult.isCritical
+              ? 'border-emerald-500'
+              : 'border-purple-500'
+          }`}
+        >
+          <div className="relative p-4 pr-10">
+            <button
+              onClick={() => {
+                setLastResult(null);
+                setActiveRollResult(null);
+              }}
+              className="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-full hover:bg-[#1f1b2a]"
+            >
+              <X size={16} />
+            </button>
 
-           <div className="p-4 pl-5 relative bg-slate-800">
-              <button 
-                onClick={() => { setLastResult(null); setActiveRollResult(null); }} 
-                className="absolute top-2 right-2 text-slate-400 hover:text-white p-1 hover:bg-slate-800 z-10"
-              >
-                 <X size={16} />
-              </button>
+            {lastResult.weaponBroken && (
+              <div className="absolute top-3 left-4 bg-red-600/20 text-red-300 text-[9px] font-bold px-2 py-0.5 border border-red-700 rounded flex items-center gap-1">
+                <Hammer size={8} /> QUEBROU
+              </div>
+            )}
 
-              {lastResult.weaponBroken && (
-                  <div className="absolute top-2 left-5 bg-red-950 text-red-300 text-[9px] font-bold px-2 py-0.5 border border-red-800 z-10 flex items-center gap-1">
-                     <Hammer size={8} /> QUEBROU
+            <div className="flex items-center gap-2 text-white mb-4">
+              <Hexagon
+                size={22}
+                strokeWidth={1.5}
+                fill="currentColor"
+                className={`${
+                  lastResult.isCritFail
+                    ? 'text-red-500'
+                    : lastResult.isCritical
+                    ? 'text-emerald-400'
+                    : 'text-purple-500'
+                }`}
+              />
+              <h3 className="font-semibold text-sm uppercase tracking-wide truncate">
+                {lastResult.title || 'Resultado'}
+              </h3>
+            </div>
+
+            <div className="flex items-center justify-between gap-6">
+              {/* Attack Column */}
+              <div className="flex-1 flex flex-col items-center text-center relative group">
+                <span
+                  className={`text-3xl font-black ${
+                    lastResult.isCritFail
+                      ? 'text-red-400'
+                      : lastResult.isCritSuccess || lastResult.isCritical
+                      ? 'text-emerald-300'
+                      : 'text-white'
+                  }`}
+                >
+                  {lastResult.attackRoll}
+                </span>
+                <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Ataque</span>
+                {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
+                  <div className="hidden group-hover:flex flex-col gap-1 absolute top-full mt-2 right-1/2 translate-x-1/2 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl whitespace-nowrap z-20">
+                    <span>{lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}</span>
+                    {lastResult.isCritSuccess && <span className="text-emerald-300">Crítico natural</span>}
+                    {lastResult.isCritFail && <span className="text-red-300">Falha natural</span>}
                   </div>
-              )}
-
-              <div className="flex items-center gap-2 mb-3 pt-1">
-                 <Sword size={18} className={`${lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-slate-300'}`} />
-                 <h3 className="font-bold text-white text-sm leading-tight truncate pr-4">{lastResult.title || "Resultado"}</h3>
+                )}
               </div>
 
-              {/* Attack Roll Display */}
-              {lastResult.attackRoll !== undefined && (
-                <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-300 font-medium">Ataque</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="relative group">
-                      <span className={`text-3xl font-black ${
-                        lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-slate-100'
-                      }`}>
-                        {lastResult.attackRoll}
-                      </span>
-                      {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
-                        <div className="hidden group-hover:block absolute top-full mt-2 right-0 bg-slate-800 text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-lg whitespace-nowrap z-20">
-                          {lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}
-                        </div>
-                      )}
-                    </div>
-                    {lastResult.isCritSuccess && <span className="text-xs font-bold text-emerald-400 uppercase">Crítico</span>}
-                    {lastResult.isCritFail && <span className="text-xs font-bold text-red-400 uppercase">Falha</span>}
-                  </div>
-                </div>
-              )}
+              <div className="h-12 w-px bg-slate-700" />
 
-              {/* Damage Display */}
-              <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3">
-                 <div className="text-slate-300 text-xs font-mono max-w-[60%] truncate">Dano</div>
-                 <div className="relative group">
-                   <span className={`text-3xl font-black leading-none ${
-                     lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-white'
-                   }`}>
-                     {lastResult.damageTotal ?? lastResult.total}
-                   </span>
-                   {lastResult.detail && (
-                     <div className="hidden group-hover:block absolute top-full mt-2 right-0 bg-slate-800 text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-lg whitespace-nowrap z-20">
-                       {lastResult.detail}
-                     </div>
-                   )}
-                 </div>
+              {/* Damage Column */}
+              <div className="flex-1 flex flex-col items-center text-center relative group">
+                <span
+                  className={`text-3xl font-black ${
+                    lastResult.isCritFail
+                      ? 'text-red-400'
+                      : lastResult.isCritical
+                      ? 'text-emerald-300'
+                      : 'text-white'
+                  }`}
+                >
+                  {lastResult.damageTotal ?? lastResult.total}
+                </span>
+                <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Dano</span>
+                {lastResult.detail && (
+                  <div className="hidden group-hover:flex absolute top-full mt-2 right-1/2 translate-x-1/2 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl whitespace-nowrap z-20">
+                    {lastResult.detail}
+                  </div>
+                )}
               </div>
-           </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
