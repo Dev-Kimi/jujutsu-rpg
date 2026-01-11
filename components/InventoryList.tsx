@@ -730,7 +730,7 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
   );
 };
 
-// Edit Item Modal Component - Simplified
+// Edit Item Modal Component - Complete Version
 const EditItemModal: React.FC<{
   item: Item;
   onUpdate: (id: string, field: keyof Item, value: any) => void;
@@ -738,24 +738,114 @@ const EditItemModal: React.FC<{
   onClose: () => void;
   onNotify?: (message: string, type?: 'success' | 'error') => void;
 }> = ({ item, onUpdate, onAdd, onClose, onNotify }) => {
-  console.log('Opening simple edit modal for item:', item);
+  console.log('Opening complete edit modal for item:', item);
 
+  // Safe parsing function
+  const parseItemData = (item: Item) => {
+    try {
+      const desc = item.description || '';
+      return {
+        category: 'Geral',
+        grade: 'Mundana',
+        spaces: 1,
+        proficiency: 'Luta',
+        weaponType: 'Corte',
+        grip: 'Uma Mão',
+        damage: '1d6',
+        critical: '20',
+        multiplier: '2',
+        damageType: 'Corte',
+        range: 'Corpo a corpo',
+        durability: '10',
+        defense: 1,
+        description: desc
+      };
+    } catch (error) {
+      console.error('Error parsing item data:', error);
+      return {
+        category: 'Geral',
+        grade: 'Mundana',
+        spaces: 1,
+        proficiency: 'Luta',
+        weaponType: 'Corte',
+        grip: 'Uma Mão',
+        damage: '1d6',
+        critical: '20',
+        multiplier: '2',
+        damageType: 'Corte',
+        range: 'Corpo a corpo',
+        durability: '10',
+        defense: 1,
+        description: item.description || ''
+      };
+    }
+  };
+
+  const parsed = parseItemData(item);
+
+  const [activeCategory, setActiveCategory] = useState<ItemCategory>('Geral');
   const [editForm, setEditForm] = useState({
     name: item?.name || '',
-    description: item?.description || ''
+    category: parsed.category,
+    grade: parsed.grade,
+    spaces: parsed.spaces,
+    proficiency: parsed.proficiency,
+    weaponType: parsed.weaponType,
+    grip: parsed.grip,
+    damage: parsed.damage,
+    critical: parsed.critical,
+    multiplier: parsed.multiplier,
+    damageType: parsed.damageType,
+    range: parsed.range,
+    durability: parsed.durability,
+    defense: parsed.defense,
+    description: parsed.description,
+    attackSkill: 'Luta'
   });
+
+  const getCategoryIcon = (cat: ItemCategory) => {
+    switch (cat) {
+      case 'Arma': return <Sword size={14} />;
+      case 'Munição': return <Zap size={14} />;
+      case 'Proteção': return <Shield size={14} />;
+      case 'Geral': return <Package size={14} />;
+    }
+  };
 
   const handleSave = () => {
     try {
+      let description = editForm.description || '';
+
+      // Add structured info based on category
+      if (editForm.category === 'Arma') {
+        description = `${editForm.description || ''} | Categoria: Arma | Tipo: ${editForm.weaponType} | Empunhadura: ${editForm.grip} | Dano: ${editForm.damage} | Crítico: ${editForm.critical} | Multiplicador: ${editForm.multiplier} | Tipo de Dano: ${editForm.damageType} | Alcance: ${editForm.range} | Durabilidade: ${editForm.durability} CE | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
+      } else if (editForm.category === 'Proteção') {
+        description = `${editForm.description || ''} | Categoria: Proteção | Defesa: +${editForm.defense} | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
+      } else if (editForm.category === 'Munição') {
+        description = `${editForm.description || ''} | Categoria: Munição | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
+      } else {
+        description = `${editForm.description || ''} | Categoria: Geral | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
+      }
+
+      const itemData: Partial<Item> = {
+        name: editForm.name,
+        description: description
+      };
+
+      // Add attack skill for weapons
+      if (editForm.category === 'Arma' && editForm.attackSkill) {
+        itemData.attackSkill = editForm.attackSkill;
+      }
+
       if (item.id.startsWith('catalog-') || item.id.startsWith('cursed-')) {
-        onAdd({
-          name: editForm.name,
-          description: editForm.description
-        });
+        onAdd(itemData);
         onNotify?.(`"${editForm.name}" adicionado ao inventário!`, 'success');
       } else {
         onUpdate(item.id, 'name', editForm.name);
-        onUpdate(item.id, 'description', editForm.description);
+        onUpdate(item.id, 'description', description);
+        if (editForm.category === 'Arma') {
+          onUpdate(item.id, 'attackSkill', editForm.attackSkill || 'Luta');
+        }
         onNotify?.(`"${editForm.name}" atualizado!`, 'success');
       }
       onClose();
@@ -767,7 +857,8 @@ const EditItemModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 w-full max-w-md rounded-2xl border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-slate-900 w-full max-w-2xl rounded-2xl border border-slate-800 shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+
         {/* Modal Header */}
         <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl">
           <h3 className="text-lg font-bold text-white">Editar Item</h3>
@@ -776,26 +867,234 @@ const EditItemModal: React.FC<{
           </button>
         </div>
 
+        {/* Category Tabs */}
+        <div className="flex border-b border-slate-800 bg-slate-950/50">
+          {(['Arma', 'Munição', 'Proteção', 'Geral'] as ItemCategory[]).map(cat => (
+            <button
+              key={cat}
+              onClick={() => {
+                setActiveCategory(cat);
+                setEditForm(prev => ({ ...prev, category: cat }));
+              }}
+              className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors border-b-2
+                ${activeCategory === cat
+                  ? 'border-emerald-500 text-emerald-400 bg-emerald-950/10'
+                  : 'border-transparent text-slate-500 hover:text-slate-300'}
+              `}
+            >
+              {getCategoryIcon(cat)} {cat}
+            </button>
+          ))}
+        </div>
+
         {/* Form Content */}
-        <div className="p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+          {/* Basic Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome do Item</label>
+              <input
+                type="text"
+                value={editForm.name}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                placeholder="Ex: Espada Lendária"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Grau</label>
+              <select
+                value={editForm.grade}
+                onChange={(e) => setEditForm(prev => ({ ...prev, grade: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="Mundana">Mundana</option>
+                <option value="Grau 4">Grau 4</option>
+                <option value="Grau 3">Grau 3</option>
+                <option value="Grau 2">Grau 2</option>
+                <option value="Grau 1">Grau 1</option>
+                <option value="Especial">Especial</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Attack Skill - Only for weapons */}
+          {activeCategory === 'Arma' && (
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Perícia de Ataque</label>
+              <select
+                value={editForm.attackSkill}
+                onChange={(e) => setEditForm(prev => ({ ...prev, attackSkill: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="Luta">Luta</option>
+                <option value="Pontaria">Pontaria</option>
+                <option value="Atletismo">Atletismo</option>
+                <option value="Furtividade">Furtividade</option>
+                <option value="Percepção">Percepção</option>
+                <option value="Intimidação">Intimidação</option>
+              </select>
+              <p className="text-[9px] text-slate-500 mt-1">Perícia usada para rolar ataques com esta arma</p>
+            </div>
+          )}
+
+          {/* Category-specific fields */}
+          {activeCategory === 'Arma' && (
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-emerald-400 flex items-center gap-2">
+                <Sword size={16} />
+                Propriedades da Arma
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Proficiência</label>
+                  <select
+                    value={editForm.proficiency}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, proficiency: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="Armas Simples">Armas Simples</option>
+                    <option value="Armas Marciais">Armas Marciais</option>
+                    <option value="Armas Exóticas">Armas Exóticas</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Arma</label>
+                  <select
+                    value={editForm.weaponType}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, weaponType: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="Corpo a Corpo">Corpo a Corpo</option>
+                    <option value="À Distância">À Distância</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Empunhadura</label>
+                  <select
+                    value={editForm.grip}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, grip: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="Leve">Leve</option>
+                    <option value="Uma Mão">Uma Mão</option>
+                    <option value="Duas Mãos">Duas Mãos</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dano</label>
+                  <input
+                    type="text"
+                    value={editForm.damage}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, damage: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="Ex: 1d6, 2d4+2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Crítico</label>
+                  <input
+                    type="text"
+                    value={editForm.critical}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, critical: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="Ex: 19-20, 20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Multiplicador</label>
+                  <select
+                    value={editForm.multiplier}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, multiplier: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="2">x2</option>
+                    <option value="3">x3</option>
+                    <option value="4">x4</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Dano</label>
+                  <select
+                    value={editForm.damageType}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, damageType: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="Balístico">Balístico</option>
+                    <option value="Cortante">Cortante</option>
+                    <option value="Perfurante">Perfurante</option>
+                    <option value="Concussão">Concussão</option>
+                    <option value="Energia">Energia</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Alcance</label>
+                  <input
+                    type="text"
+                    value={editForm.range}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, range: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="Ex: 30m, - (corpo a corpo)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Durabilidade (CE)</label>
+                  <input
+                    type="number"
+                    value={editForm.durability}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, durability: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="5"
+                    min="1"
+                  />
+                  <p className="text-[9px] text-slate-500 mt-1">Quantidade máxima de CE que pode ser investida antes da arma quebrar</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeCategory === 'Proteção' && (
+            <div className="space-y-4">
+              <h4 className="text-sm font-bold text-blue-400 flex items-center gap-2">
+                <Shield size={16} />
+                Propriedades de Proteção
+              </h4>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Defesa (+)</label>
+                <input
+                  type="number"
+                  value={editForm.defense}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, defense: e.target.value }))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                  placeholder="0"
+                  min="0"
+                />
+                <p className="text-[9px] text-slate-500 mt-1">Redução de dano físico</p>
+              </div>
+            </div>
+          )}
+
+          {/* Spaces field for all categories */}
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome do Item</label>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Espaços Ocupados</label>
             <input
-              type="text"
-              value={editForm.name}
-              onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+              type="number"
+              value={editForm.spaces}
+              onChange={(e) => setEditForm(prev => ({ ...prev, spaces: parseInt(e.target.value) || 1 }))}
               className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-              placeholder="Nome do item"
+              min="1"
             />
           </div>
 
+          {/* Description */}
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição</label>
             <textarea
               value={editForm.description}
               onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none min-h-[80px]"
-              placeholder="Descrição do item"
+              className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-300 focus:border-emerald-500 focus:outline-none min-h-[80px]"
+              placeholder="Descreva o item, seus efeitos, propriedades especiais, etc..."
             />
           </div>
         </div>
@@ -813,7 +1112,7 @@ const EditItemModal: React.FC<{
             className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg transition-colors duration-100 font-bold flex items-center gap-2"
           >
             <Edit2 size={16} />
-            Salvar
+            Salvar Alterações
           </button>
         </div>
       </div>
