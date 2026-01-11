@@ -638,7 +638,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                 </span>
                 <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Ataque</span>
                 {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
-                  <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl whitespace-nowrap z-20">
+                  <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 right-0 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
                     <span>{lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}</span>
                     {lastResult.isCritSuccess && <span className="text-emerald-300">Crítico natural</span>}
                     {lastResult.isCritFail && <span className="text-red-300">Falha natural</span>}
@@ -663,7 +663,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                 </span>
                 <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Dano</span>
                 {lastResult.detail && (
-                  <div className="hidden group-hover:flex absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl whitespace-nowrap z-20">
+                  <div className="hidden group-hover:flex absolute bottom-full mb-2 right-0 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
                     {lastResult.detail}
                   </div>
                 )}
