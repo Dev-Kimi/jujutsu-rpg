@@ -47,7 +47,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.4.9'; // Update this when you deploy changes
+const APP_VERSION = '1.4.7'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -881,7 +881,7 @@ const App: React.FC = () => {
                     </button>
                 ))}
             </div>
-            <CampaignManager currentUserChar={character} />
+            <CampaignManager currentUserChar={character} onUpdateCurrentUserChar={setCharacter} />
           </div>
       ) : (
       <main className="max-w-[1600px] mx-auto p-4 pb-24">
