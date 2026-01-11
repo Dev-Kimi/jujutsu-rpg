@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats } from '../types';
 import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices } from 'lucide-react';
@@ -10,6 +9,7 @@ import { SkillList } from './SkillList';
 import { AccordionList } from './AccordionList';
 import { InventoryList } from './InventoryList';
 import { CombatTabs } from './CombatTabs';
+import { MasterCombatTracker } from './MasterCombatTracker';
 import { calculateDerivedStats } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
 
@@ -20,7 +20,7 @@ interface CampaignManagerProps {
 
 export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserChar, onUpdateCurrentUserChar }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [view, setView] = useState<'list' | 'detail' | 'sheet'>('list');
+  const [view, setView] = useState<'list' | 'detail' | 'sheet' | 'combat'>('list');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [newCampaignName, setNewCampaignName] = useState('');
   const [newCampaignDesc, setNewCampaignDesc] = useState('');
@@ -32,7 +32,13 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   const [showDiceLog, setShowDiceLog] = useState(false);
   const [activeRollResult, setActiveRollResult] = useState<'skill' | 'combat' | null>(null);
 
+  const [showCombatSetup, setShowCombatSetup] = useState(false);
+  const [combatSelectedKeys, setCombatSelectedKeys] = useState<Record<string, boolean>>({});
+  const [activeCombatParticipants, setActiveCombatParticipants] = useState<CampaignParticipant[]>([]);
+  const [isPreparingCombat, setIsPreparingCombat] = useState(false);
+
   const lastSavedCharRef = useRef<string>('');
+  const lastSavedStatsRef = useRef<string>('');
 
   // 1. Fetch Campaigns
   useEffect(() => {
@@ -46,6 +52,13 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!selectedCampaign) return;
+    const updated = campaigns.find(c => c.id === selectedCampaign.id);
+    if (!updated) return;
+    setSelectedCampaign(updated);
+  }, [campaigns, selectedCampaign]);
 
   // 2. Actions
   const handleCreateCampaign = async () => {
@@ -90,6 +103,25 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
       await updateDoc(campRef, {
         participants: arrayUnion(newParticipant)
       });
+
+      try {
+        const stats = calculateDerivedStats(currentUserChar);
+        const key = `${newParticipant.userId}_${newParticipant.characterId}`;
+        const stateRef = doc(db, 'campaigns', campaign.id, 'characterStates', key);
+        await setDoc(stateRef, {
+          userId: newParticipant.userId,
+          characterId: newParticipant.characterId,
+          characterName: newParticipant.characterName,
+          level: newParticipant.level,
+          imageUrl: newParticipant.imageUrl,
+          currentStats: { pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE },
+          maxStats: { pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE },
+          updatedAt: Date.now()
+        }, { merge: true });
+      } catch (error) {
+        console.error('Error creating campaign character state', error);
+      }
+
       // Local update for immediate feedback (though snapshot handles it)
       setSelectedCampaign({
         ...campaign,
@@ -99,6 +131,45 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
       console.error("Error joining", error);
     }
   };
+
+  useEffect(() => {
+    if (!selectedCampaign) return;
+    if (view !== 'sheet') return;
+    if (!viewingParticipant) return;
+    if (!viewingChar) return;
+    if (!auth.currentUser) return;
+
+    const isSelf = viewingParticipant.userId === auth.currentUser.uid;
+    if (!isSelf) return;
+
+    const derived = calculateDerivedStats(viewingChar);
+    const payload = {
+      userId: viewingParticipant.userId,
+      characterId: viewingParticipant.characterId,
+      characterName: viewingChar.name,
+      level: viewingChar.level,
+      imageUrl: viewingChar.imageUrl,
+      currentStats: viewingStats,
+      maxStats: { pv: derived.MaxPV, ce: derived.MaxCE, pe: derived.MaxPE },
+      updatedAt: Date.now()
+    };
+
+    const json = JSON.stringify(payload);
+    if (json === lastSavedStatsRef.current) return;
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const key = `${viewingParticipant.userId}_${viewingParticipant.characterId}`;
+        const stateRef = doc(db, 'campaigns', selectedCampaign.id, 'characterStates', key);
+        await setDoc(stateRef, payload, { merge: true });
+        lastSavedStatsRef.current = json;
+      } catch (error) {
+        console.error('Error saving campaign currentStats', error);
+      }
+    }, 250);
+
+    return () => clearTimeout(timeoutId);
+  }, [selectedCampaign, view, viewingParticipant, viewingChar, viewingStats]);
 
   const handleViewCharacter = async (participant: CampaignParticipant) => {
     if (!selectedCampaign) return;
@@ -388,6 +459,65 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
 
   // --- RENDERERS ---
 
+  if (view === 'combat' && selectedCampaign) {
+    const isGM = selectedCampaign.gmId === auth.currentUser?.uid;
+    if (!isGM) {
+      return (
+        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4 pb-20">
+          <button
+            onClick={() => setView('detail')}
+            className="text-slate-400 hover:text-white flex items-center gap-2 text-sm font-bold uppercase tracking-wider mb-4"
+          >
+            <ArrowLeft size={16} /> Voltar
+          </button>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-slate-300">
+            Acesso restrito ao Mestre.
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4 pb-20">
+        <div className="sticky top-0 z-20 bg-slate-900 border-curse-500 border-b p-4 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setView('detail')}
+              className="p-2 hover:bg-slate-800 rounded-full transition-colors"
+            >
+              <ArrowLeft />
+            </button>
+            <div>
+              <h2 className="text-xl font-bold text-white">Painel de Combate</h2>
+              <div className="text-xs text-slate-500">{selectedCampaign.name}</div>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              setActiveCombatParticipants([]);
+              setCombatSelectedKeys({});
+              setView('detail');
+            }}
+            className="text-slate-400 hover:text-white flex items-center gap-2"
+          >
+            <X />
+          </button>
+        </div>
+
+        {activeCombatParticipants.length === 0 ? (
+          <div className="text-center text-slate-500 italic py-12">
+            Nenhum participante selecionado.
+          </div>
+        ) : (
+          <MasterCombatTracker
+            campaignId={selectedCampaign.id}
+            participants={activeCombatParticipants}
+          />
+        )}
+      </div>
+    );
+  }
+
   if (view === 'sheet' && viewingChar) {
      const stats = calculateDerivedStats(viewingChar);
      const consumeCE = (amount: number) => {
@@ -516,6 +646,86 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     const isParticipant = selectedCampaign.participants.some(p => p.userId === auth.currentUser?.uid);
     const isGM = selectedCampaign.gmId === auth.currentUser?.uid;
 
+    const toggleCombatPick = (p: CampaignParticipant) => {
+      const key = `${p.userId}_${p.characterId}`;
+      setCombatSelectedKeys(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const selectedForCombat = selectedCampaign.participants.filter(p => combatSelectedKeys[`${p.userId}_${p.characterId}`]);
+
+    const handleConfirmCombat = async () => {
+      if (!selectedCampaign) return;
+      if (selectedForCombat.length === 0) return;
+
+      setIsPreparingCombat(true);
+      try {
+        for (const p of selectedForCombat) {
+          const key = `${p.userId}_${p.characterId}`;
+          const stateRef = doc(db, 'campaigns', selectedCampaign.id, 'characterStates', key);
+
+          let maxStats: CurrentStats | undefined;
+          try {
+            if (p.userId === auth.currentUser?.uid && currentUserChar.id === p.characterId) {
+              const derived = calculateDerivedStats(currentUserChar);
+              maxStats = { pv: derived.MaxPV, ce: derived.MaxCE, pe: derived.MaxPE };
+            } else {
+              const userDocRef = doc(db, 'users', p.userId);
+              const userDocSnap = await getDoc(userDocRef);
+              if (userDocSnap.exists()) {
+                const userData = userDocSnap.data();
+                const chars = (userData.savedCharacters as Character[]) || [];
+                const target = chars.find(c => c.id === p.characterId);
+                if (target) {
+                  const derived = calculateDerivedStats(target);
+                  maxStats = { pv: derived.MaxPV, ce: derived.MaxCE, pe: derived.MaxPE };
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error preparing maxStats for combatant', error);
+          }
+
+          let shouldInitCurrent = false;
+          try {
+            const existing = await getDoc(stateRef);
+            const data = existing.exists() ? (existing.data() as any) : undefined;
+            shouldInitCurrent = !data?.currentStats;
+          } catch (error) {
+            console.error('Error reading characterStates doc', error);
+            shouldInitCurrent = true;
+          }
+
+          const payload: any = {
+            userId: p.userId,
+            characterId: p.characterId,
+            characterName: p.characterName,
+            level: p.level,
+            imageUrl: p.imageUrl,
+            updatedAt: Date.now()
+          };
+
+          if (maxStats) {
+            payload.maxStats = maxStats;
+            if (shouldInitCurrent) {
+              payload.currentStats = maxStats;
+            }
+          }
+
+          try {
+            await setDoc(stateRef, payload, { merge: true });
+          } catch (error) {
+            console.error('Error saving characterStates doc', error);
+          }
+        }
+
+        setActiveCombatParticipants(selectedForCombat);
+        setShowCombatSetup(false);
+        setView('combat');
+      } finally {
+        setIsPreparingCombat(false);
+      }
+    };
+
     return (
       <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4">
          <button 
@@ -558,6 +768,17 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                       className="bg-curse-600 hover:bg-curse-500 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg shadow-curse-900/20 transition-all"
                     >
                        <Dices size={18} /> Log de Rolagens
+                    </button>
+                  )}
+                  {isGM && (
+                    <button
+                      onClick={() => {
+                        setCombatSelectedKeys({});
+                        setShowCombatSetup(true);
+                      }}
+                      className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg shadow-red-900/20 transition-all"
+                    >
+                      <Play size={18} /> Iniciar Novo Combate
                     </button>
                   )}
                </div>
@@ -649,6 +870,81 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
              onClose={() => setShowDiceLog(false)}
              gmId={selectedCampaign.gmId}
            />
+         )}
+
+         {showCombatSetup && (
+           <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+             <div className="bg-slate-900 w-full max-w-xl rounded-2xl border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+               <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl">
+                 <h3 className="text-lg font-bold text-white">Selecionar Participantes</h3>
+                 <button
+                   onClick={() => setShowCombatSetup(false)}
+                   className="text-slate-400 hover:text-white transition-colors duration-100"
+                 >
+                   <X size={20} />
+                 </button>
+               </div>
+
+               <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
+                 {selectedCampaign.participants.length === 0 ? (
+                   <div className="text-slate-500 italic text-sm">Nenhum participante na campanha.</div>
+                 ) : (
+                   selectedCampaign.participants.map((p, idx) => {
+                     const key = `${p.userId}_${p.characterId}`;
+                     const checked = !!combatSelectedKeys[key];
+                     return (
+                       <label
+                         key={idx}
+                         className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                           checked ? 'bg-curse-950/30 border-curse-500/30' : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                         }`}
+                       >
+                         <input
+                           type="checkbox"
+                           checked={checked}
+                           onChange={() => toggleCombatPick(p)}
+                           className="accent-curse-500"
+                         />
+                         <div className="w-10 h-10 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shrink-0">
+                           {p.imageUrl ? (
+                             <img src={p.imageUrl} alt={p.characterName} className="w-full h-full object-cover" />
+                           ) : (
+                             <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold">
+                               {p.characterName.charAt(0)}
+                             </div>
+                           )}
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <div className="font-bold text-white truncate">{p.characterName}</div>
+                           <div className="text-xs text-slate-500">Lv.{p.level} {p.characterClass}</div>
+                         </div>
+                       </label>
+                     );
+                   })
+                 )}
+               </div>
+
+               <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900 rounded-b-2xl">
+                 <button
+                   onClick={() => setShowCombatSetup(false)}
+                   className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold"
+                 >
+                   Cancelar
+                 </button>
+                 <button
+                   onClick={handleConfirmCombat}
+                   disabled={selectedForCombat.length === 0 || isPreparingCombat}
+                   className={`px-4 py-2 rounded-lg font-bold ${
+                     (selectedForCombat.length === 0 || isPreparingCombat)
+                       ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                       : 'bg-red-600 hover:bg-red-500 text-white'
+                   }`}
+                 >
+                   {isPreparingCombat ? 'Preparando...' : 'Confirmar'}
+                 </button>
+               </div>
+             </div>
+           </div>
          )}
       </div>
     );
