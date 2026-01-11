@@ -116,6 +116,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     let attackRoll = 0;
     let attackRollDetail = "";
     let isCritical = false;
+    let isCritSuccess = false;
+    let isCritFail = false;
+    let attackRolls: number[] = [];
+    let damageTotal = 0;
 
     const isHR = char.origin === Origin.RestricaoCelestial;
 
@@ -143,10 +147,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          const lutaBonus = lutaSkill ? lutaSkill.value : 0;
          const llBonus = stats.LL || 0;
          const hasAdvantage = char.attributes.FOR >= 2;
-         const attackRolls = hasAdvantage ? [rollDice(20, 1), rollDice(20, 1)] : [rollDice(20, 1)];
+         attackRolls = hasAdvantage ? [rollDice(20, 1), rollDice(20, 1)] : [rollDice(20, 1)];
          const baseAttackRoll = hasAdvantage ? Math.max(...attackRolls) : attackRolls[0];
          attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus;
          attackRollDetail = `${hasAdvantage ? `max(${attackRolls.join(', ')})` : attackRolls[0]} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
+         isCritSuccess = baseAttackRoll === 20;
+         isCritFail = baseAttackRoll === 1;
+         if (isCritSuccess) isCritical = true;
       } else {
          currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
          if (currentWeaponItem) {
@@ -163,11 +170,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
              const llBonus = stats.LL || 0;
              const hasAdvantage = char.attributes.FOR >= 2;
-             const attackRolls = hasAdvantage ? [rollDice(20, 1), rollDice(20, 1)] : [rollDice(20, 1)];
+             attackRolls = hasAdvantage ? [rollDice(20, 1), rollDice(20, 1)] : [rollDice(20, 1)];
              const baseAttackRoll = hasAdvantage ? Math.max(...attackRolls) : attackRolls[0];
 
              attackRoll = baseAttackRoll + attackBonus + totalBuffBonus + llBonus;
              attackRollDetail = `${hasAdvantage ? `max(${attackRolls.join(', ')})` : attackRolls[0]} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
+             isCritSuccess = baseAttackRoll === 20;
+             isCritFail = baseAttackRoll === 1;
 
              // Check for critical hit
              const criticalThreshold = getWeaponCriticalThreshold(currentWeaponItem);
@@ -311,7 +320,22 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         onConsumeBuffs(relevantBuffs);
     }
 
-    setLastResult({ total, detail, isDamageTaken, weaponBroken, title: rollTitle, attackRoll, attackRollDetail, isCritical });
+    damageTotal = total;
+
+    setLastResult({ 
+      total, 
+      detail, 
+      isDamageTaken, 
+      weaponBroken, 
+      title: rollTitle, 
+      attackRoll, 
+      attackRollDetail, 
+      attackRolls,
+      isCritical: isCritical || isCritSuccess,
+      isCritSuccess,
+      isCritFail,
+      damageTotal
+    });
     setActiveRollResult('combat'); // Set active roll result to combat, which will hide skill results
 
     // Log to campaign if campaignId is provided
@@ -554,13 +578,15 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
         {/* Visual Roll Result Notification (Bottom Right) */}
         {lastResult && activeRollResult === 'combat' && (
-          <div className={`fixed bottom-6 right-6 z-50 w-72 bg-slate-800 border-2 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-100 ${
-            lastResult.isDamageTaken ? 'border-red-600' : 'border-slate-700'
+          <div className={`fixed bottom-6 right-6 z-50 w-80 bg-slate-900 border-2 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-100 ${
+            lastResult.isCritFail ? 'border-red-600' : lastResult.isCritical ? 'border-emerald-500' : 'border-slate-700'
           }`}>
              {/* Accent Line */}
-             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${lastResult.isDamageTaken ? 'bg-red-500' : 'bg-curse-500'}`}></div>
+             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
+                lastResult.isCritFail ? 'bg-red-500' : lastResult.isCritical ? 'bg-emerald-500' : 'bg-curse-500'
+             }`}></div>
 
-             <div className="p-4 pl-6 relative bg-gradient-to-br from-slate-800 to-slate-900">
+             <div className="p-4 pl-6 relative bg-gradient-to-br from-slate-900 to-slate-950">
                 <button 
                   onClick={() => { setLastResult(null); setActiveRollResult(null); }} 
                   className="absolute top-2 right-2 text-slate-400 hover:text-white transition-colors p-1 hover:bg-slate-700 rounded z-10"
@@ -575,39 +601,52 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                 )}
 
                 <div className="flex items-center gap-3 mb-3 pt-1">
-                   <div className={`p-2 rounded-lg border ${lastResult.isDamageTaken ? 'bg-red-900/40 border-red-700/60' : 'bg-curse-900/40 border-curse-700/60'}`}>
-                      {lastResult.isDamageTaken ? (
-                        <Shield size={20} className="text-red-400" />
-                      ) : (
-                        <Sword size={20} className="text-curse-400" />
-                      )}
+                   <div className={`p-2 rounded-lg border ${
+                     lastResult.isCritFail ? 'bg-red-900/40 border-red-700/60' : lastResult.isCritical ? 'bg-emerald-900/30 border-emerald-700/50' : 'bg-curse-900/40 border-curse-700/60'
+                   }`}>
+                      <Sword size={20} className={`${lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-curse-400'}`} />
                    </div>
                    <h3 className="font-bold text-white text-base leading-tight truncate pr-4">{lastResult.title || "Resultado"}</h3>
                 </div>
 
-                {/* Attack Roll Display (only for physical attacks) */}
+                {/* Attack Roll Display */}
                 {lastResult.attackRoll !== undefined && (
-                  <div className="flex justify-between items-center border-t border-slate-700 pt-3 mt-2 gap-3 text-sm">
+                  <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3 text-sm">
                     <div className="flex items-center gap-2">
-                      <Dices size={16} className={`text-emerald-400 ${lastResult.isCritical ? 'animate-pulse' : ''}`} />
-                      <span className="text-slate-300 font-medium">Ataque:</span>
-                      <span className="text-slate-300 font-mono">{lastResult.attackRollDetail}</span>
+                      <div className="relative group">
+                        <Dices size={18} className={`${lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-curse-400'}`} />
+                        {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
+                          <div className="invisible group-hover:visible absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-100 text-xs font-mono px-3 py-2 rounded-lg border border-slate-700 shadow-xl whitespace-nowrap z-20">
+                            {lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-slate-300 font-medium">Ataque</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`font-bold text-lg ${lastResult.isCritical ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-3xl font-black ${
+                        lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-curse-300'
+                      }`}>
                         {lastResult.attackRoll}
-                        {lastResult.isCritical && <span className="text-xs ml-1 text-yellow-300">CRÍTICO!</span>}
                       </span>
+                      {lastResult.isCritSuccess && <span className="text-xs font-bold text-emerald-400 uppercase">Crítico</span>}
+                      {lastResult.isCritFail && <span className="text-xs font-bold text-red-400 uppercase">Falha</span>}
                     </div>
                   </div>
                 )}
 
-                <div className="flex justify-between items-end border-t border-slate-700 pt-3 mt-2 gap-3">
-                   <span className="text-slate-300 font-mono text-xs tracking-tighter break-words leading-relaxed max-w-[60%]">{lastResult.detail}</span>
+                {/* Damage Display */}
+                <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3">
+                   <div className="flex flex-col text-slate-400 text-xs font-mono max-w-[60%] leading-snug">
+                     <span className="text-slate-300 font-semibold">Dano</span>
+                     <span className="truncate">{lastResult.detail}</span>
+                   </div>
                    <div className="flex items-baseline gap-2 shrink-0">
                       <span className="text-slate-500 text-lg font-bold">=</span>
-                      <div className={`text-3xl font-black leading-none ${lastResult.isDamageTaken ? 'text-red-400' : 'text-curse-400'}`}>
-                        {lastResult.total}
+                      <div className={`text-3xl font-black leading-none ${
+                        lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-curse-400'
+                      }`}>
+                        {lastResult.damageTotal ?? lastResult.total}
                       </div>
                    </div>
                 </div>
