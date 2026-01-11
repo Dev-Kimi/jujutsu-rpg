@@ -40,7 +40,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const [techniqueDie, setTechniqueDie] = useState<string>('1d6');
   
   const [incomingDamage, setIncomingDamage] = useState<number>(0);
-  const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, isCritical?: boolean } | null>(null);
+  const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, attackRolls?: number[], isCritical?: boolean, isCritSuccess?: boolean, isCritFail?: boolean, damageTotal?: number } | null>(null);
 
     // Identify equipped weapons from inventory
     const equippedWeapons = char.inventory.filter(item => {
@@ -550,110 +550,100 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                  )}
             </div>
           )}
-          
-          {isHR && activeTab === 'physical' && (
-              <div className="bg-slate-800/50 p-2 rounded border border-slate-700">
-                  <p className="text-xs text-slate-300">
-                      <span className="text-curse-400 font-bold">Restrição Celestial:</span> Dano extra passivo aplicado automaticamente.
-                  </p>
-                  <p className="text-xs font-mono text-slate-500 mt-1">Bônus: {char.level * 2}d3</p>
+
+        {isHR && activeTab === 'physical' && (
+            <div className="bg-slate-800/50 p-2 rounded border border-slate-700">
+                <p className="text-xs text-slate-300">
+                    <span className="text-curse-400 font-bold">Restrição Celestial:</span> Dano extra passivo aplicado automaticamente.
+                </p>
+                <p className="text-xs font-mono text-slate-500 mt-1">Bônus: {char.level * 2}d3</p>
+            </div>
+        )}
+      </div>
+
+      {/* Action Button */}
+      <button
+        onClick={handleRoll}
+        disabled={!isHR && invested <= 0 && activeTab !== 'physical'}
+        className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+           ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
+        `}
+      >
+        {activeTab === 'defense' ? <ArrowRight size={20} /> : <Dices size={20} />}
+        {activeTab === 'defense' ? 'Calcular Dano Final' :
+         willBreak ? 'Atacar e Quebrar Arma' :
+         activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
+         'Ataque Desarmado'}
+      </button>
+
+      {/* Visual Roll Result Notification (Bottom Right) */}
+      {lastResult && activeRollResult === 'combat' && (
+        <div className={`fixed bottom-6 right-6 z-50 w-80 bg-slate-950 border shadow-xl overflow-hidden rounded-none ${
+          lastResult.isCritFail ? 'border-red-600' : lastResult.isCritical ? 'border-emerald-500' : 'border-slate-700'
+        }`}>
+           {/* Accent Line */}
+           <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+              lastResult.isCritFail ? 'bg-red-500' : lastResult.isCritical ? 'bg-emerald-500' : 'bg-slate-600'
+           }`}></div>
+
+           <div className="p-4 pl-5 relative bg-slate-950">
+              <button 
+                onClick={() => { setLastResult(null); setActiveRollResult(null); }} 
+                className="absolute top-2 right-2 text-slate-400 hover:text-white p-1 hover:bg-slate-800 z-10"
+              >
+                 <X size={16} />
+              </button>
+
+              {lastResult.weaponBroken && (
+                  <div className="absolute top-2 left-5 bg-red-950 text-red-300 text-[9px] font-bold px-2 py-0.5 border border-red-800 z-10 flex items-center gap-1">
+                     <Hammer size={8} /> QUEBROU
+                  </div>
+              )}
+
+              <div className="flex items-center gap-2 mb-3 pt-1">
+                 <Sword size={18} className={`${lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-slate-300'}`} />
+                 <h3 className="font-bold text-white text-sm leading-tight truncate pr-4">{lastResult.title || "Resultado"}</h3>
               </div>
-          )}
-        </div>
 
-        {/* Action Button */}
-        <button
-          onClick={handleRoll}
-          disabled={!isHR && invested <= 0 && activeTab !== 'physical'}
-          className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
-             ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
-          `}
-        >
-          {activeTab === 'defense' ? <ArrowRight size={20} /> : <Dices size={20} />}
-          {activeTab === 'defense' ? 'Calcular Dano Final' :
-           willBreak ? 'Atacar e Quebrar Arma' :
-           activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
-           'Ataque Desarmado'}
-        </button>
-
-        {/* Visual Roll Result Notification (Bottom Right) */}
-        {lastResult && activeRollResult === 'combat' && (
-          <div className={`fixed bottom-6 right-6 z-50 w-80 bg-slate-900 border-2 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-right-10 fade-in duration-100 ${
-            lastResult.isCritFail ? 'border-red-600' : lastResult.isCritical ? 'border-emerald-500' : 'border-slate-700'
-          }`}>
-             {/* Accent Line */}
-             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${
-                lastResult.isCritFail ? 'bg-red-500' : lastResult.isCritical ? 'bg-emerald-500' : 'bg-curse-500'
-             }`}></div>
-
-             <div className="p-4 pl-6 relative bg-gradient-to-br from-slate-900 to-slate-950">
-                <button 
-                  onClick={() => { setLastResult(null); setActiveRollResult(null); }} 
-                  className="absolute top-2 right-2 text-slate-400 hover:text-white transition-colors p-1 hover:bg-slate-700 rounded z-10"
-                >
-                   <X size={16} />
-                </button>
-
-                {lastResult.weaponBroken && (
-                    <div className="absolute top-2 left-6 bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded flex items-center gap-1 border border-red-700 z-10">
-                       <Hammer size={8} /> QUEBROU
-                    </div>
-                )}
-
-                <div className="flex items-center gap-3 mb-3 pt-1">
-                   <div className={`p-2 rounded-lg border ${
-                     lastResult.isCritFail ? 'bg-red-900/40 border-red-700/60' : lastResult.isCritical ? 'bg-emerald-900/30 border-emerald-700/50' : 'bg-curse-900/40 border-curse-700/60'
-                   }`}>
-                      <Sword size={20} className={`${lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-curse-400'}`} />
-                   </div>
-                   <h3 className="font-bold text-white text-base leading-tight truncate pr-4">{lastResult.title || "Resultado"}</h3>
-                </div>
-
-                {/* Attack Roll Display */}
-                {lastResult.attackRoll !== undefined && (
-                  <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="relative group">
-                        <Dices size={18} className={`${lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-curse-400'}`} />
-                        {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
-                          <div className="invisible group-hover:visible absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-900 text-slate-100 text-xs font-mono px-3 py-2 rounded-lg border border-slate-700 shadow-xl whitespace-nowrap z-20">
-                            {lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-slate-300 font-medium">Ataque</span>
-                    </div>
-                    <div className="flex items-center gap-3">
+              {/* Attack Roll Display */}
+              {lastResult.attackRoll !== undefined && (
+                <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-300 font-medium">Ataque</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative group">
                       <span className={`text-3xl font-black ${
-                        lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-curse-300'
+                        lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-slate-100'
                       }`}>
                         {lastResult.attackRoll}
                       </span>
-                      {lastResult.isCritSuccess && <span className="text-xs font-bold text-emerald-400 uppercase">Crítico</span>}
-                      {lastResult.isCritFail && <span className="text-xs font-bold text-red-400 uppercase">Falha</span>}
+                      {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
+                        <div className="hidden group-hover:block absolute top-full mt-2 right-0 bg-slate-950 text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-lg whitespace-nowrap z-20">
+                          {lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}
+                        </div>
+                      )}
                     </div>
+                    {lastResult.isCritSuccess && <span className="text-xs font-bold text-emerald-400 uppercase">Crítico</span>}
+                    {lastResult.isCritFail && <span className="text-xs font-bold text-red-400 uppercase">Falha</span>}
                   </div>
-                )}
-
-                {/* Damage Display */}
-                <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3">
-                   <div className="flex flex-col text-slate-400 text-xs font-mono max-w-[60%] leading-snug">
-                     <span className="text-slate-300 font-semibold">Dano</span>
-                     <span className="truncate">{lastResult.detail}</span>
-                   </div>
-                   <div className="flex items-baseline gap-2 shrink-0">
-                      <span className="text-slate-500 text-lg font-bold">=</span>
-                      <div className={`text-3xl font-black leading-none ${
-                        lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-curse-400'
-                      }`}>
-                        {lastResult.damageTotal ?? lastResult.total}
-                      </div>
-                   </div>
                 </div>
-             </div>
-          </div>
-        )}
-      </div>
+              )}
+
+              {/* Damage Display */}
+              <div className="flex justify-between items-center border-t border-slate-800 pt-3 mt-2 gap-3">
+                 <div className="text-slate-400 text-xs font-mono max-w-[60%] truncate">{lastResult.detail}</div>
+                 <div className={`text-3xl font-black leading-none ${
+                   lastResult.isCritFail ? 'text-red-400' : lastResult.isCritical ? 'text-emerald-400' : 'text-slate-100'
+                 }`}>
+                   {lastResult.damageTotal ?? lastResult.total}
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
+
 };
