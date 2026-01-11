@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Item } from '../types';
-import { MUNDANE_WEAPONS, CURSED_TOOL_GRADES, MundaneWeapon } from '../utils/equipmentData';
-import { Plus, Trash2, Package, Minus, Sword, Shield, Info, Coins, Hammer, Zap, BookOpen, AlertTriangle, Edit2, X, CheckCircle } from 'lucide-react';
+import { MUNDANE_WEAPONS, MundaneWeapon } from '../utils/equipmentData';
+import { Plus, Trash2, Package, Minus, Sword, Shield, Info, Coins, BookOpen, AlertTriangle, Edit2, X, CheckCircle, Hammer, Zap } from 'lucide-react';
 
 interface InventoryListProps {
   items: Item[];
@@ -491,16 +491,6 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
             >
               Armas Mundanas
             </button>
-            <button
-              onClick={() => setCatalogSection('cursed')}
-              className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide border transition-all
-                ${catalogSection === 'cursed'
-                  ? 'bg-purple-900/30 text-purple-200 border-purple-500/30'
-                  : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
-              `}
-            >
-              Ferramentas Amaldiçoadas
-            </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 bg-slate-950/50">
@@ -650,62 +640,6 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, onAdd, onUp
               </div>
             )}
 
-            {/* CURSED TOOLS LIST */}
-            {catalogSection === 'cursed' && (
-              <div className="space-y-3 animate-in fade-in duration-300">
-                <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-lg text-xs text-slate-400 mb-2 flex gap-3 items-start">
-                  <Info size={16} className="shrink-0 mt-0.5 text-curse-400"/>
-                  <p>
-                    <strong className="text-curse-300">Regra de Durabilidade:</strong> O custo indica o limite seguro de CE. Se investir mais CE num ataque (Sobrecarga), a arma quebra após o golpe.
-                  </p>
-                </div>
-
-                {CURSED_TOOL_GRADES.map((grade, idx) => {
-                  // Convert cursed tool to full Item format for editing
-                  const cursedItem: Item = {
-                    id: `cursed-${idx}`,
-                    name: `Ferramenta ${grade.grade}`,
-                    quantity: 1,
-                    description: `Durabilidade: ${grade.durabilityCost} | Efeito: ${grade.effect} | Valor: ${grade.price} | Categoria: Geral | Grau: ${grade.grade} | Espaços: 1`
-                  };
-
-                  return (
-                    <div key={idx} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hover:border-curse-500/30 transition-colors group">
-                      <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-950/30">
-                        <h4 className="font-bold text-curse-300 text-sm flex items-center gap-2">
-                          <Hammer size={14} /> {grade.grade}
-                        </h4>
-                        <span className="text-xs font-mono text-emerald-400 flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                          <Coins size={10} /> {grade.price}
-                        </span>
-                      </div>
-                      <div className="p-3 text-xs space-y-2">
-                        <div className="flex items-start gap-2">
-                          <span className="bg-curse-950/40 text-curse-200 px-1.5 rounded border border-curse-500/20 whitespace-nowrap flex items-center gap-1">
-                            <Zap size={10} /> {grade.durabilityCost}
-                          </span>
-                          <span className="text-slate-400">{grade.effect}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setEditingItem(cursedItem)}
-                            className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded flex items-center justify-center gap-2 transition-colors font-bold uppercase tracking-wider text-[10px]"
-                          >
-                            <Edit2 size={10} /> Editar
-                          </button>
-                          <button
-                            onClick={() => handleAddToInventory(`Ferramenta ${grade.grade}`, `Durabilidade: ${grade.durabilityCost} | Efeito: ${grade.effect} | Valor: ${grade.price}`)}
-                            className="flex-1 py-1.5 bg-slate-800 hover:bg-curse-700 text-slate-400 hover:text-white rounded flex items-center justify-center gap-2 transition-colors font-bold uppercase tracking-wider text-[10px]"
-                          >
-                            <Plus size={10} /> Adicionar
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
 
           </div>
         </div>
