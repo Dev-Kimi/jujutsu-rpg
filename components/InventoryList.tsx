@@ -946,6 +946,139 @@ const EditItemModal: React.FC<{
         </div>
 
         {/* Category Tabs */}
+        <div className="flex border-b border-slate-800 bg-slate-950">
+          {(['Arma', 'Proteção', 'Munição', 'Geral'] as ItemCategory[]).map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors border-b-2
+                ${activeCategory === cat
+                  ? 'border-emerald-500 text-emerald-400 bg-emerald-950/10'
+                  : 'border-transparent text-slate-500 hover:text-slate-300'}
+              `}
+            >
+              {getCategoryIcon(cat)} {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Modal Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+          {/* Basic Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome do Item</label>
+              <input
+                type="text"
+                value={editForm.name || ''}
+                onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                placeholder="Ex: Espada Lendária"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Grau</label>
+              <select
+                value={editForm.grade || 'Mundana'}
+                onChange={(e) => setEditForm(prev => ({ ...prev, grade: e.target.value }))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="Mundana">Mundana</option>
+                <option value="Grau 4">Grau 4</option>
+                <option value="Grau 3">Grau 3</option>
+                <option value="Grau 2">Grau 2</option>
+                <option value="Grau 1">Grau 1</option>
+                <option value="Especial">Especial</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Weapon-specific fields */}
+          {activeCategory === 'Arma' && (
+            <>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Perícia de Ataque</label>
+                <select
+                  value={editForm.attackSkill || 'Luta'}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, attackSkill: e.target.value }))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                >
+                  <option value="Luta">Luta</option>
+                  <option value="Pontaria">Pontaria</option>
+                  <option value="Atletismo">Atletismo</option>
+                  <option value="Furtividade">Furtividade</option>
+                  <option value="Percepção">Percepção</option>
+                  <option value="Intimidação">Intimidação</option>
+                </select>
+                <p className="text-[9px] text-slate-500 mt-1">Perícia usada para rolar ataques com esta arma</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dano</label>
+                  <input
+                    type="text"
+                    value={editForm.damage || '1d6'}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, damage: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="Ex: 1d8, 2d6+2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Crítico</label>
+                  <input
+                    type="text"
+                    value={editForm.critical || '20'}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, critical: e.target.value }))}
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                    placeholder="Ex: 19-20, 18"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Description */}
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição</label>
+            <textarea
+              value={editForm.description || ''}
+              onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+              className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none h-20 resize-none"
+              placeholder="Descrição detalhada do item..."
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors duration-100"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors duration-100"
+            >
+              Salvar Alterações
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+        {/* Modal Header */}
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl">
+          <h3 className="text-lg font-bold text-white">Editar Item</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors duration-100">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Category Tabs */}
         <div className="flex border-b border-slate-800 bg-slate-950/50">
           {(['Arma', 'Munição', 'Proteção', 'Geral'] as ItemCategory[]).map(cat => (
             <button
