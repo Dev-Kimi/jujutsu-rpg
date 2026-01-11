@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats } from '../types';
 import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
@@ -9,27 +9,30 @@ import { StatBar } from './StatBar';
 import { SkillList } from './SkillList';
 import { AccordionList } from './AccordionList';
 import { InventoryList } from './InventoryList';
+import { CombatTabs } from './CombatTabs';
 import { calculateDerivedStats } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
 
 interface CampaignManagerProps {
   currentUserChar: Character;
+  onUpdateCurrentUserChar?: (nextChar: Character) => void;
 }
 
-export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserChar }) => {
+export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserChar, onUpdateCurrentUserChar }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [view, setView] = useState<'list' | 'detail' | 'sheet'>('list');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [newCampaignName, setNewCampaignName] = useState('');
   const [newCampaignDesc, setNewCampaignDesc] = useState('');
   
-  // Read Only Sheet State
+  // Sheet State
   const [viewingChar, setViewingChar] = useState<Character | null>(null);
   const [viewingStats, setViewingStats] = useState<CurrentStats>({ pv: 0, ce: 0, pe: 0 });
-  const [editingAsGM, setEditingAsGM] = useState(false);
-  const [editingParticipant, setEditingParticipant] = useState<CampaignParticipant | null>(null);
+  const [viewingParticipant, setViewingParticipant] = useState<CampaignParticipant | null>(null);
   const [showDiceLog, setShowDiceLog] = useState(false);
   const [activeRollResult, setActiveRollResult] = useState<'skill' | 'combat' | null>(null);
+
+  const lastSavedCharRef = useRef<string>('');
 
   // 1. Fetch Campaigns
   useEffect(() => {
@@ -116,8 +119,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
             setViewingChar(currentUserChar);
             const stats = calculateDerivedStats(currentUserChar);
             setViewingStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE });
-            setEditingAsGM(false);
-            setEditingParticipant(null);
+            setViewingParticipant(participant);
+            lastSavedCharRef.current = JSON.stringify(currentUserChar);
             setView('sheet');
             return;
         } else {
@@ -149,8 +152,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                 // For read-only, we assume full health/resources or you'd need to sync CurrentStats to Firestore too.
                 // Here we set to MAX for display purposes.
                 setViewingStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE });
-                setEditingAsGM(true);
-                setEditingParticipant(participant);
+                setViewingParticipant(participant);
+                lastSavedCharRef.current = JSON.stringify(target);
                 setView('sheet');
             } else {
                 alert(`Personagem com ID "${participant.characterId}" não encontrado no banco de dados do jogador.`);
@@ -164,11 +167,11 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     }
   };
 
-  const handleSaveCharacterAsGM = async () => {
-    if (!viewingChar || !editingParticipant) return;
+  const handleSaveCharacterToUser = async (userId: string, characterToSave: Character) => {
+    if (!selectedCampaign) return;
     
     try {
-      const userDocRef = doc(db, "users", editingParticipant.userId);
+      const userDocRef = doc(db, "users", userId);
       const userDocSnap = await getDoc(userDocRef);
       
       if (userDocSnap.exists()) {
@@ -177,7 +180,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
         
         // Update the character in the array
         const updatedCharacters = characters.map(c => 
-          c.id === viewingChar.id ? viewingChar : c
+          c.id === characterToSave.id ? characterToSave : c
         );
         
         // Save back to Firestore
@@ -187,32 +190,57 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
         }, { merge: true });
         
         // Update participant info in campaign if name/level changed
-        if (selectedCampaign) {
-          const campRef = doc(db, "campaigns", selectedCampaign.id);
-          const updatedParticipants = selectedCampaign.participants.map(p => 
-            p.userId === editingParticipant.userId && p.characterId === viewingChar.id
-              ? { ...p, characterName: viewingChar.name, level: viewingChar.level, characterClass: viewingChar.characterClass }
-              : p
-          );
-          
-          await updateDoc(campRef, {
-            participants: updatedParticipants
-          });
-          
-          // Update local state
-          setSelectedCampaign({
-            ...selectedCampaign,
-            participants: updatedParticipants
-          });
-        }
+        const campRef = doc(db, "campaigns", selectedCampaign.id);
+        const updatedParticipants = selectedCampaign.participants.map(p => 
+          p.userId === userId && p.characterId === characterToSave.id
+            ? { ...p, characterName: characterToSave.name, level: characterToSave.level, characterClass: characterToSave.characterClass }
+            : p
+        );
         
-        alert("Ficha salva com sucesso!");
+        await updateDoc(campRef, {
+          participants: updatedParticipants
+        });
+        
+        // Update local state
+        setSelectedCampaign({
+          ...selectedCampaign,
+          participants: updatedParticipants
+        });
       }
     } catch (error) {
-      console.error("Error saving character as GM", error);
-      alert("Erro ao salvar ficha: " + (error instanceof Error ? error.message : String(error)));
+      console.error("Error saving character", error);
     }
   };
+
+  useEffect(() => {
+    if (!viewingChar || !viewingParticipant || view !== 'sheet') return;
+    if (!auth.currentUser) return;
+
+    const isSelf = viewingParticipant.userId === auth.currentUser.uid;
+    if (isSelf) return;
+    if (!selectedCampaign) return;
+    const isGM = selectedCampaign.gmId === auth.currentUser.uid;
+    if (!isGM) return;
+
+    const json = JSON.stringify(viewingChar);
+    if (json === lastSavedCharRef.current) return;
+
+    const timeoutId = setTimeout(async () => {
+      await handleSaveCharacterToUser(viewingParticipant.userId, viewingChar);
+      lastSavedCharRef.current = json;
+    }, 700);
+
+    return () => clearTimeout(timeoutId);
+  }, [viewingChar, viewingParticipant, view, selectedCampaign]);
+
+  useEffect(() => {
+    if (!viewingParticipant) return;
+    if (!auth.currentUser) return;
+    const isSelf = viewingParticipant.userId === auth.currentUser.uid;
+    if (!isSelf) return;
+    if (view !== 'sheet') return;
+    setViewingChar(currentUserChar);
+  }, [currentUserChar, viewingParticipant, view]);
 
   const handleRemoveParticipant = async (campaign: Campaign, participant: CampaignParticipant) => {
     if (!auth.currentUser) return alert("Faça login.");
@@ -276,56 +304,60 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     }
   };
 
-  // Handlers for GM editing
-  const handleCharUpdateAsGM = (field: keyof Character, value: any) => {
+  const updateViewingChar = (updater: (prev: Character) => Character) => {
     if (!viewingChar) return;
-    setViewingChar({ ...viewingChar, [field]: value });
+    const next = updater(viewingChar);
+    setViewingChar(next);
+
+    if (!auth.currentUser || !viewingParticipant) return;
+    const isSelf = viewingParticipant.userId === auth.currentUser.uid;
+    if (isSelf && onUpdateCurrentUserChar) {
+      onUpdateCurrentUserChar(next);
+    }
   };
 
-  const handleAttributeUpdateAsGM = (attr: keyof import('../types').Attributes, val: number) => {
-    if (!viewingChar) return;
-    setViewingChar({
-      ...viewingChar,
-      attributes: { ...viewingChar.attributes, [attr]: val }
-    });
+  const handleCharUpdate = (field: keyof Character, value: any) => {
+    updateViewingChar(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSkillUpdateAsGM = (id: string, field: keyof import('../types').Skill, value: any) => {
-    if (!viewingChar) return;
-    setViewingChar({
-      ...viewingChar,
-      skills: viewingChar.skills.map(s => s.id === id ? { ...s, [field]: value } : s)
-    });
+  const handleAttributeUpdate = (attr: keyof import('../types').Attributes, val: number) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      attributes: { ...prev.attributes, [attr]: val }
+    }));
   };
 
-  const handleAddSkillAsGM = () => {
-    if (!viewingChar) return;
-    const newSkill: import('../types').Skill = { 
-      id: Math.random().toString(36).substring(2, 9), 
-      name: "Nova Perícia", 
-      value: 0 
+  const handleSkillUpdate = (id: string, field: keyof import('../types').Skill, value: any) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      skills: prev.skills.map(s => s.id === id ? { ...s, [field]: value } : s)
+    }));
+  };
+
+  const handleAddSkill = () => {
+    const newSkill: import('../types').Skill = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: "Nova Perícia",
+      value: 0
     };
-    setViewingChar({ ...viewingChar, skills: [...viewingChar.skills, newSkill] });
+    updateViewingChar(prev => ({ ...prev, skills: [...prev.skills, newSkill] }));
   };
 
-  const handleRemoveSkillAsGM = (id: string) => {
-    if (!viewingChar) return;
-    setViewingChar({
-      ...viewingChar,
-      skills: viewingChar.skills.filter(s => s.id !== id)
-    });
+  const handleRemoveSkill = (id: string) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      skills: prev.skills.filter(s => s.id !== id)
+    }));
   };
 
-  const handleArrayUpdateAsGM = (field: 'abilities' | 'inventory', id: string, itemField: string, value: any) => {
-    if (!viewingChar) return;
-    setViewingChar({
-      ...viewingChar,
-      [field]: viewingChar[field].map((item: any) => item.id === id ? { ...item, [itemField]: value } : item)
-    });
+  const handleArrayUpdate = (field: 'abilities' | 'inventory', id: string, itemField: string, value: any) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      [field]: prev[field].map((item: any) => item.id === id ? { ...item, [itemField]: value } : item)
+    }));
   };
 
-  const handleArrayAddAsGM = (field: 'abilities' | 'inventory', category?: string, template?: Partial<import('../types').Item>) => {
-    if (!viewingChar) return;
+  const handleArrayAdd = (field: 'abilities' | 'inventory', category?: string, template?: Partial<import('../types').Item>) => {
     const id = Math.random().toString(36).substring(2, 9);
     let newItem;
     if (field === 'inventory') {
@@ -333,14 +365,24 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     } else {
       newItem = { id, name: "", cost: "", description: "", category: category || "Combatente" } as import('../types').Ability;
     }
-    setViewingChar({ ...viewingChar, [field]: [...viewingChar[field], newItem] });
+    updateViewingChar(prev => ({ ...prev, [field]: [...prev[field], newItem] }));
   };
 
-  const handleArrayRemoveAsGM = (field: 'abilities' | 'inventory', id: string) => {
-    if (!viewingChar) return;
-    setViewingChar({
-      ...viewingChar,
-      [field]: viewingChar[field].filter((item: any) => item.id !== id)
+  const handleArrayRemove = (field: 'abilities' | 'inventory', id: string) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      [field]: prev[field].filter((item: any) => item.id !== id)
+    }));
+  };
+
+  const handleToggleEquipWeapon = (weaponId: string) => {
+    updateViewingChar(prev => {
+      const equippedWeapons = prev.equippedWeapons || [];
+      const isEquipped = equippedWeapons.includes(weaponId);
+      const newEquippedWeapons = isEquipped
+        ? equippedWeapons.filter(id => id !== weaponId)
+        : [...equippedWeapons, weaponId];
+      return { ...prev, equippedWeapons: newEquippedWeapons };
     });
   };
 
@@ -348,55 +390,36 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
 
   if (view === 'sheet' && viewingChar) {
      const stats = calculateDerivedStats(viewingChar);
-     const isReadOnly = !editingAsGM;
+     const consumeCE = (amount: number) => {
+       setViewingStats(prev => ({ ...prev, ce: Math.max(0, prev.ce - amount) }));
+     };
+     const consumePE = (amount: number) => {
+       setViewingStats(prev => ({ ...prev, pe: Math.max(0, prev.pe - amount) }));
+     };
      
      return (
         <div className="animate-in slide-in-from-bottom-5 duration-300 pb-20">
            {/* Header */}
-           <div className={`sticky top-0 z-20 ${editingAsGM ? 'bg-curse-900/80 border-curse-500' : 'bg-slate-900 border-curse-500'} border-b p-4 flex items-center justify-between shadow-lg`}>
+           <div className="sticky top-0 z-20 bg-slate-900 border-curse-500 border-b p-4 flex items-center justify-between shadow-lg">
                <div className="flex items-center gap-4">
                   <button 
                     onClick={() => {
                       setView('detail');
-                      setEditingAsGM(false);
-                      setEditingParticipant(null);
+                      setViewingParticipant(null);
                     }} 
                     className="p-2 hover:bg-slate-800 rounded-full transition-colors"
                   >
                      <ArrowLeft />
                   </button>
                   <div>
-                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                        {editingAsGM ? (
-                          <>
-                            <Edit2 size={20} className="text-curse-400" /> Editando: {viewingChar.name}
-                          </>
-                        ) : (
-                          <>
-                            <Eye size={20} className="text-emerald-400" /> Visualizando: {viewingChar.name}
-                          </>
-                        )}
-                     </h2>
-                     <p className="text-xs text-slate-400">
-                        {editingAsGM ? "Modo Edição (Mestre)" : "Modo Somente Leitura"}
-                     </p>
+                     <h2 className="text-xl font-bold text-white">{viewingChar.name}</h2>
                   </div>
                </div>
                <div className="flex items-center gap-2">
-                  {editingAsGM && (
-                     <button 
-                        onClick={handleSaveCharacterAsGM}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all"
-                        title="Salvar Alterações"
-                     >
-                        <Save size={18} /> Salvar
-                     </button>
-                  )}
                   <button 
                     onClick={() => {
                       setView('detail');
-                      setEditingAsGM(false);
-                      setEditingParticipant(null);
+                      setViewingParticipant(null);
                     }} 
                     className="text-slate-400 hover:text-white"
                   >
@@ -410,9 +433,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                <section className="md:col-span-1 xl:col-span-3 space-y-6">
                   <CharacterAttributes 
                      char={viewingChar} 
-                     onUpdate={editingAsGM ? handleCharUpdateAsGM : () => {}} 
-                     onUpdateAttribute={editingAsGM ? handleAttributeUpdateAsGM : () => {}} 
-                     readOnly={isReadOnly}
+                     onUpdate={handleCharUpdate}
+                     onUpdateAttribute={handleAttributeUpdate}
                      campaignId={selectedCampaign?.id}
                   />
                   <div className="space-y-1 opacity-90">
@@ -421,24 +443,21 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                        current={viewingStats.pv} 
                        max={stats.MaxPV} 
                        colorClass="bg-blood-500" 
-                       onChange={editingAsGM ? (v) => setViewingStats({ ...viewingStats, pv: v }) : () => {}} 
-                       readOnly={isReadOnly} 
+                       onChange={(v) => setViewingStats({ ...viewingStats, pv: v })}
                      />
                      <StatBar 
                        label="Energia (CE)" 
                        current={viewingStats.ce} 
                        max={stats.MaxCE} 
                        colorClass="bg-curse-500" 
-                       onChange={editingAsGM ? (v) => setViewingStats({ ...viewingStats, ce: v }) : () => {}} 
-                       readOnly={isReadOnly} 
+                       onChange={(v) => setViewingStats({ ...viewingStats, ce: v })}
                      />
                      <StatBar 
                        label="Esforço (PE)" 
                        current={viewingStats.pe} 
                        max={stats.MaxPE} 
                        colorClass="bg-orange-500" 
-                       onChange={editingAsGM ? (v) => setViewingStats({ ...viewingStats, pe: v }) : () => {}} 
-                       readOnly={isReadOnly} 
+                       onChange={(v) => setViewingStats({ ...viewingStats, pe: v })}
                      />
                   </div>
                </section>
@@ -447,12 +466,10 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                <section className="md:col-span-1 xl:col-span-5">
                   <SkillList 
                     char={viewingChar} 
-                    onUpdateSkill={editingAsGM ? handleSkillUpdateAsGM : () => {}} 
-                    onAddSkill={editingAsGM ? handleAddSkillAsGM : () => {}} 
-                    onRemoveSkill={editingAsGM ? handleRemoveSkillAsGM : () => {}} 
-                    readOnly={isReadOnly}
+                    onUpdateSkill={handleSkillUpdate}
+                    onAddSkill={handleAddSkill}
+                    onRemoveSkill={handleRemoveSkill}
                     campaignId={selectedCampaign?.id}
-                    allowRollsWhenReadOnly={editingAsGM && isReadOnly}
                     activeRollResult={activeRollResult}
                     setActiveRollResult={setActiveRollResult}
                   />
@@ -460,20 +477,34 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
 
                {/* Inventory / Abilities */}
                <section className="md:col-span-2 xl:col-span-4 space-y-4">
+                  <CombatTabs
+                    char={viewingChar}
+                    stats={stats}
+                    currentStats={viewingStats}
+                    consumeCE={consumeCE}
+                    consumePE={consumePE}
+                    activeBuffs={[]}
+                    onConsumeBuffs={() => {}}
+                    activeRollResult={activeRollResult}
+                    setActiveRollResult={setActiveRollResult}
+                    onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                    campaignId={selectedCampaign?.id}
+                  />
                   <AccordionList 
                      title="Habilidades"
                      items={viewingChar.abilities}
-                     onAdd={editingAsGM ? (cat) => handleArrayAddAsGM('abilities', cat) : () => {}} 
-                     onUpdate={editingAsGM ? (id, field, val) => handleArrayUpdateAsGM('abilities', id, field, val) : () => {}} 
-                     onRemove={editingAsGM ? (id) => handleArrayRemoveAsGM('abilities', id) : () => {}}
+                     onAdd={(cat) => handleArrayAdd('abilities', cat)}
+                     onUpdate={(id, field, val) => handleArrayUpdate('abilities', id, field, val)}
+                     onRemove={(id) => handleArrayRemove('abilities', id)}
                      enableTabs={false}
                   />
                   <InventoryList 
                      items={viewingChar.inventory} 
-                     onAdd={editingAsGM ? (template) => handleArrayAddAsGM('inventory', undefined, template) : () => {}} 
-                     onUpdate={editingAsGM ? (id, field, val) => handleArrayUpdateAsGM('inventory', id, field, val) : () => {}} 
-                     onRemove={editingAsGM ? (id) => handleArrayRemoveAsGM('inventory', id) : () => {}} 
-                     readOnly={isReadOnly}
+                     onAdd={(template) => handleArrayAdd('inventory', undefined, template)}
+                     onUpdate={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                     onRemove={(id) => handleArrayRemove('inventory', id)}
+                     equippedWeapons={viewingChar.equippedWeapons}
+                     onToggleEquip={handleToggleEquipWeapon}
                   />
                </section>
            </div>
