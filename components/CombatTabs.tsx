@@ -89,6 +89,21 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     return count * sides;
   };
 
+  const getSkillAttribute = (skillName: string): keyof Character['attributes'] => {
+    const skill = char.skills.find(s => s.name === skillName);
+    return (skill?.attribute as keyof Character['attributes']) || 'FOR';
+  };
+
+  const rollD20Pool = (diceCount: number) => {
+    const count = Math.max(1, diceCount);
+    const rolls: number[] = [];
+    for (let i = 0; i < count; i++) {
+      rolls.push(rollDice(20, 1));
+    }
+    const best = Math.max(...rolls);
+    return { rolls, best };
+  };
+
   const reset = () => {
     setLastResult(null);
     setActiveRollResult(null);
@@ -148,15 +163,17 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          baseDamageText = `${unarmedRoll} (${unarmedDamageDie})`;
          rollTitle = "Ataque Desarmado";
 
-         // Unarmed uses Luta skill (with Liberação and vantagem de FOR>=2)
+         // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
          const lutaSkill = char.skills.find(s => s.name === 'Luta');
          const lutaBonus = lutaSkill ? lutaSkill.value : 0;
          const llBonus = stats.LL || 0;
-         const hasAdvantage = char.attributes.FOR >= 2;
-         attackRolls = hasAdvantage ? [rollDice(20, 1), rollDice(20, 1)] : [rollDice(20, 1)];
-         const baseAttackRoll = hasAdvantage ? Math.max(...attackRolls) : attackRolls[0];
+         const attrKey = getSkillAttribute('Luta');
+         const { rolls, best } = rollD20Pool(char.attributes[attrKey]);
+         attackRolls = rolls;
+         const baseAttackRoll = best;
          attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus;
-         attackRollDetail = `${hasAdvantage ? `max(${attackRolls.join(', ')})` : attackRolls[0]} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
+         const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
+         attackRollDetail = `${dicePart} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
          isCritSuccess = baseAttackRoll === 20;
          isCritFail = baseAttackRoll === 1;
          if (isCritSuccess) isCritical = true;
@@ -175,12 +192,14 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const attackBonus = attackSkill ? attackSkill.value : 0;
 
              const llBonus = stats.LL || 0;
-             const hasAdvantage = char.attributes.FOR >= 2;
-             attackRolls = hasAdvantage ? [rollDice(20, 1), rollDice(20, 1)] : [rollDice(20, 1)];
-             const baseAttackRoll = hasAdvantage ? Math.max(...attackRolls) : attackRolls[0];
+             const attrKey = getSkillAttribute(attackSkillName);
+             const { rolls, best } = rollD20Pool(char.attributes[attrKey]);
+             attackRolls = rolls;
+             const baseAttackRoll = best;
 
              attackRoll = baseAttackRoll + attackBonus + totalBuffBonus + llBonus;
-             attackRollDetail = `${hasAdvantage ? `max(${attackRolls.join(', ')})` : attackRolls[0]} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
+             const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
+             attackRollDetail = `${dicePart} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
              isCritSuccess = baseAttackRoll === 20;
              isCritFail = baseAttackRoll === 1;
 
@@ -227,17 +246,25 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              }
         }
 
-        // Roll individual dice for logging
-        for (let i = 0; i < invested; i++) {
-          loggedRolls.push(rollDice(4, 1));
+        let reinforcementRoll = 0;
+        if (isCritical) {
+          // Critical: maximize reinforcement dice too
+          loggedRolls = Array.from({ length: invested }, () => 4);
+          reinforcementRoll = invested * 4;
+        } else {
+          // Roll individual dice for logging
+          for (let i = 0; i < invested; i++) {
+            loggedRolls.push(rollDice(4, 1));
+          }
+          reinforcementRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
         }
-        const reinforcementRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
         if (isCritical && selectedWeaponId === 'unarmed') {
           baseDamageValue = getMaxRollFromDice(unarmedDamageDie);
           baseDamageText = `max(${unarmedDamageDie}) = ${baseDamageValue} (Crítico!)`;
         }
         total = baseDamageValue + reinforcementRoll + strBonus;
-        detail = `[DanoBase]${baseDamageText} + [Reforço]${reinforcementRoll} + [Força]${strBonus}`;
+        const reforcoText = isCritical ? `max(${invested}d4) = ${reinforcementRoll}` : `${reinforcementRoll}`;
+        detail = `[DanoBase]${baseDamageText} + [Reforço]${reforcoText} + [Força]${strBonus}`;
       }
     } 
     else if (activeTab === 'technique') {
