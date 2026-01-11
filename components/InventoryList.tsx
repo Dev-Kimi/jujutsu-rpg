@@ -744,25 +744,45 @@ const EditItemModal: React.FC<{
 }> = ({ item, onUpdate, onAdd, onClose, onNotify }) => {
   console.log('Opening complete edit modal for item:', item);
 
-  // Safe parsing function
+  // Safe parsing function (reads the existing description to prefill fields)
   const parseItemData = (item: Item) => {
     try {
       const desc = item.description || '';
+
+      const gradeMatch = desc.match(/Grau:\s*([^|]+)/i);
+      const spacesMatch = desc.match(/Espaços:\s*(\d+)/i);
+      const proficiencyMatch = desc.match(/Prof[ií]ci[eê]ncia:\s*([^|]+)/i);
+      const weaponTypeMatch = desc.match(/Tipo:\s*([^|]+)/i);
+      const gripMatch = desc.match(/Empunhadura:\s*([^|]+)/i);
+      const damageMatch = desc.match(/Dano:\s*([^|]+)/i);
+      const criticalMatch = desc.match(/Cr[ií]tico:\s*([^|]+)/i);
+      const multiplierMatch = desc.match(/x(\d+)/i);
+      const damageTypeMatch = desc.match(/Tipo de Dano:\s*([^|]+)/i);
+      const rangeMatch = desc.match(/Alcance:\s*([^|]+)/i);
+      const durabilityMatch = desc.match(/Durabilidade:\s*(\d+)/i);
+      const defenseMatch = desc.match(/Defesa:\s*\+?(\d+)/i);
+
+      // Determine category from description content
+      let category: ItemCategory = 'Geral';
+      if (damageMatch || /Categoria:\s*Arma/i.test(desc)) category = 'Arma';
+      else if (defenseMatch || /Categoria:\s*Prote[cç][aã]o/i.test(desc)) category = 'Proteção';
+      else if (/muni[cç][aã]o/i.test(desc) || /Categoria:\s*Muni[cç][aã]o/i.test(desc)) category = 'Munição';
+
       return {
-        category: 'Geral',
-        grade: 'Mundana',
-        spaces: 1,
-        proficiency: 'Luta',
-        weaponType: 'Corte',
-        grip: 'Uma Mão',
-        damage: '1d6',
-        critical: '20',
-        multiplier: '2',
-        damageType: 'Corte',
-        range: 'Corpo a corpo',
-        durability: '10',
-        defense: 1,
-        description: desc
+        category,
+        grade: gradeMatch ? gradeMatch[1].trim() : 'Mundana',
+        spaces: spacesMatch ? parseInt(spacesMatch[1]) : 1,
+        proficiency: proficiencyMatch ? proficiencyMatch[1].trim() : 'Luta',
+        weaponType: weaponTypeMatch ? weaponTypeMatch[1].trim() : 'Corte',
+        grip: gripMatch ? gripMatch[1].trim() : 'Uma Mão',
+        damage: damageMatch ? damageMatch[1].trim() : '1d6',
+        critical: criticalMatch ? criticalMatch[1].trim() : '20',
+        multiplier: multiplierMatch ? multiplierMatch[1] : '2',
+        damageType: damageTypeMatch ? damageTypeMatch[1].trim() : 'Corte',
+        range: rangeMatch ? rangeMatch[1].trim() : 'Corpo a corpo',
+        durability: durabilityMatch ? durabilityMatch[1] : '10',
+        defense: defenseMatch ? parseInt(defenseMatch[1]) : 1,
+        description: desc.trim()
       };
     } catch (error) {
       console.error('Error parsing item data:', error);
@@ -787,7 +807,7 @@ const EditItemModal: React.FC<{
 
   const parsed = parseItemData(item);
 
-  const [activeCategory, setActiveCategory] = useState<ItemCategory>('Geral');
+  const [activeCategory, setActiveCategory] = useState<ItemCategory>(parsed.category);
   const [editForm, setEditForm] = useState({
     name: item?.name || '',
     category: parsed.category,
@@ -804,7 +824,7 @@ const EditItemModal: React.FC<{
     durability: parsed.durability,
     defense: parsed.defense,
     description: parsed.description,
-    attackSkill: 'Luta'
+    attackSkill: item.attackSkill || 'Luta'
   });
 
   const getCategoryIcon = (cat: ItemCategory) => {
