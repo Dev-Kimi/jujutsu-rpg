@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats, DiceRollLog as DiceRollLogType } from '../types';
-import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices } from 'lucide-react';
+import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
-import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc, where, limit } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc, where, limit, writeBatch } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
 import { StatBar } from './StatBar';
 import { SkillList } from './SkillList';
@@ -38,6 +38,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   const [combatSelectedKeys, setCombatSelectedKeys] = useState<Record<string, boolean>>({});
   const [activeCombatParticipants, setActiveCombatParticipants] = useState<CampaignParticipant[]>([]);
   const [isPreparingCombat, setIsPreparingCombat] = useState(false);
+  const [isProcessingRound, setIsProcessingRound] = useState(false);
 
   const lastSavedCharRef = useRef<string>('');
   const lastSavedStatsRef = useRef<string>('');
@@ -153,8 +154,12 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
           characterName: newParticipant.characterName,
           level: newParticipant.level,
           imageUrl: newParticipant.imageUrl,
+          characterClass: currentUserChar.characterClass,
+          origin: currentUserChar.origin,
+          pre: currentUserChar.attributes.PRE,
           currentStats: { pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE },
           maxStats: { pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE },
+          actionState: { standard: true, movement: 2, reactionPenalty: 0 },
           updatedAt: Date.now()
         }, { merge: true });
       } catch (error) {
@@ -188,6 +193,9 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
       characterName: viewingChar.name,
       level: viewingChar.level,
       imageUrl: viewingChar.imageUrl,
+      characterClass: viewingChar.characterClass,
+      origin: viewingChar.origin,
+      pre: viewingChar.attributes.PRE,
       currentStats: viewingStats,
       maxStats: { pv: derived.MaxPV, ce: derived.MaxCE, pe: derived.MaxPE },
       updatedAt: Date.now()
@@ -509,6 +517,75 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     });
   };
 
+  const handleAdvanceRound = async () => {
+    if (!selectedCampaign) return;
+    if (activeCombatParticipants.length === 0) return;
+
+    setIsProcessingRound(true);
+    try {
+      const refs = activeCombatParticipants.map((p) => {
+        const key = `${p.userId}_${p.characterId}`;
+        return {
+          key,
+          p,
+          ref: doc(db, 'campaigns', selectedCampaign.id, 'characterStates', key)
+        };
+      });
+
+      const snaps = await Promise.all(refs.map(({ ref }) => getDoc(ref)));
+
+      const batch = writeBatch(db);
+      const now = Date.now();
+
+      snaps.forEach((snap, idx) => {
+        const { ref, p } = refs[idx];
+        const data = snap.exists() ? (snap.data() as any) : undefined;
+
+        const current: CurrentStats = data?.currentStats || { pv: 0, ce: 0, pe: 0 };
+        const max: CurrentStats = data?.maxStats || current;
+        const level: number = data?.level ?? p.level ?? 0;
+        const pre: number = data?.pre ?? data?.attributes?.PRE ?? 0;
+        const characterClass: string | undefined = data?.characterClass ?? p.characterClass;
+        const origin: string | undefined = data?.origin;
+        const isRestrictionCelestial = characterClass === 'Restrição Celestial' || origin === 'Restrição Celestial';
+
+        const unconscious = current.pv <= 0;
+
+        let nextCE = current.ce;
+        let nextPE = current.pe;
+
+        if (!unconscious) {
+          if (isRestrictionCelestial) {
+            nextCE = 0;
+          } else {
+            const recovered = level + pre;
+            nextCE = Math.min(current.ce + recovered, max.ce ?? current.ce + recovered);
+          }
+
+          nextPE = Math.min(current.pe + 1, max.pe ?? current.pe + 1);
+        }
+
+        batch.set(ref, {
+          currentStats: {
+            ...current,
+            ce: nextCE,
+            pe: nextPE
+          },
+          actionState: { standard: true, movement: 2, reactionPenalty: 0 },
+          updatedAt: now
+        }, { merge: true });
+      });
+
+      await batch.commit();
+      alert('Rodada processada: Recursos regenerados e ações resetadas.');
+    } catch (error) {
+      console.error('Error processing round batch:', error);
+      alert('Erro ao processar rodada. Veja o console para detalhes.');
+    } finally {
+      setIsProcessingRound(false);
+    }
+  };
+
   // --- RENDERERS ---
 
   if (view === 'combat' && selectedCampaign) {
@@ -544,14 +621,29 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
               <div className="text-xs text-slate-500">{selectedCampaign.name}</div>
             </div>
           </div>
-          <button
-            onClick={() => {
-              setView('detail');
-            }}
-            className="text-slate-400 hover:text-white flex items-center gap-2"
-          >
-            <X />
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleAdvanceRound}
+              disabled={isProcessingRound || activeCombatParticipants.length === 0}
+              className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+                (isProcessingRound || activeCombatParticipants.length === 0)
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+              }`}
+              title="Encerrar Rodada / Próxima Rodada"
+            >
+              <RefreshCw size={18} className={isProcessingRound ? 'animate-spin' : ''} />
+              {isProcessingRound ? 'Processando...' : 'Encerrar Rodada'}
+            </button>
+            <button
+              onClick={() => {
+                setView('detail');
+              }}
+              className="text-slate-400 hover:text-white flex items-center gap-2"
+            >
+              <X />
+            </button>
+          </div>
         </div>
 
         {activeCombatParticipants.length === 0 ? (
@@ -751,10 +843,16 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
           const stateRef = doc(db, 'campaigns', selectedCampaign.id, 'characterStates', key);
 
           let maxStats: CurrentStats | undefined;
+          let pre: number | undefined;
+          let origin: any | undefined;
+          let characterClass: string | undefined;
           try {
             if (p.userId === auth.currentUser?.uid && currentUserChar.id === p.characterId) {
               const derived = calculateDerivedStats(currentUserChar);
               maxStats = { pv: derived.MaxPV, ce: derived.MaxCE, pe: derived.MaxPE };
+              pre = currentUserChar.attributes.PRE;
+              origin = currentUserChar.origin;
+              characterClass = currentUserChar.characterClass;
             } else {
               const userDocRef = doc(db, 'users', p.userId);
               const userDocSnap = await getDoc(userDocRef);
@@ -765,6 +863,9 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                 if (target) {
                   const derived = calculateDerivedStats(target);
                   maxStats = { pv: derived.MaxPV, ce: derived.MaxCE, pe: derived.MaxPE };
+                  pre = target.attributes.PRE;
+                  origin = target.origin;
+                  characterClass = target.characterClass;
                 }
               }
             }
@@ -788,6 +889,10 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
             characterName: p.characterName,
             level: p.level,
             imageUrl: p.imageUrl,
+            characterClass,
+            origin,
+            pre,
+            actionState: { standard: true, movement: 2, reactionPenalty: 0 },
             updatedAt: Date.now()
           };
 
