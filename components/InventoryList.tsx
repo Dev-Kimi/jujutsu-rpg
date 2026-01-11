@@ -745,33 +745,123 @@ const EditItemModal: React.FC<{
 }> = ({ item, onUpdate, onAdd, onClose, onNotify }) => {
   const [activeCategory, setActiveCategory] = useState<ItemCategory>('Arma');
   const [editForm, setEditForm] = useState(() => {
-    // Parse existing item data
-    const parsed = parseItemFromDescription(item);
-    return {
-      name: item.name,
-      category: parsed.category,
-      grade: parsed.grade,
-      spaces: parsed.spaces,
-      // Weapon fields
-      proficiency: parsed.proficiency,
-      weaponType: parsed.weaponType,
-      grip: parsed.grip,
-      damage: parsed.damage,
-      critical: parsed.critical,
-      multiplier: parsed.multiplier,
-      damageType: parsed.damageType,
-      range: parsed.range,
-      durability: parsed.durability,
-      // Armor fields
-      defense: parsed.defense,
-      // General fields
-      description: parsed.description
-    };
+    try {
+      // Parse existing item data
+      const parsed = parseItemFromDescription(item);
+      return {
+        name: item.name || '',
+        category: parsed.category || 'Geral',
+        grade: parsed.grade || 'Mundana',
+        spaces: parsed.spaces || 1,
+        // Weapon fields
+        proficiency: parsed.proficiency || 'Luta',
+        weaponType: parsed.weaponType || 'Corte',
+        grip: parsed.grip || 'Uma Mão',
+        damage: parsed.damage || '1d6',
+        critical: parsed.critical || '20',
+        multiplier: parsed.multiplier || '2',
+        damageType: parsed.damageType || 'Corte',
+        range: parsed.range || 'Corpo a corpo',
+        durability: parsed.durability || '10',
+        // Armor fields
+        defense: parsed.defense || 1,
+        // General fields
+        description: parsed.description || ''
+      };
+    } catch (error) {
+      console.error('Error initializing edit form:', error, item);
+      return {
+        name: item.name || '',
+        category: 'Geral',
+        grade: 'Mundana',
+        spaces: 1,
+        proficiency: 'Luta',
+        weaponType: 'Corte',
+        grip: 'Uma Mão',
+        damage: '1d6',
+        critical: '20',
+        multiplier: '2',
+        damageType: 'Corte',
+        range: 'Corpo a corpo',
+        durability: '10',
+        defense: 1,
+        description: ''
+      };
+    }
   });
+
+  const handleSave = () => {
+    try {
+      let description = editForm.description || '';
+
+      // Add structured info based on category
+      if (editForm.category === 'Arma') {
+        description = `${editForm.description || ''} | Categoria: Arma | Tipo: ${editForm.weaponType || 'Corte'} | Empunhadura: ${editForm.grip || 'Uma Mão'} | Dano: ${editForm.damage || '1d6'} | Crítico: ${editForm.critical || '20'} | Multiplicador: ${editForm.multiplier || '2'} | Tipo de Dano: ${editForm.damageType || 'Corte'} | Alcance: ${editForm.range || 'Corpo a corpo'} | Durabilidade: ${editForm.durability || '10'} CE | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
+      } else if (editForm.category === 'Proteção') {
+        description = `${editForm.description || ''} | Categoria: Proteção | Defesa: +${editForm.defense || 1} | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
+      } else if (editForm.category === 'Munição') {
+        description = `${editForm.description || ''} | Categoria: Munição | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
+      } else {
+        description = `${editForm.description || ''} | Categoria: Geral | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
+      }
+
+      // Check if this is a catalog item being edited (should be added to inventory)
+      if (item.id.startsWith('catalog-') || item.id.startsWith('cursed-')) {
+        // Add as new item to inventory
+        const newItem: Partial<Item> = {
+          name: editForm.name,
+          description: description
+        };
+
+        // Add attack skill for weapons
+        if (editForm.category === 'Arma' && editForm.attackSkill) {
+          newItem.attackSkill = editForm.attackSkill;
+        }
+
+        onAdd(newItem);
+        onNotify?.(`"${editForm.name}" adicionado ao inventário!`, 'success');
+      } else {
+        // Update existing inventory item
+        onUpdate(item.id, 'name', editForm.name);
+        onUpdate(item.id, 'description', description);
+
+        // Update attack skill for weapons
+        if (editForm.category === 'Arma') {
+          onUpdate(item.id, 'attackSkill', editForm.attackSkill || 'Luta');
+        }
+
+        onNotify?.(`"${editForm.name}" atualizado!`, 'success');
+      }
+      onClose();
+    } catch (error) {
+      console.error('Error saving item:', error);
+      alert('Erro ao salvar item. Tente novamente.');
+    }
+  };
 
   // Helper function to parse item data from description
   function parseItemFromDescription(item: Item): any {
-    const desc = item.description;
+    try {
+      const desc = item.description || '';
+      if (!desc) {
+        // Return default values for items without description
+        return {
+          category: 'Geral',
+          grade: 'Mundana',
+          spaces: 1,
+          proficiency: 'Luta',
+          weaponType: 'Corte',
+          grip: 'Uma Mão',
+          damage: '1d6',
+          critical: '20',
+          multiplier: '2',
+          damageType: 'Corte',
+          range: 'Corpo a corpo',
+          durability: '10',
+          defense: 1,
+          description: ''
+        };
+      }
     const gradeMatch = desc.match(/Grau:\s*([^|]+)/i);
     const spacesMatch = desc.match(/Espaços:\s*(\d+)/i);
     const proficiencyMatch = desc.match(/Proficiência:\s*([^|]+)/i);
@@ -787,9 +877,14 @@ const EditItemModal: React.FC<{
 
     // Determine category from description content
     let category: ItemCategory = 'Geral';
-    if (damageMatch) category = 'Arma';
-    else if (defenseMatch) category = 'Proteção';
-    else if (desc.toLowerCase().includes('munição')) category = 'Munição';
+    try {
+      if (damageMatch) category = 'Arma';
+      else if (defenseMatch) category = 'Proteção';
+      else if (desc.toLowerCase().includes('munição')) category = 'Munição';
+    } catch (error) {
+      console.error('Error determining category:', error);
+      category = 'Geral';
+    }
 
     return {
       category,
@@ -807,6 +902,26 @@ const EditItemModal: React.FC<{
       defense: defenseMatch ? defenseMatch[1].trim() : '0',
       description: desc.split('|')[0]?.trim() || desc
     };
+    } catch (error) {
+      console.error('Error parsing item from description:', error, item);
+      return {
+        category: 'Geral',
+        grade: 'Mundana',
+        spaces: 1,
+        proficiency: 'Luta',
+        weaponType: 'Corte',
+        grip: 'Uma Mão',
+        damage: '1d6',
+        critical: '20',
+        multiplier: '2',
+        damageType: 'Corte',
+        range: 'Corpo a corpo',
+        durability: '10',
+        defense: 1,
+        description: item.description || ''
+      };
+    }
+  }
   }
 
   const getCategoryIcon = (cat: ItemCategory) => {
@@ -816,50 +931,6 @@ const EditItemModal: React.FC<{
       case 'Proteção': return <Shield size={14} />;
       case 'Geral': return <Package size={14} />;
     }
-  };
-
-  const handleSave = () => {
-    let description = editForm.description;
-
-    // Add structured info based on category
-    if (editForm.category === 'Arma') {
-      description = `${editForm.description} | Categoria: Arma | Tipo: ${editForm.weaponType} | Empunhadura: ${editForm.grip} | Dano: ${editForm.damage} | Crítico: ${editForm.critical} | Multiplicador: ${editForm.multiplier} | Tipo de Dano: ${editForm.damageType} | Alcance: ${editForm.range} | Durabilidade: ${editForm.durability} CE | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
-    } else if (editForm.category === 'Proteção') {
-      description = `${editForm.description} | Categoria: Proteção | Defesa: +${editForm.defense} | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
-    } else if (editForm.category === 'Munição') {
-      description = `${editForm.description} | Categoria: Munição | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
-    } else {
-      description = `${editForm.description} | Categoria: Geral | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
-    }
-
-    // Check if this is a catalog item being edited (should be added to inventory)
-    if (item.id.startsWith('catalog-') || item.id.startsWith('cursed-')) {
-      // Add as new item to inventory
-      const newItem: Partial<Item> = {
-        name: editForm.name,
-        description: description
-      };
-
-      // Add attack skill for weapons
-      if (editForm.category === 'Arma' && editForm.attackSkill) {
-        newItem.attackSkill = editForm.attackSkill;
-      }
-
-      onAdd(newItem);
-      onNotify?.(`"${editForm.name}" adicionado ao inventário!`, 'success');
-    } else {
-      // Update existing inventory item
-      onUpdate(item.id, 'name', editForm.name);
-      onUpdate(item.id, 'description', description);
-
-      // Update attack skill for weapons
-      if (editForm.category === 'Arma') {
-        onUpdate(item.id, 'attackSkill', editForm.attackSkill || 'Luta');
-      }
-
-      onNotify?.(`"${editForm.name}" atualizado!`, 'success');
-    }
-    onClose();
   };
 
   return (
@@ -900,7 +971,7 @@ const EditItemModal: React.FC<{
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome do Item</label>
               <input
                 type="text"
-                value={editForm.name}
+                value={editForm.name || ''}
                 onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
                 className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                 placeholder="Ex: Espada Lendária"
@@ -909,7 +980,7 @@ const EditItemModal: React.FC<{
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Grau</label>
               <select
-                value={editForm.grade}
+                value={editForm.grade || 'Mundana'}
                 onChange={(e) => setEditForm(prev => ({ ...prev, grade: e.target.value }))}
                 className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
               >
@@ -954,7 +1025,7 @@ const EditItemModal: React.FC<{
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Proficiência</label>
                   <select
-                    value={editForm.proficiency}
+                    value={editForm.proficiency || 'Armas Simples'}
                     onChange={(e) => setEditForm(prev => ({ ...prev, proficiency: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                   >
@@ -966,7 +1037,7 @@ const EditItemModal: React.FC<{
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Arma</label>
                   <select
-                    value={editForm.weaponType}
+                    value={editForm.weaponType || 'Corpo a Corpo'}
                     onChange={(e) => setEditForm(prev => ({ ...prev, weaponType: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                   >
@@ -977,7 +1048,7 @@ const EditItemModal: React.FC<{
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Empunhadura</label>
                   <select
-                    value={editForm.grip}
+                    value={editForm.grip || 'Leve'}
                     onChange={(e) => setEditForm(prev => ({ ...prev, grip: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                   >
@@ -990,7 +1061,7 @@ const EditItemModal: React.FC<{
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dano</label>
                   <input
                     type="text"
-                    value={editForm.damage}
+                    value={editForm.damage || '1d6'}
                     onChange={(e) => setEditForm(prev => ({ ...prev, damage: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     placeholder="Ex: 1d8, 2d6+2"
@@ -1000,7 +1071,7 @@ const EditItemModal: React.FC<{
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Crítico</label>
                   <input
                     type="text"
-                    value={editForm.critical}
+                    value={editForm.critical || '20'}
                     onChange={(e) => setEditForm(prev => ({ ...prev, critical: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     placeholder="Ex: 19-20, 20"
@@ -1009,7 +1080,7 @@ const EditItemModal: React.FC<{
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Multiplicador</label>
                   <select
-                    value={editForm.multiplier}
+                    value={editForm.multiplier || '2'}
                     onChange={(e) => setEditForm(prev => ({ ...prev, multiplier: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                   >
@@ -1021,7 +1092,7 @@ const EditItemModal: React.FC<{
                 <div>
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Dano</label>
                   <select
-                    value={editForm.damageType}
+                    value={editForm.damageType || 'Corte'}
                     onChange={(e) => setEditForm(prev => ({ ...prev, damageType: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                   >
@@ -1036,7 +1107,7 @@ const EditItemModal: React.FC<{
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Alcance</label>
                   <input
                     type="text"
-                    value={editForm.range}
+                    value={editForm.range || 'Corpo a corpo'}
                     onChange={(e) => setEditForm(prev => ({ ...prev, range: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     placeholder="Ex: 30m, - (corpo a corpo)"
@@ -1046,7 +1117,7 @@ const EditItemModal: React.FC<{
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Durabilidade (CE)</label>
                   <input
                     type="number"
-                    value={editForm.durability}
+                    value={editForm.durability || 10}
                     onChange={(e) => setEditForm(prev => ({ ...prev, durability: e.target.value }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                     placeholder="5"
@@ -1068,7 +1139,7 @@ const EditItemModal: React.FC<{
                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Defesa (+)</label>
                 <input
                   type="number"
-                  value={editForm.defense}
+                  value={editForm.defense || 1}
                   onChange={(e) => setEditForm(prev => ({ ...prev, defense: e.target.value }))}
                   className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
                   placeholder="0"
@@ -1084,7 +1155,7 @@ const EditItemModal: React.FC<{
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Espaços Ocupados</label>
             <input
               type="number"
-              value={editForm.spaces}
+              value={editForm.spaces || 1}
               onChange={(e) => setEditForm(prev => ({ ...prev, spaces: parseInt(e.target.value) || 1 }))}
               className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
               min="1"
@@ -1095,7 +1166,7 @@ const EditItemModal: React.FC<{
           <div>
             <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição</label>
             <textarea
-              value={editForm.description}
+              value={editForm.description || ''}
               onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
               className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-300 focus:border-emerald-500 focus:outline-none min-h-[80px]"
               placeholder="Descreva o item, seus efeitos, propriedades especiais, etc..."
