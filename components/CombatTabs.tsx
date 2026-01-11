@@ -127,19 +127,22 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       // Determine Weapon and Attack Skill
       if (selectedWeaponId === 'unarmed') {
-         baseDamageValue = weaponDamageInput;
-         baseDamageText = `${weaponDamageInput}`;
+         // Dano base desarmado: 1d4 (ou valor manual se informado)
+         if (weaponDamageInput > 0) {
+           baseDamageValue = weaponDamageInput;
+           baseDamageText = `${weaponDamageInput}`;
+         } else {
+           const unarmedRoll = rollDice(4, 1);
+           baseDamageValue = unarmedRoll;
+           baseDamageText = `${unarmedRoll} (1d4)`;
+         }
          rollTitle = "Ataque Desarmado";
 
          // Unarmed uses Luta skill
          const lutaSkill = char.skills.find(s => s.name === 'Luta');
-         if (lutaSkill) {
-           attackRoll = rollDice(20, 1) + lutaSkill.value;
-           attackRollDetail = `1d20 + ${lutaSkill.value} (Luta)`;
-         } else {
-           attackRoll = rollDice(20, 1);
-           attackRollDetail = "1d20";
-         }
+         const lutaBonus = lutaSkill ? lutaSkill.value : 0;
+         attackRoll = rollDice(20, 1) + lutaBonus + totalBuffBonus;
+         attackRollDetail = `1d20 + ${lutaBonus} (Luta)${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
       } else {
          currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
          if (currentWeaponItem) {
@@ -152,14 +155,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              // Use weapon's attack skill (default to Luta)
              const attackSkillName = currentWeaponItem.attackSkill || 'Luta';
              const attackSkill = char.skills.find(s => s.name === attackSkillName);
+             const attackBonus = attackSkill ? attackSkill.value : 0;
 
-             if (attackSkill) {
-               attackRoll = rollDice(20, 1) + attackSkill.value;
-               attackRollDetail = `1d20 + ${attackSkill.value} (${attackSkillName})`;
-             } else {
-               attackRoll = rollDice(20, 1);
-               attackRollDetail = "1d20";
-             }
+             attackRoll = rollDice(20, 1) + attackBonus + totalBuffBonus;
+             attackRollDetail = `1d20 + ${attackBonus} (${attackSkillName})${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
 
              // Check for critical hit
              const criticalThreshold = getWeaponCriticalThreshold(currentWeaponItem);
