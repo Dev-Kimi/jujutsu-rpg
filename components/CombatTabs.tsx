@@ -138,11 +138,15 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          }
          rollTitle = "Ataque Desarmado";
 
-         // Unarmed uses Luta skill
+         // Unarmed uses Luta skill (with Liberação and vantagem de FOR>=2)
          const lutaSkill = char.skills.find(s => s.name === 'Luta');
          const lutaBonus = lutaSkill ? lutaSkill.value : 0;
-         attackRoll = rollDice(20, 1) + lutaBonus + totalBuffBonus;
-         attackRollDetail = `1d20 + ${lutaBonus} (Luta)${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
+         const llBonus = stats.LL || 0;
+         const hasAdvantage = char.attributes.FOR >= 2;
+         const attackRolls = hasAdvantage ? [rollDice(20, 1), rollDice(20, 1)] : [rollDice(20, 1)];
+         const baseAttackRoll = hasAdvantage ? Math.max(...attackRolls) : attackRolls[0];
+         attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus;
+         attackRollDetail = `${hasAdvantage ? `max(${attackRolls.join(', ')})` : attackRolls[0]} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
       } else {
          currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
          if (currentWeaponItem) {
@@ -157,8 +161,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const attackSkill = char.skills.find(s => s.name === attackSkillName);
              const attackBonus = attackSkill ? attackSkill.value : 0;
 
-             attackRoll = rollDice(20, 1) + attackBonus + totalBuffBonus;
-             attackRollDetail = `1d20 + ${attackBonus} (${attackSkillName})${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
+             const llBonus = stats.LL || 0;
+             const hasAdvantage = char.attributes.FOR >= 2;
+             const attackRolls = hasAdvantage ? [rollDice(20, 1), rollDice(20, 1)] : [rollDice(20, 1)];
+             const baseAttackRoll = hasAdvantage ? Math.max(...attackRolls) : attackRolls[0];
+
+             attackRoll = baseAttackRoll + attackBonus + totalBuffBonus + llBonus;
+             attackRollDetail = `${hasAdvantage ? `max(${attackRolls.join(', ')})` : attackRolls[0]} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
 
              // Check for critical hit
              const criticalThreshold = getWeaponCriticalThreshold(currentWeaponItem);
