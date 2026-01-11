@@ -34,7 +34,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'physical' | 'defense'>('physical');
   const [invested, setInvested] = useState<number>(1);
-  const [weaponDamageInput, setWeaponDamageInput] = useState<number>(0); // For manual override
+  const [unarmedDamageDie, setUnarmedDamageDie] = useState<string>('1d4');
   const [selectedWeaponId, setSelectedWeaponId] = useState<string>('unarmed');
   const [selectedTechniqueId, setSelectedTechniqueId] = useState<string>('');
   const [techniqueDie, setTechniqueDie] = useState<string>('1d6');
@@ -76,6 +76,17 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         console.error('Error getting weapon damage string:', error, item);
         return "1d4"; // Safe fallback
       }
+  };
+
+  const parseDice = (diceStr: string) => {
+    const match = diceStr.match(/(\d+)d(\d+)/i);
+    if (!match) return { count: 1, sides: 4 };
+    return { count: parseInt(match[1]), sides: parseInt(match[2]) };
+  };
+
+  const getMaxRollFromDice = (diceStr: string) => {
+    const { count, sides } = parseDice(diceStr);
+    return count * sides;
   };
 
   const reset = () => {
@@ -131,15 +142,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       // Determine Weapon and Attack Skill
       if (selectedWeaponId === 'unarmed') {
-         // Dano base desarmado: 1d4 (ou valor manual se informado)
-         if (weaponDamageInput > 0) {
-           baseDamageValue = weaponDamageInput;
-           baseDamageText = `${weaponDamageInput}`;
-         } else {
-           const unarmedRoll = rollDice(4, 1);
-           baseDamageValue = unarmedRoll;
-           baseDamageText = `${unarmedRoll} (1d4)`;
-         }
+         const { count: dieCount, sides: dieSides } = parseDice(unarmedDamageDie);
+         const unarmedRoll = rollDice(dieSides, dieCount);
+         baseDamageValue = unarmedRoll;
+         baseDamageText = `${unarmedRoll} (${unarmedDamageDie})`;
          rollTitle = "Ataque Desarmado";
 
          // Unarmed uses Luta skill (with Liberação and vantagem de FOR>=2)
@@ -160,7 +166,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const diceStr = getWeaponDamageString(currentWeaponItem);
              const roll = parseAndRollDice(diceStr);
              baseDamageValue = roll.total;
-             baseDamageText = `${roll.total}`;
+             baseDamageText = `${roll.total} (${diceStr})`;
              rollTitle = currentWeaponItem.name;
 
              // Use weapon's attack skill (default to Luta)
@@ -182,9 +188,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const criticalThreshold = getWeaponCriticalThreshold(currentWeaponItem);
              if (attackRoll >= criticalThreshold) {
                isCritical = true;
-               const multiplier = getWeaponCriticalMultiplier(currentWeaponItem);
-               baseDamageValue *= multiplier;
-               baseDamageText = `${baseDamageText} × ${multiplier} (Crítico!)`;
+               baseDamageValue = getMaxRollFromDice(diceStr);
+               baseDamageText = `max(${diceStr}) = ${baseDamageValue} (Crítico!)`;
              }
          }
       }
@@ -199,7 +204,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           loggedRolls.push(rollDice(3, 1));
         }
         const hrRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
-        
+        if (isCritical) {
+          if (selectedWeaponId === 'unarmed') {
+            baseDamageValue = getMaxRollFromDice(unarmedDamageDie);
+            baseDamageText = `max(${unarmedDamageDie}) = ${baseDamageValue} (Crítico!)`;
+          }
+        }
+
         total = baseDamageValue + hrRoll + strBonus;
         detail = `${baseDamageText} + ${hrRoll} (HR) + ${strBonus} (FOR)`;
         actionCostCE = 0;
@@ -221,6 +232,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           loggedRolls.push(rollDice(4, 1));
         }
         const reinforcementRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
+        if (isCritical && selectedWeaponId === 'unarmed') {
+          baseDamageValue = getMaxRollFromDice(unarmedDamageDie);
+          baseDamageText = `max(${unarmedDamageDie}) = ${baseDamageValue} (Crítico!)`;
+        }
         total = baseDamageValue + reinforcementRoll + strBonus;
         detail = `[DanoBase]${baseDamageText} + [Reforço]${reinforcementRoll} + [Força]${strBonus}`;
       }
@@ -386,14 +401,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     return 20; // Default critical threshold
   };
 
-  const getWeaponCriticalMultiplier = (weapon: Item): number => {
-    // Try to find multiplier in description (x2, x3, x4)
-    const match = weapon.description.match(/×\s*(\d+)/i) || weapon.description.match(/x\s*(\d+)/i);
-    if (match) return parseInt(match[1]);
-
-    return 2; // Default critical multiplier
-  };
-
   return (
     <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-xl p-4">
 
@@ -497,13 +504,16 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                   {/* Manual Input (Only if Unarmed) */}
                   {selectedWeaponId === 'unarmed' && (
                     <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                      <input 
-                        type="number" 
-                        value={weaponDamageInput} 
-                        onChange={(e) => setWeaponDamageInput(parseInt(e.target.value) || 0)}
-                        placeholder="Dano base numérico"
+                      <select
+                        value={unarmedDamageDie}
+                        onChange={(e) => setUnarmedDamageDie(e.target.value)}
                         className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-curse-500 text-sm"
-                      />
+                      >
+                        <option value="1d4">1d4</option>
+                        <option value="1d6">1d6</option>
+                        <option value="2d4">2d4</option>
+                        <option value="2d6">2d6</option>
+                      </select>
                     </div>
                   )}
                 </div>
