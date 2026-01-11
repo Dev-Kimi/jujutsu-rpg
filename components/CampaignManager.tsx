@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Campaign, CampaignParticipant, Character, CurrentStats } from '../types';
+import { Campaign, CampaignParticipant, Character, CurrentStats, DiceRollLog as DiceRollLogType } from '../types';
 import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
-import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc, where, limit } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
 import { StatBar } from './StatBar';
 import { SkillList } from './SkillList';
@@ -32,6 +32,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   const [showDiceLog, setShowDiceLog] = useState(false);
   const [activeRollResult, setActiveRollResult] = useState<'skill' | 'combat' | null>(null);
 
+  const [combatRolls, setCombatRolls] = useState<DiceRollLogType[]>([]);
+
   const [showCombatSetup, setShowCombatSetup] = useState(false);
   const [combatSelectedKeys, setCombatSelectedKeys] = useState<Record<string, boolean>>({});
   const [activeCombatParticipants, setActiveCombatParticipants] = useState<CampaignParticipant[]>([]);
@@ -60,6 +62,41 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     setSelectedCampaign(updated);
   }, [campaigns, selectedCampaign]);
 
+  useEffect(() => {
+    if (!selectedCampaign) return;
+    if (!selectedCampaign.activeCombatActive) return;
+    if (!selectedCampaign.activeCombatParticipants) return;
+    if (selectedCampaign.activeCombatParticipants.length === 0) return;
+    setActiveCombatParticipants(selectedCampaign.activeCombatParticipants);
+  }, [selectedCampaign]);
+
+  useEffect(() => {
+    if (view !== 'combat') {
+      setCombatRolls([]);
+      return;
+    }
+    if (!selectedCampaign) return;
+
+    const q = query(
+      collection(db, 'diceRolls'),
+      where('campaignId', '==', selectedCampaign.id),
+      orderBy('timestamp', 'desc'),
+      limit(100)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const next = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<DiceRollLogType, 'id'>)
+      } as DiceRollLogType));
+      setCombatRolls(next);
+    }, (error) => {
+      console.error('Error fetching combat dice rolls:', error);
+    });
+
+    return () => unsubscribe();
+  }, [view, selectedCampaign]);
+
   // 2. Actions
   const handleCreateCampaign = async () => {
     if (!newCampaignName.trim()) return;
@@ -71,6 +108,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
         description: newCampaignDesc,
         gmId: auth.currentUser.uid,
         participants: [],
+        participantIds: [auth.currentUser.uid],
         createdAt: Date.now()
       });
       setNewCampaignName('');
@@ -101,7 +139,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     try {
       const campRef = doc(db, "campaigns", campaign.id);
       await updateDoc(campRef, {
-        participants: arrayUnion(newParticipant)
+        participants: arrayUnion(newParticipant),
+        participantIds: arrayUnion(auth.currentUser.uid)
       });
 
       try {
@@ -189,7 +228,19 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
         if (currentUserChar.id === participant.characterId) {
             setViewingChar(currentUserChar);
             const stats = calculateDerivedStats(currentUserChar);
-            setViewingStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE });
+            let nextStats: CurrentStats = { pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE };
+            try {
+              const key = `${participant.userId}_${participant.characterId}`;
+              const stateRef = doc(db, 'campaigns', selectedCampaign.id, 'characterStates', key);
+              const snap = await getDoc(stateRef);
+              const data = snap.exists() ? (snap.data() as any) : undefined;
+              if (data?.currentStats) {
+                nextStats = data.currentStats as CurrentStats;
+              }
+            } catch (error) {
+              console.error('Error loading currentStats for self in campaign sheet', error);
+            }
+            setViewingStats(nextStats);
             setViewingParticipant(participant);
             lastSavedCharRef.current = JSON.stringify(currentUserChar);
             setView('sheet');
@@ -332,7 +383,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     try {
       const campRef = doc(db, "campaigns", campaign.id);
       await updateDoc(campRef, {
-        participants: arrayRemove(participant)
+        participants: arrayRemove(participant),
+        participantIds: arrayRemove(participant.userId)
       });
       // Update local state immediately
       if (selectedCampaign && selectedCampaign.id === campaign.id) {
@@ -494,8 +546,6 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
           </div>
           <button
             onClick={() => {
-              setActiveCombatParticipants([]);
-              setCombatSelectedKeys({});
               setView('detail');
             }}
             className="text-slate-400 hover:text-white flex items-center gap-2"
@@ -509,10 +559,46 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
             Nenhum participante selecionado.
           </div>
         ) : (
-          <MasterCombatTracker
-            campaignId={selectedCampaign.id}
-            participants={activeCombatParticipants}
-          />
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+            <div className="xl:col-span-8">
+              <MasterCombatTracker
+                campaignId={selectedCampaign.id}
+                participants={activeCombatParticipants}
+              />
+            </div>
+            <div className="xl:col-span-4 space-y-3">
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+                <div className="p-4 border-b border-slate-800 bg-slate-900/40 flex items-center justify-between">
+                  <div className="font-bold text-white flex items-center gap-2">
+                    <Dices size={16} className="text-curse-400" /> Log de Dados
+                  </div>
+                  <div className="text-[10px] text-slate-600 font-mono">Últimos 100</div>
+                </div>
+                <div className="max-h-[70vh] overflow-y-auto p-4 space-y-3">
+                  {combatRolls
+                    .filter(r => activeCombatParticipants.some(p => p.userId === r.userId && p.characterName === r.characterName))
+                    .slice(0, 60)
+                    .map((roll) => (
+                      <div
+                        key={roll.id}
+                        className="bg-slate-900/30 border border-slate-800 rounded-lg p-3"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-bold text-white text-sm">{roll.characterName}</span>
+                          <span className="text-curse-400 font-semibold text-sm">{roll.rollName}</span>
+                        </div>
+                        <div className="text-xs text-slate-400 font-mono">
+                          {roll.breakdown || `[${roll.rolls.join(', ')}] = ${roll.total}`}
+                        </div>
+                        <div className="text-[10px] text-slate-600 font-mono mt-2">
+                          {new Date(roll.timestamp).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' })}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -659,6 +745,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
 
       setIsPreparingCombat(true);
       try {
+        const campRef = doc(db, 'campaigns', selectedCampaign.id);
         for (const p of selectedForCombat) {
           const key = `${p.userId}_${p.characterId}`;
           const stateRef = doc(db, 'campaigns', selectedCampaign.id, 'characterStates', key);
@@ -718,6 +805,18 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
           }
         }
 
+        try {
+          await updateDoc(campRef, {
+            activeCombatActive: true,
+            activeCombatParticipants: selectedForCombat,
+            activeCombatParticipantKeys: selectedForCombat.map(p => `${p.userId}_${p.characterId}`),
+            activeCombatStartedAt: Date.now(),
+            activeCombatStartedBy: auth.currentUser?.uid || ''
+          });
+        } catch (error) {
+          console.error('Error persisting active combat to campaign', error);
+        }
+
         setActiveCombatParticipants(selectedForCombat);
         setShowCombatSetup(false);
         setView('combat');
@@ -771,15 +870,27 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                     </button>
                   )}
                   {isGM && (
-                    <button
+                    selectedCampaign.activeCombatActive && (selectedCampaign.activeCombatParticipants?.length || 0) > 0 ? (
+                      <button
+                        onClick={() => {
+                          setActiveCombatParticipants(selectedCampaign.activeCombatParticipants || []);
+                          setView('combat');
+                        }}
+                        className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg shadow-red-900/20 transition-all"
+                      >
+                        <Shield size={18} /> Continuar Combate
+                      </button>
+                    ) : (
+                     <button
                       onClick={() => {
                         setCombatSelectedKeys({});
                         setShowCombatSetup(true);
                       }}
                       className="bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 shadow-lg shadow-red-900/20 transition-all"
-                    >
+                     >
                       <Play size={18} /> Iniciar Novo Combate
-                    </button>
+                     </button>
+                    )
                   )}
                </div>
             </div>
