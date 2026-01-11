@@ -841,12 +841,8 @@ const EditItemModal: React.FC<{
     console.log('Edit form data:', editForm);
 
     try {
-      // Remove estruturas antigas da descrição para evitar duplicação
-      const baseDesc = (editForm.description || '')
-        .split('| Categoria:')[0]
-        .split('| Grau:')[0]
-        .split('| Espaços:')[0]
-        .trim();
+      // Extrai somente o texto livre (antes do primeiro "|"), ignorando blocos estruturados antigos
+      const baseDesc = (editForm.description || '').split('|')[0].trim();
 
       // Validate required fields
       if (!editForm.name || editForm.name.trim() === '') {
@@ -867,14 +863,16 @@ const EditItemModal: React.FC<{
       console.log('Building description for category:', editForm.category);
 
       // Add structured info based on category
+      const prefix = baseDesc ? `${baseDesc} | ` : '';
+
       if (editForm.category === 'Arma') {
-        description = `${baseDesc} | Categoria: Arma | Tipo: ${editForm.weaponType || 'Corte'} | Empunhadura: ${editForm.grip || 'Uma Mão'} | Dano: ${editForm.damage || '1d6'} | Crítico: ${editForm.critical || '20'} | Multiplicador: ${editForm.multiplier || '2'} | Tipo de Dano: ${editForm.damageType || 'Corte'} | Alcance: ${editForm.range || 'Corpo a corpo'} | Durabilidade: ${editForm.durability || '10'} CE | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
+        description = `${prefix}Categoria: Arma | Tipo: ${editForm.weaponType || 'Corte'} | Empunhadura: ${editForm.grip || 'Uma Mão'} | Dano: ${editForm.damage || '1d6'} | Crítico: ${editForm.critical || '20'} | Multiplicador: ${editForm.multiplier || '2'} | Tipo de Dano: ${editForm.damageType || 'Corte'} | Alcance: ${editForm.range || 'Corpo a corpo'} | Durabilidade: ${editForm.durability || '10'} CE | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
       } else if (editForm.category === 'Proteção') {
-        description = `${baseDesc} | Categoria: Proteção | Defesa: +${editForm.defense || 1} | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
+        description = `${prefix}Categoria: Proteção | Defesa: +${editForm.defense || 1} | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
       } else if (editForm.category === 'Munição') {
-        description = `${baseDesc} | Categoria: Munição | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
+        description = `${prefix}Categoria: Munição | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
       } else {
-        description = `${baseDesc} | Categoria: Geral | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
+        description = `${prefix}Categoria: Geral | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
       }
 
       console.log('Final description:', description);
