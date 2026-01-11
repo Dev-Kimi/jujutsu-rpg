@@ -813,45 +813,79 @@ const EditItemModal: React.FC<{
   };
 
   const handleSave = () => {
+    console.log('Starting save process for item:', item.id);
+    console.log('Edit form data:', editForm);
+
     try {
+      // Validate required fields
+      if (!editForm.name || editForm.name.trim() === '') {
+        alert('Nome do item é obrigatório');
+        return;
+      }
+
+      // Ensure all form fields have valid values
+      const safeForm = {
+        ...editForm,
+        name: editForm.name.trim(),
+        description: editForm.description || '',
+        spaces: Math.max(1, editForm.spaces || 1),
+        defense: Math.max(0, editForm.defense || 0)
+      };
+
       let description = editForm.description || '';
+      console.log('Building description for category:', editForm.category);
 
       // Add structured info based on category
       if (editForm.category === 'Arma') {
-        description = `${editForm.description || ''} | Categoria: Arma | Tipo: ${editForm.weaponType} | Empunhadura: ${editForm.grip} | Dano: ${editForm.damage} | Crítico: ${editForm.critical} | Multiplicador: ${editForm.multiplier} | Tipo de Dano: ${editForm.damageType} | Alcance: ${editForm.range} | Durabilidade: ${editForm.durability} CE | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
+        description = `${editForm.description || ''} | Categoria: Arma | Tipo: ${editForm.weaponType || 'Corte'} | Empunhadura: ${editForm.grip || 'Uma Mão'} | Dano: ${editForm.damage || '1d6'} | Crítico: ${editForm.critical || '20'} | Multiplicador: ${editForm.multiplier || '2'} | Tipo de Dano: ${editForm.damageType || 'Corte'} | Alcance: ${editForm.range || 'Corpo a corpo'} | Durabilidade: ${editForm.durability || '10'} CE | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
       } else if (editForm.category === 'Proteção') {
-        description = `${editForm.description || ''} | Categoria: Proteção | Defesa: +${editForm.defense} | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
+        description = `${editForm.description || ''} | Categoria: Proteção | Defesa: +${editForm.defense || 1} | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
       } else if (editForm.category === 'Munição') {
-        description = `${editForm.description || ''} | Categoria: Munição | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
+        description = `${editForm.description || ''} | Categoria: Munição | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
       } else {
-        description = `${editForm.description || ''} | Categoria: Geral | Grau: ${editForm.grade} | Espaços: ${editForm.spaces}`;
+        description = `${editForm.description || ''} | Categoria: Geral | Grau: ${editForm.grade || 'Mundana'} | Espaços: ${editForm.spaces || 1}`;
       }
 
+      console.log('Final description:', description);
+
       const itemData: Partial<Item> = {
-        name: editForm.name,
+        name: safeForm.name,
         description: description
       };
 
       // Add attack skill for weapons
-      if (editForm.category === 'Arma' && editForm.attackSkill) {
-        itemData.attackSkill = editForm.attackSkill;
+      if (safeForm.category === 'Arma' && safeForm.attackSkill) {
+        itemData.attackSkill = safeForm.attackSkill;
       }
 
+      console.log('Item data to save:', itemData);
+      console.log('Item type check:', item.id.startsWith('catalog-'), item.id.startsWith('cursed-'));
+
       if (item.id.startsWith('catalog-') || item.id.startsWith('cursed-')) {
+        console.log('Adding new item to inventory');
         onAdd(itemData);
-        onNotify?.(`"${editForm.name}" adicionado ao inventário!`, 'success');
+        onNotify?.(`"${safeForm.name}" adicionado ao inventário!`, 'success');
       } else {
-        onUpdate(item.id, 'name', editForm.name);
+        console.log('Updating existing item:', item.id);
+        onUpdate(item.id, 'name', safeForm.name);
         onUpdate(item.id, 'description', description);
-        if (editForm.category === 'Arma') {
-          onUpdate(item.id, 'attackSkill', editForm.attackSkill || 'Luta');
+        if (safeForm.category === 'Arma') {
+          onUpdate(item.id, 'attackSkill', safeForm.attackSkill || 'Luta');
         }
-        onNotify?.(`"${editForm.name}" atualizado!`, 'success');
+        onNotify?.(`"${safeForm.name}" atualizado!`, 'success');
       }
-      onClose();
+
+      console.log('Save completed successfully, closing modal');
+      // Close modal only after successful save
+      setTimeout(() => onClose(), 100);
     } catch (error) {
       console.error('Error saving item:', error);
-      alert('Erro ao salvar item. Tente novamente.');
+      console.error('Error details:', {
+        item,
+        editForm,
+        error: error instanceof Error ? error.message : error
+      });
+      alert(`Erro ao salvar item: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   };
 
