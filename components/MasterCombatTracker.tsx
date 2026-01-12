@@ -12,6 +12,7 @@ type CombatantState = {
   currentStats?: CurrentStats;
   maxStats?: CurrentStats;
   updatedAt?: number;
+  projectionStacks?: number;
 };
 
 interface MasterCombatTrackerProps {
@@ -68,6 +69,7 @@ export const MasterCombatTracker: React.FC<MasterCombatTrackerProps> = ({ campai
             characterName: p.characterName,
             level: p.level,
             imageUrl: p.imageUrl,
+            projectionStacks: data?.projectionStacks,
             ...(data || {})
           }
         }));
@@ -126,6 +128,25 @@ export const MasterCombatTracker: React.FC<MasterCombatTrackerProps> = ({ campai
               <MiniBar label="PV" current={current.pv} max={max.pv} colorClass="bg-blood-500" />
               <MiniBar label="CE" current={current.ce} max={max.ce} colorClass="bg-curse-500" />
               <MiniBar label="PE" current={current.pe} max={max.pe} colorClass="bg-orange-500" />
+              
+              {/* Projection Stacks Indicator */}
+              {(state?.projectionStacks !== undefined && state.projectionStacks > 0) && (
+                 <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-800/50">
+                    <span className="text-[10px] uppercase font-bold text-curse-400">Projeção</span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3].map(i => (
+                        <div
+                          key={i}
+                          className={`w-3 h-4 border rounded-[1px] flex items-center justify-center
+                            ${(state?.projectionStacks || 0) >= i
+                              ? 'bg-curse-500 border-curse-400 shadow-[0_0_5px_rgba(124,58,237,0.5)]'
+                              : 'bg-slate-900 border-slate-700 opacity-30'}
+                          `}
+                        />
+                      ))}
+                    </div>
+                 </div>
+              )}
             </div>
           </div>
         );
