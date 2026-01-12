@@ -1,6 +1,6 @@
 import React from 'react';
 import { Character, Origin, Attributes, Skill, CharacterClass } from '../types';
-import { User, Dna, BookOpen, Plus, Trash2, Lock } from 'lucide-react';
+import { User, Dna, BookOpen, Plus, Trash2, Lock, Layers } from 'lucide-react';
 
 interface EditorProps {
   char: Character;
@@ -98,6 +98,9 @@ export const CharacterEditor: React.FC<EditorProps> = ({ char, setChar, onClose 
   const sortedSkills = [...(char.skills || [])].sort((a, b) => {
     return a.name.localeCompare(b.name);
   });
+
+  // Check for Projection Sorcery
+  const hasProjection = char.techniques.some(t => t.name.includes("Projeção")) || char.projectionStacks !== undefined;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -277,8 +280,42 @@ export const CharacterEditor: React.FC<EditorProps> = ({ char, setChar, onClose 
             </div>
           </div>
 
+          {/* Innate Technique Section (Projection Sorcery Special) */}
+          {hasProjection && (
+             <div>
+                <div className="flex items-center gap-2 text-curse-300 font-bold mb-3 border-b border-slate-800 pb-2">
+                   <Layers size={18} /> Técnica Inata
+                </div>
+                <div className="space-y-3">
+                   <div className="bg-slate-950 p-3 rounded-lg border border-curse-900/50">
+                      <h4 className="text-xs font-bold text-curse-400 uppercase tracking-wider mb-1">Projeção</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                         Enquanto ativa, concede +5/7/10 de bônus em Acerto e aumenta o Deslocamento em +50% por stack (Máx 3).
+                         Violar a regra dos 24 quadros resulta em congelamento (Imóvel/Indefeso) por 1 turno e perda dos stacks.
+                      </p>
+                   </div>
+                   
+                   <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                      <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">Barreira de Quadros</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                         Reação. O usuário pode criar uma barreira plana congelando o ar.
+                         Gaste CE (até o limite LL) para reduzir o dano recebido em valor igual.
+                      </p>
+                   </div>
+
+                   <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
+                      <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Quadro de Frame</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                         Ação Padrão (2 PE). Toque um alvo para prendê-lo em um quadro de animação.
+                         Teste Oposto: Luta (Usuário) vs Reflexos (Alvo). Se falhar, o alvo fica Imóvel e Vulnerável até o início do seu próximo turno.
+                      </p>
+                   </div>
+                </div>
+             </div>
+          )}
+
           <div className="p-5 border-t border-slate-800 bg-slate-900 sticky bottom-0">
-            <button 
+            <button
               onClick={onClose}
               className="w-full bg-curse-600 hover:bg-curse-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-curse-900/20"
             >
