@@ -436,19 +436,27 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   };
 
   const updateViewingChar = (updater: (prev: Character) => Character) => {
-    if (!viewingChar) return;
-    const next = updater(viewingChar);
-    setViewingChar(next);
-
-    if (!auth.currentUser || !viewingParticipant) return;
-    const isSelf = viewingParticipant.userId === auth.currentUser.uid;
-    if (isSelf && onUpdateCurrentUserChar) {
-      onUpdateCurrentUserChar(next);
-    }
+    setViewingChar(prev => {
+       if (!prev) return null;
+       return updater(prev);
+    });
   };
 
-  const handleCharUpdate = (field: keyof Character, value: any) => {
-    updateViewingChar(prev => ({ ...prev, [field]: value }));
+  // Sync viewingChar changes to parent (currentUserChar) if it's the user's character
+  useEffect(() => {
+    if (!viewingChar || !viewingParticipant || !auth.currentUser) return;
+    const isSelf = viewingParticipant.userId === auth.currentUser.uid;
+    if (isSelf && onUpdateCurrentUserChar) {
+      onUpdateCurrentUserChar(viewingChar);
+    }
+  }, [viewingChar]);
+
+  const handleCharUpdate = (field: keyof Character | Partial<Character>, value?: any) => {
+    if (typeof field === 'object') {
+        updateViewingChar(prev => ({ ...prev, ...field }));
+    } else {
+        updateViewingChar(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleAttributeUpdate = (attr: keyof import('../types').Attributes, val: number) => {
