@@ -78,14 +78,14 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
       let gainedTraining = 0;
       
       if (level === 1) {
-        gainedAttr = 5; // Start: +5 Pontos de Atributo
+        gainedAttr = 4; // Start: +4 Pontos de Atributo
         gainedSkill = 1; // +1 Ponto de Habilidade
         gainedTechnique = 1; // Variação de Técnica Inata
         if (isInato) {
           gainedSkill += 1; // Inato bonus level 1
         }
         if (isHR) {
-          gainedAttr = 3; // HR: +3 Atributos Iniciais
+          gainedAttr += 3; // HR: +3 Atributos Iniciais
         }
       }
       
@@ -506,9 +506,9 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
                           </div>
                         )}
                       </div>
-                    </div>
                   </div>
-                </div>
+                  </div>
+               </div>
               );
             })}
          </div>
