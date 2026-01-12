@@ -1,5 +1,34 @@
 import { DieType, Technique } from '../types';
 
+export const PRESET_TECHNIQUES: Technique[] = [
+  {
+    id: 'projection-sorcery',
+    name: "Projeção de Feitiçaria",
+    category: "Inata",
+    description: "Divide 1 segundo em 24 quadros. Permite movimento extremamente veloz (+50% a +150% Deslocamento) e aprisionamento de inimigos em frames de animação.",
+    subTechniques: [
+      {
+        id: 'proj-move',
+        name: "Projeção (Movimento)",
+        usage: "Ação de Movimento",
+        description: "Gasta CE (LL) para ativar ou manter a regra dos 24fps. Ganha +1 Stack (Máx 3). Cada stack aumenta Deslocamento e Acerto. Ignora Ataques de Oportunidade."
+      },
+      {
+        id: 'proj-barrier',
+        name: "Barreira de Quadros",
+        usage: "Reação",
+        description: "Gasta CE (LL). Cria uma superfície plana congelada no ar que bloqueia projéteis/energia ou redireciona ataques em área."
+      },
+      {
+        id: 'proj-trap',
+        name: "Quadro de Frame",
+        usage: "Ação Padrão (2 PE)",
+        description: "Toque. Teste de Luta vs Reflexos. Se vencer, o alvo é transformado em um quadro de animação 2D, ficando Imóvel e Indefeso até ser quebrado ou o turno acabar."
+      }
+    ]
+  }
+];
+
 export const TECHNIQUE_TEMPLATES: Partial<Technique>[] = [
   {
     name: "Disparo de Energia Bruta",
