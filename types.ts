@@ -80,6 +80,10 @@ export interface Character {
   inventory: Item[];
   equippedWeapons: string[]; // IDs das armas equipadas
   aptitudes?: AptitudeLevels; // Níveis de aptidão em categorias de Habilidades Amaldiçoadas
+  innateTechnique?: {
+    name: string;
+    description?: string;
+  };
   projectionStacks?: number; // Stacks da Projeção de Feitiçaria (0-3)
   ignoreAOO?: boolean; // Ignorar Ataques de Oportunidade
 }
