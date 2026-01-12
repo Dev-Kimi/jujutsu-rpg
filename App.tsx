@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Droplet, Zap, Activity, Skull, Flame, LogOut } from 'lucide-react';
-import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes } from './types';
+import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes, Condition, BindingVow } from './types';
 import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger } from './utils/calculations';
 import { StatBar } from './components/StatBar';
 import { CombatTabs } from './components/CombatTabs';
@@ -26,27 +26,6 @@ import Auth from './components/Auth';
 import UserMenu from './components/UserMenu';
 import UserProfile from './components/UserProfile';
 
-// Helper functions for conditions
-const getConditionBorderColor = (severity: string) => {
-  switch (severity) {
-    case 'minor': return 'border-yellow-500/50';
-    case 'moderate': return 'border-orange-500/50';
-    case 'major': return 'border-red-500/50';
-    case 'extreme': return 'border-purple-500/50';
-    default: return 'border-slate-700';
-  }
-};
-
-const getConditionSeverityColor = (severity: string) => {
-  switch (severity) {
-    case 'minor': return 'bg-yellow-600/20 text-yellow-300 border border-yellow-500/30';
-    case 'moderate': return 'bg-orange-600/20 text-orange-300 border border-orange-500/30';
-    case 'major': return 'bg-red-600/20 text-red-300 border border-red-500/30';
-    case 'extreme': return 'bg-purple-600/20 text-purple-300 border border-purple-500/30';
-    default: return 'bg-slate-600/20 text-slate-300 border border-slate-500/30';
-  }
-};
-
 // Helper to generate a fresh character state (Fallback only)
 const getInitialChar = (): Character => ({
   id: Math.random().toString(36).substring(2, 9),
@@ -70,7 +49,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.6.0'; // Update this when you deploy changes
+const APP_VERSION = '1.5.0'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -355,6 +334,27 @@ const App: React.FC = () => {
 
   // Active Buffs State
   const [activeBuffs, setActiveBuffs] = useState<Ability[]>([]);
+
+  // Helper functions for conditions
+  const getConditionBorderColor = (severity: string) => {
+    switch (severity) {
+      case 'minor': return 'border-yellow-500/50';
+      case 'moderate': return 'border-orange-500/50';
+      case 'major': return 'border-red-500/50';
+      case 'extreme': return 'border-purple-500/50';
+      default: return 'border-slate-700';
+    }
+  };
+
+  const getConditionSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'minor': return 'bg-yellow-600/20 text-yellow-300 border border-yellow-500/30';
+      case 'moderate': return 'bg-orange-600/20 text-orange-300 border border-orange-500/30';
+      case 'major': return 'bg-red-600/20 text-red-300 border border-red-500/30';
+      case 'extreme': return 'bg-purple-600/20 text-purple-300 border border-purple-500/30';
+      default: return 'bg-slate-600/20 text-slate-300 border border-slate-500/30';
+    }
+  };
 
   // Ref to track last saved character for auto-save optimization
   const lastSavedCharacterRef = useRef<string>('');
@@ -1259,27 +1259,21 @@ const App: React.FC = () => {
                   {/* Conditions Section */}
                   <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden mt-4">
                      <div className="p-4 border-b border-slate-800">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                           <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
-                             <span className="text-xs font-bold text-white">⚠</span>
-                           </div>
-                           Condições Ativas
-                        </h3>
+                        <h3 className="text-lg font-bold text-white">Condições Ativas</h3>
                         <p className="text-sm text-slate-400 mt-1">
                            Status negativos que afetam capacidades e defesas
                         </p>
                      </div>
-
                      <div className="p-4">
                         {character.conditions && character.conditions.length > 0 ? (
                            <div className="space-y-3">
                               {character.conditions.map(condition => (
-                                 <div key={condition.id} className={`border rounded-lg p-3 ${condition.isActive ? getConditionBorderColor(condition.severity) : 'border-slate-700 opacity-50'}`}>
+                                 <div key={condition.id} className={`border rounded-lg p-3 ${condition.isActive ? 'border-red-500/50' : 'border-slate-700 opacity-50'}`}>
                                     <div className="flex items-start justify-between">
                                        <div className="flex-1">
                                           <div className="flex items-center gap-2 mb-1">
                                              <h4 className={`font-bold ${condition.isActive ? 'text-white' : 'text-slate-500'}`}>{condition.name}</h4>
-                                             <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${getConditionSeverityColor(condition.severity)}`}>
+                                             <span className="text-xs px-2 py-0.5 rounded uppercase font-bold bg-red-600/20 text-red-300 border border-red-500/30">
                                                 {condition.severity}
                                              </span>
                                              {condition.duration && (
