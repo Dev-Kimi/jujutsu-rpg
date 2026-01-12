@@ -22,8 +22,8 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
   const [origin, setOrigin] = useState<Origin>(Origin.Inato);
   const [characterClass, setCharacterClass] = useState<CharacterClass>("Combatente");
   
-  // Attribute State (Default all 1, 5 points to spend)
-  // Logic: Base 1. Max 3. Min 0. Total Pool = 10 (5 attrs * 1 base + 5 free).
+  // Attribute State (Default all 1, 4 points to spend)
+  // Logic: Base 1. Max 3. Min 0. Total Pool = 9 (5 attrs * 1 base + 4 free).
   const [attributes, setAttributes] = useState<Attributes>({
     FOR: 1, AGI: 1, VIG: 1, INT: 1, PRE: 1
   });
@@ -206,7 +206,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
                   <div>
                     <h2 className="text-3xl font-black text-white">Atributos</h2>
                     <p className="text-slate-400 text-sm mt-1">
-                      Distribua seus pontos. Você começa com 1 em tudo. 
+                      Distribua seus 4 pontos. Você começa com 1 em tudo.
                       Pode reduzir para 0 para ganhar +1 ponto. Max inicial 3.
                     </p>
                   </div>
