@@ -565,6 +565,7 @@ const App: React.FC = () => {
       domainActive,
       domainRound,
       domainType,
+      projectionStacks: character.projectionStacks,
       updatedAt: Date.now()
     };
 
@@ -1218,6 +1219,7 @@ const App: React.FC = () => {
                     activeRollResult={activeRollResult}
                     setActiveRollResult={setActiveRollResult}
                     onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                    onUpdateCharacter={handleCharUpdate}
                     domainActive={domainActive}
                     domainRound={domainRound}
                     domainType={domainType}
