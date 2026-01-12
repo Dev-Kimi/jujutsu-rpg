@@ -100,7 +100,7 @@ export const CharacterEditor: React.FC<EditorProps> = ({ char, setChar, onClose 
   });
 
   // Check for Projection Sorcery
-  const hasProjection = char.techniques.some(t => t.name.includes("Projeção")) || char.projectionStacks !== undefined;
+  const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria";
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -141,7 +141,7 @@ export const CharacterEditor: React.FC<EditorProps> = ({ char, setChar, onClose 
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Origem</label>
-                <select 
+                <select
                   value={char.origin}
                   onChange={(e) => handleChange('origin', e.target.value as Origin)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white text-sm focus:border-curse-500 focus:outline-none"
@@ -149,6 +149,26 @@ export const CharacterEditor: React.FC<EditorProps> = ({ char, setChar, onClose 
                   {Object.values(Origin).map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div>
+               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Técnica Inata</label>
+               <select
+                  value={char.innateTechnique?.name || ""}
+                  onChange={(e) => {
+                     const val = e.target.value;
+                     setChar({
+                        ...char,
+                        innateTechnique: val ? { name: val } : undefined,
+                        // Initialize stacks if selecting Projection
+                        projectionStacks: val === "Projeção de Feitiçaria" ? 0 : undefined
+                     });
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white text-sm focus:border-curse-500 focus:outline-none"
+               >
+                  <option value="">Nenhuma / Customizada</option>
+                  <option value="Projeção de Feitiçaria">Projeção de Feitiçaria</option>
+               </select>
             </div>
             
              <div>
