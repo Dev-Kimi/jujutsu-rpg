@@ -562,7 +562,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       )}
 
       {/* Tabs Header */}
-      <div className="flex border-b border-slate-800 mb-4">
+      <div className="flex border-b border-slate-800 mb-4 overflow-x-auto whitespace-nowrap scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
         <button
           onClick={() => { setActiveTab('physical'); reset(); }}
           className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
