@@ -49,7 +49,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.5.0'; // Update this when you deploy changes
+const APP_VERSION = '1.6.0'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -1237,26 +1237,27 @@ const App: React.FC = () => {
             {/* Tab Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-100">
                {activeTab === 'combat' && (
-                  <CombatTabs 
-                    char={character}
-                    stats={stats}
-                    currentStats={currentStats}
-                    consumeCE={consumeCE}
-                    consumePE={consumePE}
-                    activeBuffs={activeBuffs}
-                    onConsumeBuffs={handleConsumeBuffs}
-                    activeRollResult={activeRollResult}
-                    setActiveRollResult={setActiveRollResult}
-                    onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
-                    onUpdateCharacter={handleCharUpdate}
-                    domainActive={domainActive}
-                    domainRound={domainRound}
-                    domainType={domainType}
-                    onAdvanceDomain={advanceDomainRound}
-                    onCloseDomain={closeDomain}
-                  />
+                  <>
+                     <CombatTabs
+                        char={character}
+                        stats={stats}
+                        currentStats={currentStats}
+                        consumeCE={consumeCE}
+                        consumePE={consumePE}
+                        activeBuffs={activeBuffs}
+                        onConsumeBuffs={handleConsumeBuffs}
+                        activeRollResult={activeRollResult}
+                        setActiveRollResult={setActiveRollResult}
+                        onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                        onUpdateCharacter={handleCharUpdate}
+                        domainActive={domainActive}
+                        domainRound={domainRound}
+                        domainType={domainType}
+                        onAdvanceDomain={advanceDomainRound}
+                        onCloseDomain={closeDomain}
+                     />
 
-                  {/* Conditions Section */}
+                     {/* Conditions Section */}
                   <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden mt-4">
                      <div className="p-4 border-b border-slate-800">
                         <h3 className="text-lg font-bold text-white">Condições Ativas</h3>
@@ -1396,6 +1397,7 @@ const App: React.FC = () => {
                         </div>
                      </div>
                   </div>
+                  </>
                )}
                {activeTab === 'abilities' && (
                  <AccordionList 
