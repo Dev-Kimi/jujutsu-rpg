@@ -149,20 +149,31 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
                           <button
                             key={c}
                             onClick={() => setCharacterClass(c)}
-                            className={`p-4 rounded-xl border text-left transition-all flex items-center gap-4
-                              ${characterClass === c 
-                                ? 'bg-curse-950/40 border-curse-500 shadow-[0_0_20px_rgba(124,58,237,0.2)]' 
+                            className={`p-4 rounded-xl border text-left transition-all flex flex-col items-start gap-3
+                              ${characterClass === c
+                                ? 'bg-curse-950/40 border-curse-500 shadow-[0_0_20px_rgba(124,58,237,0.2)]'
                                 : 'bg-slate-950 border-slate-800 hover:border-slate-600 opacity-60 hover:opacity-100'}
                             `}
                           >
-                             <div className={`p-3 rounded-full ${characterClass === c ? 'bg-curse-600 text-white' : 'bg-slate-900 text-slate-500'}`}>
-                                {c === 'Combatente' && <Sword size={20} />}
-                                {c === 'Feiticeiro' && <Wand2 size={20} />}
-                                {c === 'Especialista' && <Brain size={20} />}
+                             <div className="flex items-center gap-3 w-full">
+                               <div className={`p-3 rounded-full ${characterClass === c ? 'bg-curse-600 text-white' : 'bg-slate-900 text-slate-500'}`}>
+                                  {c === 'Combatente' && <Sword size={20} />}
+                                  {c === 'Feiticeiro' && <Wand2 size={20} />}
+                                  {c === 'Especialista' && <Brain size={20} />}
+                               </div>
+                               <div className="flex-1">
+                                  <div className={`font-bold text-lg ${characterClass === c ? 'text-white' : 'text-slate-400'}`}>{c}</div>
+                                  <div className="text-xs text-slate-500">
+                                    {c === 'Combatente' && 'Mestre do combate físico, usa energia como combustível corporal'}
+                                    {c === 'Feiticeiro' && 'Focado no controle refinado e aplicação eficiente de Técnicas Inatas'}
+                                    {c === 'Especialista' && 'Estrategista que controla o fluxo do combate e auxilia aliados'}
+                                  </div>
+                               </div>
                              </div>
-                             <div>
-                                <div className={`font-bold text-lg ${characterClass === c ? 'text-white' : 'text-slate-400'}`}>{c}</div>
-                                <div className="text-xs text-slate-500">Especialização tática</div>
+                             <div className="text-[10px] text-slate-600 leading-tight">
+                               {c === 'Combatente' && 'Especialista em combate corpo-a-corpo, usando reforço corporal e técnicas físicas para dominar o campo de batalha.'}
+                               {c === 'Feiticeiro' && 'Dominam o controle preciso da Energia Amaldiçoada, desenvolvendo técnicas complexas e barreiras defensivas.'}
+                               {c === 'Especialista' && 'Controlam o ritmo do combate através de técnicas utilitárias, apoio aos aliados e manipulação ambiental.'}
                              </div>
                           </button>
                         ))}
