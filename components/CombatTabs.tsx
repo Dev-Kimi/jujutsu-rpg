@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap } from 'lucide-react';
-import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item, DiceRoll as DiceRollType, Technique } from '../types';
+import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
 import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
 import { logDiceRoll } from '../utils/diceRollLogger';
-import { auth } from '../firebase';
 
 interface CombatTabsProps {
   char: Character;
@@ -289,52 +288,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          return;
       }
       
-      // Get techniques with damage dice and their abilities
-      const techniquesWithDamage = char.techniques.flatMap(tech => {
-        const damageAbilities = (tech.effects || [])
-          .filter((effect: any) => effect.type === 'damage' && effect.dice)
-          .map((effect: any) => ({
-            ...effect,
-            techniqueName: tech.name,
-            techniqueId: tech.id
-          }));
-        
-        return damageAbilities.length > 0 ? [{
-          ...tech,
-          damageAbilities
-        }] : [];
-      });
-
-      // Handle ability roll
-      const handleAbilityRoll = (ability: any) => {
-        if (!ability.dice) return;
-        
-        const roll = rollDice(ability.dice, 1);
-        const total = roll + (ability.bonus || 0);
-        const detail = `[${ability.techniqueName}] ${ability.name}: ${roll}${ability.bonus ? ` + ${ability.bonus}` : ''} = ${total} de dano`;
-        
-        setLastResult({
-          total,
-          detail,
-          title: `${ability.techniqueName}: ${ability.name}`,
-          damageTotal: total
-        });
-        setActiveRollResult('combat');
-
-        // Log to campaign if campaignId is provided
-        if (campaignId) {
-logDiceRoll(
-            auth.currentUser?.uid || 'unknown',
-            char.id,
-            char.name,
-            'damage',
-            total,
-            detail,
-            campaignId
-          );
-        }
-      };
-
       const selectedTech = char.techniques.find(t => t.id === selectedTechniqueId);
       
       if (!selectedTech) {
