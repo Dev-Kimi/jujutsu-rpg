@@ -14,8 +14,8 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
     // HR Formula: 50 + (VIG * 5) + (level * (30 + VIG))
     MaxPV = 50 + (VIG * 5) + (level * (30 + VIG));
   } else {
-    // Sorcerer Formula: Nível × (10 + (Vigor × 5))
-    MaxPV = level * (10 + (VIG * 5));
+    // Sorcerer Formula: 15 + (Nível * (10 + (Vigor * 5)))
+    MaxPV = 15 + (level * (10 + (VIG * 5)));
   }
 
   // C. Energia Amaldiçoada (CE)
@@ -43,6 +43,12 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
      Movement = 12; // Base HR
   } else {
      Movement = 9 + (level * 3);
+  }
+
+  // Projection Sorcery Speed Bonus
+  if (char.innateTechnique?.name === "Projeção de Feitiçaria" && char.projectionStacks) {
+      const multiplier = 1 + (char.projectionStacks * 0.5); // +50% per stack
+      Movement = Math.floor(Movement * multiplier);
   }
 
   return { LL, MaxPV, MaxCE, MaxPE, Movement };
@@ -99,9 +105,9 @@ export const parseAbilityCost = (costStr: string): { pe: number, ce: number } =>
   let ce = 0;
   
   if (!costStr) return { pe: 0, ce: 0 };
-  
+
   const lower = costStr.toLowerCase();
-  
+
   // Check for "Passivo" or "Passiva"
   if (lower.includes("passivo") || lower.includes("passiva")) {
     return { pe: 0, ce: 0 };
