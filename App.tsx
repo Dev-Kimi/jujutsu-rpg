@@ -49,7 +49,7 @@ type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
 const STORAGE_UID_KEY = 'jjk_rpg_current_user_uid'; // Track which user's data is in localStorage
-const APP_VERSION = '1.5.0'; // Update this when you deploy changes
+const APP_VERSION = '1.6.0'; // Update this when you deploy changes
 
 const App: React.FC = () => {
   // View State
@@ -1237,6 +1237,7 @@ const App: React.FC = () => {
             {/* Tab Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-100">
                {activeTab === 'combat' && (
+                  <>
                      <CombatTabs
                         char={character}
                         stats={stats}
@@ -1254,173 +1255,47 @@ const App: React.FC = () => {
                         domainType={domainType}
                         onAdvanceDomain={advanceDomainRound}
                         onCloseDomain={closeDomain}
-                     />)
-                     
-               
-               
-               {/* Conditions Section */}
-                     <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden mt-4">
-                        <div className="p-4 border-b border-slate-800">
-                           <h3 className="text-lg font-bold text-white">Condições Ativas</h3>
-                           <p className="text-sm text-slate-400 mt-1">
-                              Status negativos que afetam capacidades e defesas
-                           </p>
-                        </div>
-                        <div className="p-4">
-                           {character.conditions && character.conditions.length > 0 ? (
-                              <div className="space-y-3">
-                                 {character.conditions.map(condition => (
-                                    <div key={condition.id} className={`border rounded-lg p-3 ${condition.isActive ? 'border-red-500/50' : 'border-slate-700 opacity-50'}`}>
-                                       <div className="flex items-start justify-between">
-                                          <div className="flex-1">
-                                             <div className="flex items-center gap-2 mb-1">
-                                                <h4 className={`font-bold ${condition.isActive ? 'text-white' : 'text-slate-500'}`}>{condition.name}</h4>
-                                                <span className="text-xs px-2 py-0.5 rounded uppercase font-bold bg-red-600/20 text-red-300 border border-red-500/30">
-                                                   {condition.severity}
+                     />
+)
+                     {/* Conditions Section */}
+                  <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden mt-4">
+                     <div className="p-4 border-b border-slate-800">
+                        <h3 className="text-lg font-bold text-white">Condições Ativas</h3>
+                        <p className="text-sm text-slate-400 mt-1">
+                           Status negativos que afetam capacidades e defesas
+                        </p>
+                     </div>
+                     <div className="p-4">
+                        {character.conditions && character.conditions.length > 0 ? (
+                           <div className="space-y-3">
+                              {character.conditions.map(condition => (
+                                 <div key={condition.id} className={`border rounded-lg p-3 ${condition.isActive ? 'border-red-500/50' : 'border-slate-700 opacity-50'}`}>
+                                    <div className="flex items-start justify-between">
+                                       <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-1">
+                                             <h4 className={`font-bold ${condition.isActive ? 'text-white' : 'text-slate-500'}`}>{condition.name}</h4>
+                                             <span className="text-xs px-2 py-0.5 rounded uppercase font-bold bg-red-600/20 text-red-300 border border-red-500/30">
+                                                {condition.severity}
+                                             </span>
+                                             {condition.duration && (
+                                                <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                                                   {condition.duration} turnos
                                                 </span>
-                                             </div>
-                                             <p className="text-sm text-slate-300 mb-2">{condition.description}</p>
-                                             <div className="space-y-1">
-                                                {condition.effects.map((effect, idx) => (
-                                                   <div key={idx} className="text-xs text-red-400 flex items-center gap-1">
-                                                      <span>•</span>
-                                                      <span>{effect}</span>
-                                                   </div>
-                                                ))}
-                                             </div>
+                                             )}
                                           </div>
-                                          <div className="flex flex-col gap-2 ml-4">
-                                             <button
-                                                onClick={() => {
-                                                   setCharacter(prev => ({
-                                                      ...prev,
-                                                      conditions: prev.conditions?.map(c =>
-                                                         c.id === condition.id ? { ...c, isActive: !c.isActive } : c
-                                                      ) || []
-                                                   }));
-                                                }}
-                                                className={`px-3 py-1 text-xs font-bold rounded transition-colors ${
-                                                   condition.isActive
-                                                      ? 'bg-red-600 hover:bg-red-500 text-white'
-                                                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                                                }`}
-                                             >
-                                                {condition.isActive ? 'Ativo' : 'Inativo'}
-                                             </button>
-                                             <button
-                                                onClick={() => {
-                                                   if (confirm(`Remover a condição "${condition.name}"?`)) {
-                                                      setCharacter(prev => ({
-                                                         ...prev,
-                                                         conditions: prev.conditions?.filter(c => c.id !== condition.id) || []
-                                                      }));
-                                                   }
-                                                }}
-                                                className="px-3 py-1 text-xs font-bold bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
-                                             >
-                                                Remover
-                                             </button>
+                                          <p className="text-sm text-slate-300 mb-2">{condition.description}</p>
+
+                                          <div className="space-y-1">
+                                             {condition.effects.map((effect, idx) => (
+                                                <div key={idx} className="text-xs text-red-400 flex items-center gap-1">
+                                                   <span>•</span>
+                                                   <span>{effect}</span>
+                                                </div>
+                                             ))}
                                           </div>
                                        </div>
-                                    </div>
-                                 ))}
-                              </div>
-                           ) : (
-                              <div className="text-center py-8">
-                                 <div className="text-4xl mb-4">✅</div>
-                                 <p className="text-slate-400">Nenhuma condição ativa</p>
-                                 <p className="text-sm text-slate-500 mt-1">O personagem está em perfeitas condições</p>
-                              </div>
-                           )}
-                           <div className="border-t border-slate-800 pt-4 mt-4">
-                              <div className="grid grid-cols-2 gap-3">
-                                 {[
-                                    { name: "Atordoado", desc: "Não pode realizar ações", effects: ["Não pode agir", "-4 em defesas"], severity: 'major' as const },
-                                    { name: "Indefeso", desc: "Não pode se defender", effects: ["Não pode usar reações", "-10 em defesas"], severity: 'extreme' as const },
-                                    { name: "Vulnerável", desc: "Mais suscetível a danos", effects: ["+2 em rolagens de dano contra você"], severity: 'moderate' as const },
-                                    { name: "Exausto", desc: "Fadiga extrema", effects: ["-2 em todos os testes", "-1 ação por turno"], severity: 'moderate' as const }
-                                 ].map(cond => (
-                                    <button
-                                       key={cond.name}
-                                       onClick={() => {
-                                          const newCondition: Condition = {
-                                             id: Math.random().toString(36).substring(2, 9),
-                                             name: cond.name,
-                                             description: cond.desc,
-                                             effects: cond.effects,
-                                             severity: cond.severity,
-                                             isActive: true
-                                          };
-                                          setCharacter(prev => ({
-                                             ...prev,
-                                             conditions: [...(prev.conditions || []), newCondition]
-                                          }));
-                                       }}
-                                       className="py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium rounded-lg transition-colors text-sm"
-                                    >
-                                       + {cond.name}
-                                    </button>
-                                 ))}
-                                 <button
-                                    onClick={() => {
-                                       const newCondition: Condition = {
-                                          id: Math.random().toString(36).substring(2, 9),
-                                          name: "Condição Personalizada",
-                                          description: "Descreva o efeito desta condição",
-                                          effects: ["-2 em testes relacionados"],
-                                          severity: 'minor',
-                                          isActive: true
-                                       };
-                                       setCharacter(prev => ({
-                                          ...prev,
-                                          conditions: [...(prev.conditions || []), newCondition]
-                                       }));
-                                    }}
-                                    className="py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors text-sm"
-                                 >
-                                    + Personalizada
-                                 </button>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                        <div className="p-4 border-b border-slate-800">
-                           <h3 className="text-lg font-bold text-white">Condições Ativas</h3>
-                           <p className="text-sm text-slate-400 mt-1">
-                              Status negativos que afetam capacidades e defesas
-                           </p>
-                        </div>
-                           <div className="p-4">
-                              {character.conditions && character.conditions.length > 0 ? (
-                                 <div className="space-y-3">
-                                    {character.conditions.map(condition => (
-                                       <div key={condition.id} className={`border rounded-lg p-3 ${condition.isActive ? 'border-red-500/50' : 'border-slate-700 opacity-50'}`}>
-                                          <div className="flex items-start justify-between">
-                                             <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                   <h4 className={`font-bold ${condition.isActive ? 'text-white' : 'text-slate-500'}`}>{condition.name}</h4>
-                                                   <span className="text-xs px-2 py-0.5 rounded uppercase font-bold bg-red-600/20 text-red-300 border border-red-500/30">
-                                                      {condition.severity}
-                                                   </span>
-                                                   {condition.duration && (
-                                                      <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
-                                                         {condition.duration} turnos
-                                                      </span>
-                                                   )}
-                                                </div>
-                                                <p className="text-sm text-slate-300 mb-2">{condition.description}</p>
 
-                                                <div className="space-y-1">
-                                                   {condition.effects.map((effect, idx) => (
-                                                      <div key={idx} className="text-xs text-red-400 flex items-center gap-1">
-                                                         <span>•</span>
-                                                         <span>{effect}</span>
-                                                      </div>
-                                                   ))}
-                                                </div>
-                                             </div>
-
-                                             <div className="flex flex-col gap-2 ml-4">
+                                       <div className="flex flex-col gap-2 ml-4">
                                           <button
                                              onClick={() => {
                                                 setCharacter(prev => ({
