@@ -57,6 +57,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const [attackHit, setAttackHit] = useState<boolean>(true); // Assume hit by default
   const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, attackRolls?: number[], isCritical?: boolean, isCritSuccess?: boolean, isCritFail?: boolean, damageTotal?: number, attackHits?: boolean } | null>(null);
 
+    // Check if character has Projection Sorcery
+    const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria" || char.techniques.some(t => t.name === "Projeção de Feitiçaria");
+
+    const projectionStacks = char.projectionStacks || 0;
+    const projectionBonus = projectionStacks === 1 ? 5 : projectionStacks === 2 ? 7 : projectionStacks === 3 ? 10 : 0;
+
     // Identify equipped weapons from inventory
     const equippedWeapons = char.inventory.filter(item => {
         try {
@@ -189,9 +195,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus + projectionBonus;
          const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
          attackRollDetail = `${dicePart} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
-         isCritSuccess = baseAttackRoll === 20;
-         isCritFail = baseAttackRoll === 1;
-         if (isCritSuccess) isCritical = true;
+        isCritSuccess = baseAttackRoll === 20;
+        isCritFail = baseAttackRoll === 1;
+        // Unarmed attacks don't get critical damage bonus, only critical hit confirmation
+        if (isCritSuccess) isCritical = true;
       } else {
          currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
          if (currentWeaponItem) {
@@ -218,9 +225,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              isCritSuccess = baseAttackRoll === 20;
              isCritFail = baseAttackRoll === 1;
 
-             // Check for critical hit
-             const criticalThreshold = getWeaponCriticalThreshold(currentWeaponItem);
-             if (attackRoll >= criticalThreshold) {
+            // Check for critical hit
+            const criticalThreshold = currentWeaponItem ? getWeaponCriticalThreshold(currentWeaponItem) : 20;
+            if (attackRoll >= criticalThreshold) {
                isCritical = true;
                baseDamageValue = getMaxRollFromDice(diceStr);
                baseDamageText = `max(${diceStr}) = ${baseDamageValue} (Crítico!)`;
@@ -282,7 +289,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         detail = `[DanoBase]${baseDamageText} + [Reforço]${reforcoText} + [Força]${strBonus}`;
 
         // Check if attack hits based on user selection
-        if (!attackHit) {
+        const hitResult = attackHit !== undefined ? attackHit : true; // Default to hit if not set
+        if (!hitResult) {
           // Attack missed - no damage
           total = 0;
           detail = `ATAQUE ERROU: ${detail}`;
@@ -408,7 +416,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       attackRoll,
       attackRollDetail,
       attackRolls,
-      attackHits: attackHit,
+      attackHits: hitResult,
       isCritical: isCritical || isCritSuccess,
       isCritSuccess,
       isCritFail,
@@ -432,12 +440,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   };
 
   const isHR = char.origin === Origin.RestricaoCelestial;
-  
-  // Check if character has Projection Sorcery
-  const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria" || char.techniques.some(t => t.name === "Projeção de Feitiçaria");
-
-  const projectionStacks = char.projectionStacks || 0;
-  const projectionBonus = projectionStacks === 1 ? 5 : projectionStacks === 2 ? 7 : projectionStacks === 3 ? 10 : 0;
 
   // Projection Handlers
   const handleProjectionActivate = () => {
@@ -841,35 +843,26 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           {activeTab === 'physical' && (
             <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
               <div className="flex items-center gap-2 text-sm font-bold text-slate-300 mb-3">
-                <Shield size={16} />
                 <span>Resultado do Ataque</span>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setAttackHit(true)}
-                  className={`flex-1 py-2 px-4 rounded-lg font-bold transition-colors ${
-                    attackHit
-                      ? 'bg-green-600 hover:bg-green-500 text-white'
-                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                  }`}
+                  className="flex-1 py-2 px-4 rounded-lg font-bold bg-green-600 text-white"
                 >
                   ✅ ACERTOU
                 </button>
                 <button
                   onClick={() => setAttackHit(false)}
-                  className={`flex-1 py-2 px-4 rounded-lg font-bold transition-colors ${
-                    !attackHit
-                      ? 'bg-red-600 hover:bg-red-500 text-white'
-                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                  }`}
+                  className="flex-1 py-2 px-4 rounded-lg font-bold bg-red-600 text-white"
                 >
                   ❌ ERROU
                 </button>
               </div>
 
               <div className="text-[10px] text-slate-500 italic mt-2">
-                O Mestre informa se o ataque acertou. Clique na opção correspondente para calcular o dano.
+                O Mestre informa se o ataque acertou.
               </div>
             </div>
           )}
