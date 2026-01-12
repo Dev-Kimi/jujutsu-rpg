@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Technique, SubTechnique } from '../types';
-import { Search, Plus, X, BookOpen, ChevronDown, ChevronRight, Wand2, Sparkles, Trash2, Edit2 } from 'lucide-react';
+import { PRESET_TECHNIQUES } from '../utils/templates';
+import { Search, Plus, X, BookOpen, ChevronDown, ChevronRight, Wand2, Sparkles, Trash2, Edit2, Lock } from 'lucide-react';
 
 interface TechniqueLibraryProps {
   userTechniques: Technique[];
@@ -96,10 +97,14 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
     onAddToCharacter(techniqueCopy);
   };
 
-  const filteredTechniques = userTechniques.filter(tech =>
+  const allTechniques = [...PRESET_TECHNIQUES, ...userTechniques];
+  
+  const filteredTechniques = allTechniques.filter(tech =>
     tech.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tech.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const isPreset = (id: string) => PRESET_TECHNIQUES.some(p => p.id === id);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-0 sm:p-4">
@@ -174,7 +179,14 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center gap-2">
-                      <h3 className="font-bold text-white text-sm truncate">{tech.name}</h3>
+                      <div className="flex items-center gap-2">
+                         <h3 className="font-bold text-white text-sm truncate">{tech.name}</h3>
+                         {isPreset(tech.id) && (
+                            <span className="text-[9px] uppercase font-bold text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 flex items-center gap-1">
+                               <Lock size={8} /> Sistema
+                            </span>
+                         )}
+                      </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">
                           {tech.subTechniques.length} {tech.subTechniques.length === 1 ? 'Habilidade' : 'Habilidades'}
@@ -202,7 +214,7 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                   <div className="border-t border-slate-800 bg-slate-900/30 animate-in slide-in-from-top-2">
                     
                     {/* Edit Mode */}
-                    {editingTechniqueId === tech.id ? (
+                    {editingTechniqueId === tech.id && !isPreset(tech.id) ? (
                       <div className="p-4 space-y-3 border-b border-slate-800/50">
                         <div>
                           <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome da Técnica</label>
@@ -255,12 +267,17 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                     ) : (
                       <div className="p-4 border-b border-slate-800/50">
                         <p className="text-sm text-slate-300 mb-3">{tech.description}</p>
-                        <button
-                          onClick={() => setEditingTechniqueId(tech.id)}
-                          className="flex items-center gap-1 text-xs text-slate-400 hover:text-white px-3 py-1 rounded hover:bg-slate-800 transition-colors duration-100"
-                        >
-                          <Edit2 size={12} /> Editar
-                        </button>
+                        {!isPreset(tech.id) && (
+                            <button
+                            onClick={() => setEditingTechniqueId(tech.id)}
+                            className="flex items-center gap-1 text-xs text-slate-400 hover:text-white px-3 py-1 rounded hover:bg-slate-800 transition-colors duration-100"
+                            >
+                            <Edit2 size={12} /> Editar
+                            </button>
+                        )}
+                        {isPreset(tech.id) && (
+                            <p className="text-[10px] text-slate-600 italic">Técnicas de sistema não podem ser editadas diretamente. Adicione à ficha para usar.</p>
+                        )}
                       </div>
                     )}
 
