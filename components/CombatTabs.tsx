@@ -538,7 +538,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              <div className="flex items-center gap-4">
                 <div className="flex flex-col items-end text-[10px] text-slate-500 font-mono leading-tight">
                     <span>+{projectionBonus} Acerto</span>
-                    <span>+{(char.projectionStacks || 0) * 50}% Deslocamento</span>
+                    <span className="text-emerald-400 font-bold">{stats.Movement}m Deslocamento (+{(char.projectionStacks || 0) * 50}%)</span>
                 </div>
                 <div className="flex gap-1">
                 {[1, 2, 3].map(i => (
