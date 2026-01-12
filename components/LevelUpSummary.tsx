@@ -278,12 +278,18 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
                    <Zap size={18} className="text-purple-400 flex-shrink-0" />
                    <span className="text-sm font-bold text-slate-300">Manipulação</span>
                  </div>
-                 <span className="text-xl font-bold font-mono text-curse-400">
-                   {aptitudeLevels.manipulacao || 0}
-                 </span>
                </div>
-               <div className="text-center text-[10px] text-slate-500 mb-3 py-2 px-2 bg-slate-800/30 rounded">
-                 {actualUsedAptitude} / {resources.totalAptitude} pts
+               <div className="flex items-center justify-between mb-3">
+                 <div className="text-center flex-1">
+                   <div className="text-3xl font-bold font-mono text-curse-400">
+                     {aptitudeLevels.manipulacao || 0}
+                   </div>
+                   <div className="text-[9px] text-slate-500 mt-1">Nível</div>
+                 </div>
+                 <div className="text-right text-[10px] text-slate-400 ml-3">
+                   <div className="font-bold text-emerald-400">{resources.totalAptitude - actualUsedAptitude}</div>
+                   <div className="text-slate-500">restantes</div>
+                 </div>
                </div>
                <div className="flex items-center gap-2 mt-auto">
                  <button
@@ -296,9 +302,9 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
                  </button>
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('manipulacao', (aptitudeLevels.manipulacao || 0) + 1)}
-                   disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
+                   disabled={!onUpdateAptitude || (aptitudeLevels.manipulacao || 0) >= 5 || actualUsedAptitude >= resources.totalAptitude}
                    className="flex-1 p-2 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700"
-                   title="Aumentar nível"
+                   title="Aumentar nível (máx 5)"
                  >
                    <Plus size={16} className="mx-auto" />
                  </button>
@@ -312,12 +318,18 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
                    <Shield size={18} className="text-blue-400 flex-shrink-0" />
                    <span className="text-sm font-bold text-slate-300">Barreiras</span>
                  </div>
-                 <span className="text-xl font-bold font-mono text-curse-400">
-                   {aptitudeLevels.barreiras || 0}
-                 </span>
                </div>
-               <div className="text-center text-[10px] text-slate-500 mb-3 py-2 px-2 bg-slate-800/30 rounded">
-                 {actualUsedAptitude} / {resources.totalAptitude} pts
+               <div className="flex items-center justify-between mb-3">
+                 <div className="text-center flex-1">
+                   <div className="text-3xl font-bold font-mono text-curse-400">
+                     {aptitudeLevels.barreiras || 0}
+                   </div>
+                   <div className="text-[9px] text-slate-500 mt-1">Nível</div>
+                 </div>
+                 <div className="text-right text-[10px] text-slate-400 ml-3">
+                   <div className="font-bold text-emerald-400">{resources.totalAptitude - actualUsedAptitude}</div>
+                   <div className="text-slate-500">restantes</div>
+                 </div>
                </div>
                <div className="flex items-center gap-2 mt-auto">
                  <button
@@ -330,9 +342,9 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
                  </button>
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('barreiras', (aptitudeLevels.barreiras || 0) + 1)}
-                   disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
+                   disabled={!onUpdateAptitude || (aptitudeLevels.barreiras || 0) >= 5 || actualUsedAptitude >= resources.totalAptitude}
                    className="flex-1 p-2 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700"
-                   title="Aumentar nível"
+                   title="Aumentar nível (máx 5)"
                  >
                    <Plus size={16} className="mx-auto" />
                  </button>
@@ -346,12 +358,18 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
                    <Heart size={18} className="text-emerald-400 flex-shrink-0" />
                    <span className="text-sm font-bold text-slate-300">Energia Reversa</span>
                  </div>
-                 <span className="text-xl font-bold font-mono text-curse-400">
-                   {aptitudeLevels.energiaReversa || 0}
-                 </span>
                </div>
-               <div className="text-center text-[10px] text-slate-500 mb-3 py-2 px-2 bg-slate-800/30 rounded">
-                 {actualUsedAptitude} / {resources.totalAptitude} pts
+               <div className="flex items-center justify-between mb-3">
+                 <div className="text-center flex-1">
+                   <div className="text-3xl font-bold font-mono text-curse-400">
+                     {aptitudeLevels.energiaReversa || 0}
+                   </div>
+                   <div className="text-[9px] text-slate-500 mt-1">Nível</div>
+                 </div>
+                 <div className="text-right text-[10px] text-slate-400 ml-3">
+                   <div className="font-bold text-emerald-400">{resources.totalAptitude - actualUsedAptitude}</div>
+                   <div className="text-slate-500">restantes</div>
+                 </div>
                </div>
                <div className="flex items-center gap-2 mt-auto">
                  <button
@@ -364,9 +382,9 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
                  </button>
                  <button
                    onClick={() => onUpdateAptitude && onUpdateAptitude('energiaReversa', (aptitudeLevels.energiaReversa || 0) + 1)}
-                   disabled={!onUpdateAptitude || actualUsedAptitude >= resources.totalAptitude}
+                   disabled={!onUpdateAptitude || (aptitudeLevels.energiaReversa || 0) >= 5 || actualUsedAptitude >= resources.totalAptitude}
                    className="flex-1 p-2 rounded-lg bg-slate-800 hover:bg-emerald-900/50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-400 hover:text-emerald-400 transition-colors border border-slate-700 hover:border-emerald-700"
-                   title="Aumentar nível"
+                   title="Aumentar nível (máx 5)"
                  >
                    <Plus size={16} className="mx-auto" />
                  </button>
