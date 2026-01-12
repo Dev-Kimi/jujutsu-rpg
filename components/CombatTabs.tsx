@@ -54,8 +54,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const [techniqueDie, setTechniqueDie] = useState<string>('1d6');
 
   const [incomingDamage, setIncomingDamage] = useState<number>(0);
-  const [conditions, setConditions] = useState<string[]>([]);
-  const [newCondition, setNewCondition] = useState('');
   const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, attackRolls?: number[], isCritical?: boolean, isCritSuccess?: boolean, isCritFail?: boolean, damageTotal?: number, defenseRoll?: number, defenseRollDetail?: string, attackHits?: boolean } | null>(null);
 
     // Identify equipped weapons from inventory
@@ -125,18 +123,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     setActiveRollResult(null);
     setInvested(1);
     setIncomingDamage(0);
-  };
-
-  // Add/remove conditions
-  const addCondition = () => {
-    if (newCondition.trim() && !conditions.includes(newCondition.trim())) {
-      setConditions([...conditions, newCondition.trim()]);
-      setNewCondition('');
-    }
-  };
-
-  const removeCondition = (condition: string) => {
-    setConditions(conditions.filter(c => c !== condition));
   };
 
   // --- Calculate Active Buffs ---
@@ -671,41 +657,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
               </div>
            </div>
         )}
-
-        {/* Conditions Section */}
-        <div className="bg-slate-800 p-4 rounded-lg mb-4">
-          <h3 className="font-bold text-lg mb-2">Condições</h3>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {conditions.map((condition, index) => (
-              <div key={index} className="bg-slate-700 px-3 py-1 rounded-full text-sm flex items-center">
-                {condition}
-                <button 
-                  onClick={() => removeCondition(condition)}
-                  className="ml-1 text-slate-400 hover:text-white"
-                  title="Remover condição"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newCondition}
-              onChange={(e) => setNewCondition(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addCondition()}
-              placeholder="Nova condição"
-              className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1 text-sm"
-            />
-            <button 
-              onClick={addCondition}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-sm"
-            >
-              Adicionar
-            </button>
-          </div>
-        </div>
 
         {/* Cost Display */}
         <div className="flex justify-between text-xs uppercase tracking-widest text-slate-500 font-bold">
