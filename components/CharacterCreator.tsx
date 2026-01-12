@@ -21,7 +21,8 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
   const [imageUrl, setImageUrl] = useState('');
   const [origin, setOrigin] = useState<Origin>(Origin.Inato);
   const [characterClass, setCharacterClass] = useState<CharacterClass>("Combatente");
-  
+  const [innateTechniqueName, setInnateTechniqueName] = useState<string>("");
+
   // Attribute State (Default all 1, 4 points to spend)
   // Logic: Base 1. Max 3. Min 0. Total Pool = 9 (5 attrs * 1 base + 4 free).
   const [attributes, setAttributes] = useState<Attributes>({
@@ -66,7 +67,9 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
       abilities: [],
       techniques: [],
       inventory: [],
-      aptitudes: {} // Initialize empty aptitudes
+      equippedWeapons: [],
+      aptitudes: {}, // Initialize empty aptitudes
+      innateTechnique: innateTechniqueName ? { name: innateTechniqueName } : undefined
     };
     onFinish(newChar);
   };
@@ -193,6 +196,29 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
                         {origin === Origin.Hibrido && "Uma anomalia, misturando sangue humano e maldição."}
                         {origin === Origin.RestricaoCelestial && "Abdicou da energia em troca de proeza física absoluta."}
                      </div>
+                  </div>
+
+                  {/* Innate Technique Selection */}
+                  <div className="space-y-4 md:col-span-2">
+                     <label className="text-xs font-bold text-curse-400 uppercase tracking-widest">Técnica Inata (Opcional)</label>
+                     <select
+                        value={innateTechniqueName}
+                        onChange={(e) => setInnateTechniqueName(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-white focus:outline-none focus:border-curse-500 appearance-none"
+                     >
+                        <option value="">Nenhuma / Customizada</option>
+                        <option value="Projeção de Feitiçaria">Projeção de Feitiçaria</option>
+                     </select>
+                     {innateTechniqueName === "Projeção de Feitiçaria" && (
+                        <div className="bg-curse-900/20 border border-curse-500/30 p-4 rounded-xl text-sm text-curse-200">
+                           <strong className="block text-curse-400 mb-1">Projeção de Feitiçaria</strong>
+                           Divide 1 segundo em 24 quadros. Permite movimento extremamente veloz e aprisionamento de inimigos em quadros de animação 2D.
+                           <ul className="list-disc list-inside mt-2 opacity-80 text-xs space-y-1">
+                              <li>Ganha stacks de velocidade ao seguir a regra dos 24fps.</li>
+                              <li>Pode congelar inimigos que falhem em seguir o ritmo.</li>
+                           </ul>
+                        </div>
+                     )}
                   </div>
                </div>
             </div>
