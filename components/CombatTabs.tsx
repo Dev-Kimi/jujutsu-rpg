@@ -934,7 +934,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
               </div>
             )}
 
-            <div className="flex items-center gap-2 text-white mb-4">
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto whitespace-nowrap pb-2 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
               <Hexagon
                 size={22}
                 strokeWidth={1.5}
