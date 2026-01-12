@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats, DiceRollLog as DiceRollLogType } from '../types';
-import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw } from 'lucide-react';
+import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw, Square } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
 import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc, where, limit, writeBatch } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
@@ -649,6 +649,25 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
       );
     }
 
+    const handleEndCombat = async () => {
+        if (!selectedCampaign) return;
+        if (!confirm("ATENÇÃO: Deseja realmente encerrar o combate? Isso desativará o modo de combate para todos.")) return;
+
+        try {
+            const campRef = doc(db, 'campaigns', selectedCampaign.id);
+            await updateDoc(campRef, {
+                activeCombatActive: false,
+                activeCombatParticipants: [],
+                activeCombatParticipantKeys: []
+            });
+            setActiveCombatParticipants([]);
+            setView('detail');
+        } catch (error) {
+            console.error("Error ending combat", error);
+            alert("Erro ao encerrar combate.");
+        }
+    };
+
     return (
       <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4 pb-20">
         <div className="sticky top-0 z-20 bg-slate-900 border-curse-500 border-b p-4 flex items-center justify-between shadow-lg">
@@ -665,6 +684,14 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button
+               onClick={handleEndCombat}
+               className="bg-red-900/50 hover:bg-red-800/80 text-red-200 px-3 py-2 rounded-lg flex items-center gap-2 border border-red-500/30 transition-all font-bold text-xs uppercase tracking-wider mr-4"
+               title="Encerrar Combate Definitivamente"
+            >
+               <Square size={14} fill="currentColor" /> Encerrar Combate
+            </button>
+            <div className="h-8 w-px bg-slate-800 mx-2"></div>
             <button
               onClick={handleAdvanceRound}
               disabled={isProcessingRound || activeCombatParticipants.length === 0}
@@ -839,6 +866,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                     activeRollResult={activeRollResult}
                     setActiveRollResult={setActiveRollResult}
                     onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                    onUpdateCharacter={handleCharUpdate}
                     campaignId={selectedCampaign?.id}
                   />
                   <AccordionList 
