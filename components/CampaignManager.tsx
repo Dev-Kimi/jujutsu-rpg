@@ -8,6 +8,7 @@ import { StatBar } from './StatBar';
 import { SkillList } from './SkillList';
 import { AccordionList } from './AccordionList';
 import { InventoryList } from './InventoryList';
+import { BindingVowsManager } from './BindingVowsManager';
 import { CombatTabs } from './CombatTabs';
 import { MasterCombatTracker } from './MasterCombatTracker';
 import { calculateDerivedStats } from '../utils/calculations';
@@ -892,6 +893,10 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                      onRemove={(id) => handleArrayRemove('inventory', id)}
                      equippedWeapons={viewingChar.equippedWeapons}
                      onToggleEquip={handleToggleEquipWeapon}
+                  />
+                  <BindingVowsManager 
+                     char={viewingChar} 
+                     onUpdateCharacter={handleCharUpdate} 
                   />
                </section>
            </div>
