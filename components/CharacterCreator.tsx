@@ -28,7 +28,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
     FOR: 1, AGI: 1, VIG: 1, INT: 1, PRE: 1
   });
 
-  const totalPoints = 10;
+  const totalPoints = 9;
   const currentTotal = Object.values(attributes).reduce((a, b) => a + b, 0);
   const remainingPoints = totalPoints - currentTotal;
 
