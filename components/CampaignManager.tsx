@@ -565,7 +565,45 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
           nextPE = Math.min(current.pe + 1, max.pe ?? current.pe + 1);
         }
 
-        batch.set(ref, {
+        // --- Domain Maintenance Logic (Master Auto-Process) ---
+        // "Se um domínio for mantido à força, a dedução de PE deve ser processada automaticamente no início do turno."
+        let nextDomainActive = data?.domainActive;
+        let nextDomainRound = data?.domainRound;
+        const domainType = data?.domainType;
+
+        if (nextDomainActive && nextDomainRound !== undefined) {
+           const potentialRound = nextDomainRound + 1;
+           let cost = 0;
+           let shouldClose = false;
+
+           if (domainType === 'incomplete') {
+               if (potentialRound > 2) shouldClose = true;
+               else if (potentialRound === 2) cost = 50;
+           } else if (domainType === 'complete') {
+               if (potentialRound > 5) shouldClose = true;
+               else if (potentialRound === 4) cost = 50;
+               else if (potentialRound === 5) cost = 100;
+           }
+
+           if (shouldClose) {
+               nextDomainActive = false;
+               nextDomainRound = 0;
+           } else if (cost > 0) {
+               if (nextPE >= cost) {
+                   nextPE -= cost;
+                   nextDomainRound = potentialRound;
+               } else {
+                   // Insufficient PE to maintain
+                   nextDomainActive = false;
+                   nextDomainRound = 0;
+               }
+           } else {
+               // Free round advance
+               nextDomainRound = potentialRound;
+           }
+        }
+
+        const updates: any = {
           currentStats: {
             ...current,
             ce: nextCE,
@@ -573,7 +611,12 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
           },
           actionState: { standard: true, movement: 2, reactionPenalty: 0 },
           updatedAt: now
-        }, { merge: true });
+        };
+
+        if (nextDomainActive !== undefined) updates.domainActive = nextDomainActive;
+        if (nextDomainRound !== undefined) updates.domainRound = nextDomainRound;
+
+        batch.set(ref, updates, { merge: true });
       });
 
       await batch.commit();
