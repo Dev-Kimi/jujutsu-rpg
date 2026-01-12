@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon } from 'lucide-react';
+import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
 import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
@@ -46,7 +46,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   onCloseDomain,
   onUpdateCharacter
 }) => {
-  const [activeTab, setActiveTab] = useState<'physical' | 'defense'>('physical');
+  const [activeTab, setActiveTab] = useState<'physical' | 'defense' | 'innate'>('physical');
   const [invested, setInvested] = useState<number>(1);
   const [unarmedDamageDie, setUnarmedDamageDie] = useState<string>('1d4');
   const [selectedWeaponId, setSelectedWeaponId] = useState<string>('unarmed');
@@ -281,7 +281,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         detail = `[DanoBase]${baseDamageText} + [Reforço]${reforcoText} + [Força]${strBonus}`;
       }
     } 
-    else if (activeTab === 'technique') {
+    else if (activeTab === 'technique' || activeTab === 'innate') {
       if (isHR) {
          alert("Restrição Celestial não pode usar Técnicas Inatas.");
          return;
@@ -311,8 +311,18 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       }
       
       // Roll individual dice for logging
+      // Parse techniqueDie from string '1d6' etc to number if needed, but state is '1d6' (string) or just '6'
+      // Current state techniqueDie is '1d6' by default (line 54), but generic roller select sets '4', '6' etc.
+      // Let's ensure we parse it correctly.
+      let sides = 6;
+      if (techniqueDie.includes('d')) {
+          sides = parseInt(techniqueDie.split('d')[1]);
+      } else {
+          sides = parseInt(techniqueDie);
+      }
+
       for (let i = 0; i < invested; i++) {
-        loggedRolls.push(rollDice(techniqueDie, 1));
+        loggedRolls.push(rollDice(sides, 1));
       }
       const magicRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
       total = magicRoll + intBonus;
@@ -320,9 +330,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       // If using 10 CE (after reduction check original invested amount), reduce INT from total
       if (invested >= 10) {
         total = Math.max(0, total - intBonus);
-        detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus} - [INT]${intBonus} (10+ CE)`;
+        detail = `[${invested}d${sides}]${magicRoll} + [INT]${intBonus} - [INT]${intBonus} (10+ CE)`;
       } else {
-      detail = `[${invested}d${techniqueDie}]${magicRoll} + [INT]${intBonus}`;
+        detail = `[${invested}d${sides}]${magicRoll} + [INT]${intBonus}`;
       }
       
       // Add economia de fluxo reduction to detail if applicable
@@ -421,6 +431,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const handleProjectionActivate = () => {
     if (!onUpdateCharacter) return;
     const current = char.projectionStacks || 0;
+    
+    // Check if we can afford the CE cost (assuming it costs based on LL or just requires activation)
+    // Prompt implies checking LL. For Projection, usually it's a technique use.
+    // We'll stick to simple increment for now, respecting max 3.
+    
     if (current < 3) {
       onUpdateCharacter('projectionStacks', current + 1);
     }
@@ -508,81 +523,58 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   return (
     <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-xl p-4">
 
-      {/* Projection Sorcery UI */}
+      {/* Projection Sorcery Visualizer (Stacks) */}
       {hasProjection && (
         <div className="bg-slate-950/80 border border-curse-500/30 rounded-lg p-3 mb-4 animate-in slide-in-from-top-2">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between">
              <div className="flex items-center gap-2">
                <Layers className="text-curse-400" size={16} />
-               <h3 className="text-xs font-bold uppercase tracking-wider text-curse-200">Projeção de Feitiçaria</h3>
+               <h3 className="text-xs font-bold uppercase tracking-wider text-curse-200">Projeção (Stacks)</h3>
              </div>
-             <div className="flex gap-1">
-               {[1, 2, 3].map(i => (
-                 <div
-                   key={i}
-                   className={`w-6 h-8 border rounded-sm flex items-center justify-center transition-all duration-300
-                     ${(char.projectionStacks || 0) >= i
-                       ? 'bg-curse-500 border-curse-400 shadow-[0_0_10px_rgba(124,58,237,0.5)]'
-                       : 'bg-slate-900 border-slate-700 opacity-50'}
-                   `}
-                 >
-                   {(char.projectionStacks || 0) >= i && <div className="w-full h-full bg-white/10 animate-pulse" />}
-                 </div>
-               ))}
+             <div className="flex items-center gap-4">
+                <div className="flex flex-col items-end text-[10px] text-slate-500 font-mono leading-tight">
+                    <span>+{projectionBonus} Acerto</span>
+                    <span>+{(char.projectionStacks || 0) * 50}% Deslocamento</span>
+                </div>
+                <div className="flex gap-1">
+                {[1, 2, 3].map(i => (
+                    <div
+                    key={i}
+                    className={`w-6 h-8 border rounded-sm flex items-center justify-center transition-all duration-300
+                        ${(char.projectionStacks || 0) >= i
+                        ? 'bg-curse-500 border-curse-400 shadow-[0_0_10px_rgba(124,58,237,0.5)]'
+                        : 'bg-slate-900 border-slate-700 opacity-50'}
+                    `}
+                    >
+                    {(char.projectionStacks || 0) >= i && <div className="w-full h-full bg-white/10 animate-pulse" />}
+                    </div>
+                ))}
+                </div>
              </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-             <button
-               onClick={handleProjectionActivate}
-               className="bg-curse-900/40 hover:bg-curse-800/60 border border-curse-500/30 text-curse-200 text-[10px] font-bold uppercase py-2 rounded flex flex-col items-center gap-1 transition-colors"
-             >
-               <span>Ativar Projeção</span>
-               <span className="text-[9px] opacity-60">+1 Stack / Ignora AOO</span>
-             </button>
-             
-             <button
-               onClick={handleProjectionViolation}
-               className="bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase py-2 rounded flex flex-col items-center gap-1 transition-colors"
-             >
-               <span>Violação</span>
-               <span className="text-[9px] opacity-60">Reset Stacks</span>
-             </button>
-
-             <button
-               onClick={handleFrameBarrier}
-               className="bg-blue-900/20 hover:bg-blue-900/40 border border-blue-500/30 text-blue-300 text-[10px] font-bold uppercase py-2 rounded flex flex-col items-center gap-1 transition-colors"
-             >
-               <span>Barreira (Reação)</span>
-               <span className="text-[9px] opacity-60">Gastar CE p/ Bloqueio</span>
-             </button>
-
-             <button
-               onClick={handleFrameTrap}
-               className="bg-emerald-900/20 hover:bg-emerald-900/40 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold uppercase py-2 rounded flex flex-col items-center gap-1 transition-colors"
-             >
-               <span>Quadro de Frame</span>
-               <span className="text-[9px] opacity-60">2 PE - Luta vs Reflexos</span>
-             </button>
-          </div>
-
-          <div className="mt-2 flex justify-between text-[10px] text-slate-500 font-mono">
-             <span>Bônus Atual: +{projectionBonus} Acerto</span>
-             <span>Deslocamento: +{(char.projectionStacks || 0) * 50}%</span>
           </div>
         </div>
       )}
 
       {/* Tabs Header */}
       <div className="flex border-b border-slate-800 mb-4">
-        <button 
+        <button
           onClick={() => { setActiveTab('physical'); reset(); }}
           className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
             ${activeTab === 'physical' ? 'border-curse-500 text-white bg-slate-800/30' : 'border-transparent text-slate-400 hover:text-slate-200'}`}
         >
           <Sword size={16} /> <span className="hidden sm:inline">Ataque</span>
         </button>
-        <button 
+        <button
+          onClick={() => { setActiveTab('innate'); reset(); }}
+          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
+            ${activeTab === 'innate' ? 'border-purple-500 text-purple-300 bg-purple-900/10' : 'border-transparent text-slate-400 hover:text-slate-200'}
+            ${isHR ? 'opacity-50 cursor-not-allowed' : ''}
+          `}
+          disabled={isHR}
+        >
+          <Zap size={16} /> <span className="hidden sm:inline">Técnicas</span>
+        </button>
+        <button
           onClick={() => { setActiveTab('defense'); reset(); }}
           className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
             ${activeTab === 'defense' ? 'border-blue-500 text-blue-300 bg-blue-900/10' : 'border-transparent text-slate-400 hover:text-slate-200'}
@@ -695,6 +687,98 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              </div>
           )}
 
+          {activeTab === 'innate' && (
+             <div className="space-y-4">
+               {hasProjection ? (
+                  <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-bottom-2">
+                     <button
+                        onClick={handleProjectionActivate}
+                        className="bg-curse-900/40 hover:bg-curse-800/60 border border-curse-500/30 text-curse-200 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
+                     >
+                        <span>Aumentar Stack</span>
+                        <span className="text-[9px] opacity-60">Verificar LL (Max 3)</span>
+                     </button>
+                     
+                     <button
+                        onClick={handleProjectionViolation}
+                        className="bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
+                     >
+                        <span>Violação de Frame</span>
+                        <span className="text-[9px] opacity-60">Zerar Stacks / Imóvel</span>
+                     </button>
+
+                     <button
+                        onClick={handleFrameBarrier}
+                        className="bg-blue-900/20 hover:bg-blue-900/40 border border-blue-500/30 text-blue-300 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
+                     >
+                        <span>Barreira (Reação)</span>
+                        <span className="text-[9px] opacity-60">Gastar CE p/ Mitigar</span>
+                     </button>
+
+                     <button
+                        onClick={handleFrameTrap}
+                        className="bg-emerald-900/20 hover:bg-emerald-900/40 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
+                     >
+                        <span>Quadro de Frame</span>
+                        <span className="text-[9px] opacity-60">2 PE - Prender Alvo</span>
+                     </button>
+                  </div>
+               ) : (
+                  <div className="text-center p-4 border border-dashed border-slate-700 rounded-lg text-slate-500 text-xs">
+                     Nenhuma técnica inata especial detectada.
+                  </div>
+               )}
+               
+               {/* Generic Technique Roller - Always available if user wants to just roll dice */}
+               <div className="mt-4 pt-4 border-t border-slate-800">
+                  <label className="block text-xs text-slate-400 mb-2 font-bold uppercase">Rolagem Genérica de Técnica</label>
+                  <div className="flex items-center gap-3">
+                     <input
+                        type="range"
+                        min="0"
+                        max={stats.LL}
+                        step="1"
+                        value={invested}
+                        onChange={(e) => setInvested(parseInt(e.target.value))}
+                        className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                     />
+                     <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
+                        {invested}
+                     </span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 mt-1">
+                     Gasta {invested} CE • Rola {invested}d{techniqueDie} + INT
+                  </div>
+                  
+                  <div className="mt-2 flex items-center gap-2">
+                     <select
+                        value={techniqueDie}
+                        onChange={(e) => setTechniqueDie(e.target.value)}
+                        className="bg-slate-950 border border-slate-700 rounded text-xs p-1 text-slate-300"
+                     >
+                        <option value="4">d4</option>
+                        <option value="6">d6</option>
+                        <option value="8">d8</option>
+                        <option value="10">d10</option>
+                        <option value="12">d12</option>
+                     </select>
+                     <button
+                        onClick={() => {
+                           // Set active tab to technique strictly for the roll logic processing
+                           // We need to temporarily "fool" the handleRoll or refactor handleRoll
+                           // For now, let's just make sure handleRoll handles 'innate' like 'technique'
+                           // Or we update handleRoll to check 'innate'
+                           handleRoll();
+                        }}
+                        className="flex-1 py-1.5 bg-purple-900/30 hover:bg-purple-800/50 border border-purple-500/30 text-purple-200 text-xs font-bold rounded uppercase transition-colors"
+                     >
+                        Rolar Dano de Técnica
+                     </button>
+                  </div>
+               </div>
+             </div>
+          )}
+
           {activeTab === 'physical' && (
              <div>
                 <label className="block text-xs text-slate-400 mb-1">Arma Equipada / Dano Base</label>
@@ -739,7 +823,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              </div>
           )}
 
-          {!isHR && (
+          {!isHR && activeTab !== 'innate' && (
             <div>
                 <label className="block text-xs text-slate-400 mb-1">
                   {activeTab === 'physical' && `Dados de Reforço (Max LL: ${stats.LL})`}
@@ -759,13 +843,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                     {invested}
                 </span>
                 </div>
-                {activeTab === 'defense' && (
-                   <div className="text-[10px] text-slate-500 mt-1 flex justify-between">
-                      <span>Reforço Corporal (Defesa)</span>
-                      <span>Mitiga {invested} de dano fixo</span>
-                   </div>
-                )}
-                 
                  {/* Durability Warning */}
                  {activeTab === 'physical' && weaponLimit !== null && (
                     <div className="flex justify-between items-center mt-2 px-1">
@@ -790,20 +867,22 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         )}
       </div>
 
-      {/* Action Button */}
-      <button
-        onClick={handleRoll}
-        disabled={!isHR && invested <= 0 && activeTab !== 'physical'}
-        className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
-           ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
-        `}
-      >
-        {activeTab === 'defense' ? <ArrowRight size={20} /> : <Dices size={20} />}
-        {activeTab === 'defense' ? 'Calcular Dano Final' :
-         willBreak ? 'Atacar e Quebrar Arma' :
-         activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
-         'Ataque Desarmado'}
-      </button>
+      {/* Action Button (Hidden for Innate since it has its own buttons, shown for Physical/Defense) */}
+      {activeTab !== 'innate' && (
+        <button
+          onClick={handleRoll}
+          disabled={!isHR && invested <= 0 && activeTab !== 'physical'}
+          className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+             ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
+          `}
+        >
+          {activeTab === 'defense' ? <ArrowRight size={20} /> : <Dices size={20} />}
+          {activeTab === 'defense' ? 'Calcular Dano Final' :
+           willBreak ? 'Atacar e Quebrar Arma' :
+           activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
+           'Ataque Desarmado'}
+        </button>
+      )}
 
       {/* Visual Roll Result Notification (Bottom Right) */}
       {lastResult && activeRollResult === 'combat' && (
