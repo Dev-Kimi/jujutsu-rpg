@@ -46,7 +46,8 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
   }
 
   // Projection Sorcery Speed Bonus
-  if (char.innateTechnique?.name === "Projeção de Feitiçaria" && char.projectionStacks) {
+  const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria" || char.techniques.some(t => t.name === "Projeção de Feitiçaria");
+  if (hasProjection && char.projectionStacks) {
       const multiplier = 1 + (char.projectionStacks * 0.5); // +50% per stack
       Movement = Math.floor(Movement * multiplier);
   }
