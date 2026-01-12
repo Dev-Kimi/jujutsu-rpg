@@ -72,6 +72,7 @@ export interface BindingVow {
   description: string;
   benefit: string; // Benefício garantido
   restriction: string; // Restrição imposta
+  bonuses?: string[]; // Lista de bônus mecânicos (ex: "+2 FOR", "+10 CE")
   isActive: boolean;
   createdAt: number;
 }
