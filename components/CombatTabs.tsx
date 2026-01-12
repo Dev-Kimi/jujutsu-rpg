@@ -421,8 +421,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
   const isHR = char.origin === Origin.RestricaoCelestial;
   
-  // Check if character has Projection Sorcery (by name in techniques or existing stacks)
-  const hasProjection = char.techniques.some(t => t.name.includes("Projeção")) || char.projectionStacks !== undefined;
+  // Check if character has Projection Sorcery
+  const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria";
 
   const projectionStacks = char.projectionStacks || 0;
   const projectionBonus = projectionStacks === 1 ? 5 : projectionStacks === 2 ? 7 : projectionStacks === 3 ? 10 : 0;
@@ -430,38 +430,42 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   // Projection Handlers
   const handleProjectionActivate = () => {
     if (!onUpdateCharacter) return;
-    const current = char.projectionStacks || 0;
+    const cost = stats.LL;
     
-    // Check if we can afford the CE cost (assuming it costs based on LL or just requires activation)
-    // Prompt implies checking LL. For Projection, usually it's a technique use.
-    // We'll stick to simple increment for now, respecting max 3.
+    if (currentStats.ce < cost) {
+        alert(`CE Insuficiente! Necessário: ${cost} (LL)`);
+        return;
+    }
+
+    consumeCE(cost);
+    const current = char.projectionStacks || 0;
     
     if (current < 3) {
       onUpdateCharacter('projectionStacks', current + 1);
     }
     onUpdateCharacter('ignoreAOO', true);
+    
+    // Visual feedback
+    alert(`Projeção ativada! Gasto ${cost} CE. Stacks: ${Math.min(3, current + 1)}`);
   };
 
   const handleProjectionViolation = () => {
     if (!onUpdateCharacter) return;
     onUpdateCharacter('projectionStacks', 0);
     onUpdateCharacter('ignoreAOO', false);
-    // Should also apply Immobile/Helpless but that's status effect logic usually handled via buffs/conditions system
-    alert("Violação! Stacks zerados. Personagem Imóvel e Indefeso.");
+    alert("VIOLAÇÃO DE QUADRO! Stacks zerados. Personagem está IMÓVEL e INDEFESO até o fim do turno.");
   };
 
   const handleFrameBarrier = () => {
-    // Reaction: Spend CE up to LL. Block damage.
-    // For simplicity, we just ask for CE amount to spend
-    const spend = parseInt(prompt("Quanto CE gastar na Barreira? (Máx " + stats.LL + ")", "0") || "0");
-    if (spend > 0) {
-      if (currentStats.ce < spend) {
-        alert("CE Insuficiente.");
+    // Reaction: Spend CE = LL.
+    const cost = stats.LL;
+    if (currentStats.ce < cost) {
+        alert(`CE Insuficiente para Barreira! Necessário: ${cost} (LL)`);
         return;
-      }
-      consumeCE(spend);
-      alert(`Barreira de Quadros ativada! ${spend} de dano mitigado/anulado.`);
     }
+    
+    consumeCE(cost);
+    alert(`Barreira de Quadros ativada! (Custo: ${cost} CE). Dano de projéteis/energia anulado e ataques em área redirecionados.`);
   };
 
   const handleFrameTrap = () => {
@@ -695,8 +699,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                         onClick={handleProjectionActivate}
                         className="bg-curse-900/40 hover:bg-curse-800/60 border border-curse-500/30 text-curse-200 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
                      >
-                        <span>Aumentar Stack</span>
-                        <span className="text-[9px] opacity-60">Verificar LL (Max 3)</span>
+                        <span>Movimento (Ação)</span>
+                        <span className="text-[9px] opacity-60">Gasta {stats.LL} CE • +1 Stack</span>
                      </button>
                      
                      <button
@@ -712,7 +716,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                         className="bg-blue-900/20 hover:bg-blue-900/40 border border-blue-500/30 text-blue-300 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
                      >
                         <span>Barreira (Reação)</span>
-                        <span className="text-[9px] opacity-60">Gastar CE p/ Mitigar</span>
+                        <span className="text-[9px] opacity-60">Gasta {stats.LL} CE • Anular/Redirecionar</span>
                      </button>
 
                      <button
