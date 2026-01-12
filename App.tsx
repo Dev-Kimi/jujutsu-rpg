@@ -1255,7 +1255,10 @@ const App: React.FC = () => {
                         onAdvanceDomain={advanceDomainRound}
                         onCloseDomain={closeDomain}
                      />)
-                     {/* Conditions Section */}
+                     
+               
+               
+               {/* Conditions Section */}
                      <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden mt-4">
                         <div className="p-4 border-b border-slate-800">
                            <h3 className="text-lg font-bold text-white">Condições Ativas</h3>
