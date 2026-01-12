@@ -66,6 +66,26 @@ export interface AptitudeLevels {
   energiaReversa?: number; // Nível de aptidão em Energia Reversa
 }
 
+export interface BindingVow {
+  id: string;
+  name: string;
+  description: string;
+  benefit: string; // Benefício garantido
+  restriction: string; // Restrição imposta
+  isActive: boolean;
+  createdAt: number;
+}
+
+export interface Condition {
+  id: string;
+  name: string;
+  description: string;
+  effects: string[]; // Lista de efeitos (ex: "-2 em ataques", "Não pode agir", etc.)
+  duration?: number; // Duração em turnos (opcional, para condições temporárias)
+  severity: 'minor' | 'moderate' | 'major' | 'extreme'; // Gravidade da condição
+  isActive: boolean;
+}
+
 export interface Character {
   id: string; // Unique identifier for saving/loading
   name: string;
@@ -86,6 +106,8 @@ export interface Character {
   };
   projectionStacks?: number; // Stacks da Projeção de Feitiçaria (0-3)
   ignoreAOO?: boolean; // Ignorar Ataques de Oportunidade
+  bindingVows?: BindingVow[]; // Votos Vinculativos ativos
+  conditions?: Condition[]; // Condições/status ativos
 }
 
 export interface DerivedStats {
