@@ -56,7 +56,7 @@ export const calculateTotalResources = (level: number, origin: Origin): Resource
   const isInato = origin === Origin.Inato;
 
   // Initial Values (Level 1)
-  attributes = 5; 
+  attributes = 4; 
   skills = 6; // 5 Base + 1 (Lvl 1 Standard)
   
   if (isHR) {
