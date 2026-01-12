@@ -34,7 +34,7 @@ export const CharacterSelection: React.FC<CharacterSelectionProps> = ({
            <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-white">
               JUJUTSU <span className="text-transparent bg-clip-text bg-gradient-to-r from-curse-500 to-curse-300">RPG</span>
            </h1>
-           <p className="text-slate-500 font-mono text-sm tracking-widest uppercase">Companion App & Combat Manager</p>
+           <p className="text-slate-500 font-mono text-sm tracking-widest uppercase">Sistema de Combate Tático & Letal</p>
         </div>
 
         {/* Action Area */}
