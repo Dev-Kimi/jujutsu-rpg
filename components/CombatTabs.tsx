@@ -422,7 +422,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const isHR = char.origin === Origin.RestricaoCelestial;
   
   // Check if character has Projection Sorcery
-  const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria";
+  const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria" || char.techniques.some(t => t.name === "Projeção de Feitiçaria");
 
   const projectionStacks = char.projectionStacks || 0;
   const projectionBonus = projectionStacks === 1 ? 5 : projectionStacks === 2 ? 7 : projectionStacks === 3 ? 10 : 0;
