@@ -54,9 +54,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const [techniqueDie, setTechniqueDie] = useState<string>('1d6');
 
   const [incomingDamage, setIncomingDamage] = useState<number>(0);
-  const [opponentDefenseSkill, setOpponentDefenseSkill] = useState<string>('Reflexos');
-  const [opponentDefenseBonus, setOpponentDefenseBonus] = useState<number>(0);
-  const [opponentDefenseAttribute, setOpponentDefenseAttribute] = useState<number>(2); // Default AGI 2
+  const [conditions, setConditions] = useState<string[]>([]);
+  const [newCondition, setNewCondition] = useState('');
   const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, attackRolls?: number[], isCritical?: boolean, isCritSuccess?: boolean, isCritFail?: boolean, damageTotal?: number, defenseRoll?: number, defenseRollDetail?: string, attackHits?: boolean } | null>(null);
 
     // Identify equipped weapons from inventory
@@ -128,6 +127,17 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     setIncomingDamage(0);
   };
 
+  // Add/remove conditions
+  const addCondition = () => {
+    if (newCondition.trim() && !conditions.includes(newCondition.trim())) {
+      setConditions([...conditions, newCondition.trim()]);
+      setNewCondition('');
+    }
+  };
+
+  const removeCondition = (condition: string) => {
+    setConditions(conditions.filter(c => c !== condition));
+  };
 
   // --- Calculate Active Buffs ---
   const relevantBuffs = activeBuffs.filter(buff => {
@@ -146,7 +156,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     return { pe: acc.pe + cost.pe, ce: acc.ce + cost.ce };
   }, { pe: 0, ce: 0 });
 
-
   const handleRoll = () => {
     let total = 0;
     let detail = "";
@@ -158,9 +167,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     let loggedRolls: number[] = []; // Store rolls for logging
     let attackRoll = 0;
     let attackRollDetail = "";
-    let defenseRoll = 0;
-    let defenseRollDetail = "";
-    let attackHits = false;
+    let attackHits = true; // Always hits now that we removed opposed test
     let isCritical = false;
     let isCritSuccess = false;
     let isCritFail = false;
@@ -286,29 +293,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         const reforcoText = isCritical ? `max(${invested}d4) = ${reinforcementRoll}` : `${reinforcementRoll}`;
         detail = `[DanoBase]${baseDamageText} + [Reforço]${reforcoText} + [Força]${strBonus}`;
 
-        // SISTEMA DE TESTE OPOSO - Teste de Acerto vs Defesa
-        // Roll opponent's defense
-        const defenseDiceCount = opponentDefenseAttribute;
-        const defenseRolls = [];
-        for (let i = 0; i < defenseDiceCount; i++) {
-          defenseRolls.push(rollDice(20, 1));
-        }
-        const bestDefenseRoll = Math.max(...defenseRolls);
-        defenseRoll = bestDefenseRoll + opponentDefenseBonus;
-        const defenseDicePart = `[${defenseRolls.join(', ')}]${defenseRolls.length > 1 ? ` ➜ ${bestDefenseRoll}` : ''}`;
-        defenseRollDetail = `${defenseDicePart} + ${opponentDefenseBonus} (${opponentDefenseSkill})`;
-
-        // Determine if attack hits
-        attackHits = attackRoll > defenseRoll;
-
-        if (!attackHits) {
-          // Attack missed - no damage
-          total = 0;
-          detail = `ATAQUE ERROU: ${attackRollDetail} vs ${defenseRollDetail}`;
-        } else {
-          // Attack hit - show full damage calculation
-          detail = `ATAQUE ACERTOU: ${attackRollDetail} vs ${defenseRollDetail} | ${detail}`;
-        }
+        detail = `ATAQUE ACERTOU: ${attackRollDetail} | ${detail}`;
       }
     } 
     else if (activeTab === 'technique' || activeTab === 'innate') {
@@ -427,9 +412,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       attackRoll,
       attackRollDetail,
       attackRolls,
-      defenseRoll: activeTab === 'physical' ? defenseRoll : undefined,
-      defenseRollDetail: activeTab === 'physical' ? defenseRollDetail : undefined,
-      attackHits: activeTab === 'physical' ? attackHits : undefined,
       isCritical: isCritical || isCritSuccess,
       isCritSuccess,
       isCritFail,
@@ -690,6 +672,41 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            </div>
         )}
 
+        {/* Conditions Section */}
+        <div className="bg-slate-800 p-4 rounded-lg mb-4">
+          <h3 className="font-bold text-lg mb-2">Condições</h3>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {conditions.map((condition, index) => (
+              <div key={index} className="bg-slate-700 px-3 py-1 rounded-full text-sm flex items-center">
+                {condition}
+                <button 
+                  onClick={() => removeCondition(condition)}
+                  className="ml-1 text-slate-400 hover:text-white"
+                  title="Remover condição"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newCondition}
+              onChange={(e) => setNewCondition(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addCondition()}
+              placeholder="Nova condição"
+              className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-1 text-sm"
+            />
+            <button 
+              onClick={addCondition}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-sm"
+            >
+              Adicionar
+            </button>
+          </div>
+        </div>
+
         {/* Cost Display */}
         <div className="flex justify-between text-xs uppercase tracking-widest text-slate-500 font-bold">
           <span>
@@ -859,60 +876,17 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           )}
 
           {/* Opponent Defense Configuration - Only for Physical Attacks */}
-          {activeTab === 'physical' && (
-            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 space-y-3">
-              <div className="flex items-center gap-2 text-sm font-bold text-slate-300">
-                <Shield size={16} />
-                <span>Defesa do Oponente</span>
-              </div>
+          {/* Removed */}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Defense Skill */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Perícia de Defesa</label>
-                  <select
-                    value={opponentDefenseSkill}
-                    onChange={(e) => setOpponentDefenseSkill(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="Reflexos">Reflexos</option>
-                    <option value="Vontade">Vontade</option>
-                    <option value="Fortitude">Fortitude</option>
-                    <option value="Percepção">Percepção</option>
-                    <option value="Intuição">Intuição</option>
-                  </select>
-                </div>
-
-                {/* Defense Bonus */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Bônus de Perícia</label>
-                  <input
-                    type="number"
-                    value={opponentDefenseBonus}
-                    onChange={(e) => setOpponentDefenseBonus(parseInt(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="0"
-                    min="0"
-                  />
-                </div>
-
-                {/* Defense Attribute */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Atributo Base</label>
-                  <select
-                    value={opponentDefenseAttribute}
-                    onChange={(e) => setOpponentDefenseAttribute(parseInt(e.target.value))}
-                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="1">1 (Fraco)</option>
-                    <option value="2">2 (Médio)</option>
-                    <option value="3">3 (Forte)</option>
-                    <option value="4">4 (Elite)</option>
-                    <option value="5">5 (Lendário)</option>
-                    <option value="6">6 (Mítico)</option>
-                  </select>
-                </div>
-              </div>
+          {/* Durability Warning */}
+          {activeTab === 'physical' && weaponLimit !== null && (
+            <div className="flex justify-between items-center mt-2 px-1">
+               <span className="text-[10px] text-slate-500">Durabilidade da Arma: {weaponLimit} CE</span>
+               {willBreak && (
+                  <span className="text-[10px] font-bold text-red-500 flex items-center gap-1 animate-pulse">
+                     <Hammer size={10} /> Quebrará após o ataque!
+                  </span>
+               )}
 
               <div className="text-[10px] text-slate-500 italic">
                 <strong>Sistema de Teste Oposto:</strong> Seu ataque (Luta/Pontaria + LL + buffs) vs defesa do oponente (Reflexos/Vontade + bônus). Ataque deve ser maior que defesa para acertar.
