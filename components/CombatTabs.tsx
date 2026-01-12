@@ -16,6 +16,7 @@ interface CombatTabsProps {
   activeRollResult: 'skill' | 'combat' | null;
   setActiveRollResult: (type: 'skill' | 'combat' | null) => void;
   onUpdateInventory?: (id: string, field: keyof Item, value: any) => void;
+  onUpdateCharacter?: (field: keyof Character, value: any) => void;
   campaignId?: string; // Optional campaign ID for logging rolls
   
   // Domain Props
@@ -42,7 +43,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   domainRound = 0,
   domainType,
   onAdvanceDomain,
-  onCloseDomain
+  onCloseDomain,
+  onUpdateCharacter
 }) => {
   const [activeTab, setActiveTab] = useState<'physical' | 'defense'>('physical');
   const [invested, setInvested] = useState<number>(1);
@@ -183,9 +185,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          const { rolls, best } = rollD20Pool(char.attributes[attrKey]);
          attackRolls = rolls;
          const baseAttackRoll = best;
-         attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus;
+         attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus + projectionBonus;
          const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
-         attackRollDetail = `${dicePart} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
+         attackRollDetail = `${dicePart} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
          isCritSuccess = baseAttackRoll === 20;
          isCritFail = baseAttackRoll === 1;
          if (isCritSuccess) isCritical = true;
@@ -209,9 +211,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              attackRolls = rolls;
              const baseAttackRoll = best;
 
-             attackRoll = baseAttackRoll + attackBonus + totalBuffBonus + llBonus;
+             attackRoll = baseAttackRoll + attackBonus + totalBuffBonus + llBonus + projectionBonus;
              const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
-             attackRollDetail = `${dicePart} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}`;
+             attackRollDetail = `${dicePart} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
              isCritSuccess = baseAttackRoll === 20;
              isCritFail = baseAttackRoll === 1;
 
@@ -408,6 +410,69 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   };
 
   const isHR = char.origin === Origin.RestricaoCelestial;
+  
+  // Check if character has Projection Sorcery (by name in techniques or existing stacks)
+  const hasProjection = char.techniques.some(t => t.name.includes("Projeção")) || char.projectionStacks !== undefined;
+
+  const projectionStacks = char.projectionStacks || 0;
+  const projectionBonus = projectionStacks === 1 ? 5 : projectionStacks === 2 ? 7 : projectionStacks === 3 ? 10 : 0;
+
+  // Projection Handlers
+  const handleProjectionActivate = () => {
+    if (!onUpdateCharacter) return;
+    const current = char.projectionStacks || 0;
+    if (current < 3) {
+      onUpdateCharacter('projectionStacks', current + 1);
+    }
+    onUpdateCharacter('ignoreAOO', true);
+  };
+
+  const handleProjectionViolation = () => {
+    if (!onUpdateCharacter) return;
+    onUpdateCharacter('projectionStacks', 0);
+    onUpdateCharacter('ignoreAOO', false);
+    // Should also apply Immobile/Helpless but that's status effect logic usually handled via buffs/conditions system
+    alert("Violação! Stacks zerados. Personagem Imóvel e Indefeso.");
+  };
+
+  const handleFrameBarrier = () => {
+    // Reaction: Spend CE up to LL. Block damage.
+    // For simplicity, we just ask for CE amount to spend
+    const spend = parseInt(prompt("Quanto CE gastar na Barreira? (Máx " + stats.LL + ")", "0") || "0");
+    if (spend > 0) {
+      if (currentStats.ce < spend) {
+        alert("CE Insuficiente.");
+        return;
+      }
+      consumeCE(spend);
+      alert(`Barreira de Quadros ativada! ${spend} de dano mitigado/anulado.`);
+    }
+  };
+
+  const handleFrameTrap = () => {
+    // 2 PE. Opposed Roll.
+    if (currentStats.pe < 2) {
+      alert("PE Insuficiente.");
+      return;
+    }
+    consumePE(2);
+    
+    // Roll Luta vs Reflexos (User rolls Luta)
+    const lutaSkill = char.skills.find(s => s.name === 'Luta');
+    const lutaBonus = lutaSkill ? lutaSkill.value : 0;
+    const attrKey = getSkillAttribute('Luta');
+    const { best } = rollD20Pool(char.attributes[attrKey]);
+    const total = best + lutaBonus + stats.LL; // Adding LL as standard proficiency/power
+    
+    setLastResult({
+      total: total,
+      detail: `[d20]${best} + ${lutaBonus} (Luta) + ${stats.LL} (LL)`,
+      title: "Quadro de Frame (Ataque)",
+      isDamageTaken: false,
+      weaponBroken: false
+    });
+    setActiveRollResult('combat');
+  };
 
   let maxInvest = stats.LL;
   if (isHR && activeTab === 'physical') {
@@ -442,6 +507,71 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
   return (
     <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-xl p-4">
+
+      {/* Projection Sorcery UI */}
+      {hasProjection && (
+        <div className="bg-slate-950/80 border border-curse-500/30 rounded-lg p-3 mb-4 animate-in slide-in-from-top-2">
+          <div className="flex items-center justify-between mb-3">
+             <div className="flex items-center gap-2">
+               <Layers className="text-curse-400" size={16} />
+               <h3 className="text-xs font-bold uppercase tracking-wider text-curse-200">Projeção de Feitiçaria</h3>
+             </div>
+             <div className="flex gap-1">
+               {[1, 2, 3].map(i => (
+                 <div
+                   key={i}
+                   className={`w-6 h-8 border rounded-sm flex items-center justify-center transition-all duration-300
+                     ${(char.projectionStacks || 0) >= i
+                       ? 'bg-curse-500 border-curse-400 shadow-[0_0_10px_rgba(124,58,237,0.5)]'
+                       : 'bg-slate-900 border-slate-700 opacity-50'}
+                   `}
+                 >
+                   {(char.projectionStacks || 0) >= i && <div className="w-full h-full bg-white/10 animate-pulse" />}
+                 </div>
+               ))}
+             </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2">
+             <button
+               onClick={handleProjectionActivate}
+               className="bg-curse-900/40 hover:bg-curse-800/60 border border-curse-500/30 text-curse-200 text-[10px] font-bold uppercase py-2 rounded flex flex-col items-center gap-1 transition-colors"
+             >
+               <span>Ativar Projeção</span>
+               <span className="text-[9px] opacity-60">+1 Stack / Ignora AOO</span>
+             </button>
+             
+             <button
+               onClick={handleProjectionViolation}
+               className="bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase py-2 rounded flex flex-col items-center gap-1 transition-colors"
+             >
+               <span>Violação</span>
+               <span className="text-[9px] opacity-60">Reset Stacks</span>
+             </button>
+
+             <button
+               onClick={handleFrameBarrier}
+               className="bg-blue-900/20 hover:bg-blue-900/40 border border-blue-500/30 text-blue-300 text-[10px] font-bold uppercase py-2 rounded flex flex-col items-center gap-1 transition-colors"
+             >
+               <span>Barreira (Reação)</span>
+               <span className="text-[9px] opacity-60">Gastar CE p/ Bloqueio</span>
+             </button>
+
+             <button
+               onClick={handleFrameTrap}
+               className="bg-emerald-900/20 hover:bg-emerald-900/40 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold uppercase py-2 rounded flex flex-col items-center gap-1 transition-colors"
+             >
+               <span>Quadro de Frame</span>
+               <span className="text-[9px] opacity-60">2 PE - Luta vs Reflexos</span>
+             </button>
+          </div>
+
+          <div className="mt-2 flex justify-between text-[10px] text-slate-500 font-mono">
+             <span>Bônus Atual: +{projectionBonus} Acerto</span>
+             <span>Deslocamento: +{(char.projectionStacks || 0) * 50}%</span>
+          </div>
+        </div>
+      )}
 
       {/* Tabs Header */}
       <div className="flex border-b border-slate-800 mb-4">
