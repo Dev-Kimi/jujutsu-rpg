@@ -26,6 +26,27 @@ import Auth from './components/Auth';
 import UserMenu from './components/UserMenu';
 import UserProfile from './components/UserProfile';
 
+// Helper functions for conditions
+const getConditionBorderColor = (severity: string) => {
+  switch (severity) {
+    case 'minor': return 'border-yellow-500/50';
+    case 'moderate': return 'border-orange-500/50';
+    case 'major': return 'border-red-500/50';
+    case 'extreme': return 'border-purple-500/50';
+    default: return 'border-slate-700';
+  }
+};
+
+const getConditionSeverityColor = (severity: string) => {
+  switch (severity) {
+    case 'minor': return 'bg-yellow-600/20 text-yellow-300 border border-yellow-500/30';
+    case 'moderate': return 'bg-orange-600/20 text-orange-300 border border-orange-500/30';
+    case 'major': return 'bg-red-600/20 text-red-300 border border-red-500/30';
+    case 'extreme': return 'bg-purple-600/20 text-purple-300 border border-purple-500/30';
+    default: return 'bg-slate-600/20 text-slate-300 border border-slate-500/30';
+  }
+};
+
 // Helper to generate a fresh character state (Fallback only)
 const getInitialChar = (): Character => ({
   id: Math.random().toString(36).substring(2, 9),
@@ -39,10 +60,12 @@ const getInitialChar = (): Character => ({
   techniques: [],
   inventory: [],
   equippedWeapons: [],
-  aptitudes: {} // Initialize empty aptitudes
+  aptitudes: {}, // Initialize empty aptitudes
+  bindingVows: [], // Initialize empty binding vows
+  conditions: [] // Initialize empty conditions
 });
 
-type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' | 'campaigns';
+type Tab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' | 'campaigns' | 'binding-vows';
 type ViewMode = 'menu' | 'creator' | 'sheet' | 'profile';
 
 const STORAGE_KEY = 'jjk_rpg_saved_characters';
@@ -153,7 +176,7 @@ const App: React.FC = () => {
       return [];
     }
   };
-
+  
   // Helper: persist savedCharacters to Firestore users/{uid}
   const persistUserCharacters = async (chars: Character[]) => {
     try {
@@ -277,7 +300,7 @@ const App: React.FC = () => {
       const storedUid = localStorage.getItem(STORAGE_UID_KEY);
       // Only save if the stored UID matches current user
       if (!storedUid || storedUid === currentUser.uid) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(savedCharacters));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedCharacters));
         localStorage.setItem(STORAGE_UID_KEY, currentUser.uid);
       }
       // Always persist to Firestore (unless we're loading)
@@ -687,16 +710,16 @@ const App: React.FC = () => {
 
   const handleArrayAdd = useCallback((field: 'abilities' | 'inventory', category?: string, template?: Partial<Item>) => {
     try {
-      if (field === 'abilities') {
-        if (category) setAbilityLibraryCategory(category);
-        setShowAbilityLibrary(true);
-        return;
-      }
+    if (field === 'abilities') {
+      if (category) setAbilityLibraryCategory(category);
+      setShowAbilityLibrary(true);
+      return;
+    }
 
-      const id = Math.random().toString(36).substring(2, 9);
-      let newItem;
+    const id = Math.random().toString(36).substring(2, 9);
+    let newItem;
 
-      if (field === 'inventory') {
+    if (field === 'inventory') {
         newItem = {
           id,
           name: template?.name || "",
@@ -705,9 +728,9 @@ const App: React.FC = () => {
           ...(template?.attackSkill && { attackSkill: template.attackSkill })
         } as Item;
         console.log('Adding new inventory item:', newItem);
-      } else {
-        newItem = { id, name: "", cost: "", description: "", category: category || "Combatente" } as Ability;
-      }
+    } else {
+      newItem = { id, name: "", cost: "", description: "", category: category || "Combatente" } as Ability;
+    }
 
       setCharacter(prev => ({
         ...prev,
@@ -729,7 +752,7 @@ const App: React.FC = () => {
   };
 
   const handleTechniqueRemove = (id: string) => {
-    setCharacter(prev => ({ ...prev, techniques: prev.techniques.filter(t => t.id !== id) }));
+     setCharacter(prev => ({ ...prev, techniques: prev.techniques.filter(t => t.id !== id) }));
   };
 
   // User library technique handlers
@@ -823,8 +846,8 @@ const App: React.FC = () => {
     // Activation Logic
     if (character.level < reqLevel) {
       alert(`Nível insuficiente! Requer nível ${reqLevel}.`);
-      return;
-    }
+        return;
+      }
 
     if (currentStats.ce < ceCost) {
       alert(`CE insuficiente para Expandir Domínio! Você precisa de ${ceCost} CE.`);
@@ -832,9 +855,9 @@ const App: React.FC = () => {
     }
 
     consumeCE(ceCost);
-    setDomainActive(true);
+      setDomainActive(true);
     setDomainType(type);
-    setDomainRound(1);
+      setDomainRound(1);
   };
 
   const closeDomain = () => {
@@ -849,8 +872,8 @@ const App: React.FC = () => {
      };
      setActiveBuffs(prev => [...prev, burnoutDebuff]);
 
-     setDomainActive(false);
-     setDomainRound(0);
+      setDomainActive(false);
+      setDomainRound(0);
      setDomainType(null);
   };
 
@@ -859,22 +882,24 @@ const App: React.FC = () => {
     let maintenanceCost = 0;
 
     // Check Duration Limits & Costs
+    // Segundo as regras: manutenção começa APÓS 2 turnos
     if (domainType === 'incomplete') {
         if (nextRound > 2) {
             alert("Domínio Incompleto não pode exceder 2 rodadas!");
             closeDomain();
             return;
         }
-        if (nextRound === 2) maintenanceCost = 50;
+        // Manutenção começa na rodada 3 (após 2 turnos)
+        if (nextRound > 2) maintenanceCost = 50;
     } else if (domainType === 'complete') {
         if (nextRound > 5) {
             alert("Domínio Completo não pode exceder 5 rodadas!");
             closeDomain();
             return;
         }
-        // Base duration 3 rounds (1, 2, 3 are free). Round 4 costs 50. Round 5 costs 100.
-        if (nextRound === 4) maintenanceCost = 50;
-        if (nextRound === 5) maintenanceCost = 100;
+        // Manutenção começa na rodada 3 (após 2 turnos)
+        if (nextRound === 3) maintenanceCost = 50;
+        else if (nextRound > 3) maintenanceCost = 50; // 50 PE por rodada de manutenção
     }
 
     // Process Maintenance
@@ -922,12 +947,12 @@ const App: React.FC = () => {
           <div className="fixed top-3 right-3 z-50">
             <UserMenu user={currentUser} onProfileClick={() => setViewMode('profile')} />
           </div>
-          <CharacterSelection 
-             savedCharacters={savedCharacters}
-             onSelect={handleSelectCharacter}
-             onCreate={handleStartCreation}
-             onDelete={handleDeleteCharacter}
-          />
+        <CharacterSelection 
+           savedCharacters={savedCharacters}
+           onSelect={handleSelectCharacter}
+           onCreate={handleStartCreation}
+           onDelete={handleDeleteCharacter}
+        />
         </>
      );
   }
@@ -938,10 +963,10 @@ const App: React.FC = () => {
           <div className="fixed top-3 right-3 z-50">
             <UserMenu user={currentUser} onProfileClick={() => setViewMode('profile')} />
           </div>
-          <CharacterCreator 
-             onFinish={handleFinishCreation}
-             onCancel={() => setViewMode('menu')}
-          />
+        <CharacterCreator 
+           onFinish={handleFinishCreation}
+           onCancel={() => setViewMode('menu')}
+        />
         </>
      );
   }
@@ -1092,9 +1117,12 @@ const App: React.FC = () => {
                 onChange={(v) => updateStat('pe', v)}
               />
               <div className="flex gap-2">
-                <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono">
+                <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono group relative">
                   <span className="text-slate-500 uppercase font-bold">Lim. (LL)</span>
                   <span className="text-curse-400 font-black text-lg">{stats.LL}</span>
+                  <div className="hidden group-hover:flex absolute bottom-full left-0 mb-2 bg-slate-900 text-slate-100 text-xs px-3 py-2 border border-slate-700 shadow-xl max-w-[200px] whitespace-normal z-20">
+                    <strong>Liberação (LL):</strong> Volume máximo de CE controlado. Concede bônus passivos em perícias físicas (+LL) e limita reforços corporais.
+                  </div>
                 </div>
                 <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono">
                   <span className="text-slate-500 uppercase font-bold">Mov.</span>
@@ -1105,12 +1133,12 @@ const App: React.FC = () => {
 
       {/* Domain Expansion Control (Side Panel) */}
       <section className={`rounded-xl border ${borderColor} p-4 transition-all duration-150 ${domainActive ? 'bg-curse-950/30' : 'bg-slate-900/50'}`}>
-        <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4">
            <Skull size={20} className={domainActive ? "text-curse-400" : "text-slate-600"} />
-           <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Controle de Domínio</h2>
-        </div>
-        
-        {!domainActive ? (
+                 <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Controle de Domínio</h2>
+              </div>
+              
+              {!domainActive ? (
           <div className="flex flex-col gap-2">
             {[
               { label: 'Incompleto', type: 'incomplete', ce: 150, level: 10 },
@@ -1118,7 +1146,7 @@ const App: React.FC = () => {
             ].map((opt) => {
               const isDisabled = character.level < opt.level;
               return (
-                <button
+                    <button
                   key={opt.label}
                   disabled={isDisabled}
                   onClick={() => activateDomain(opt.type as any, opt.ce, opt.level)}
@@ -1136,31 +1164,31 @@ const App: React.FC = () => {
                   ) : (
                      <span className="text-[10px] font-mono text-curse-400">{opt.ce} CE</span>
                   )}
-                </button>
+                    </button>
               );
             })}
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
              <div className="p-3 bg-slate-950/50 rounded border border-slate-800 text-center">
                 <div className="text-curse-400 text-xs font-bold uppercase mb-1">Domínio Ativo</div>
                 <div className="text-white font-mono text-sm">
                   Rodada {domainRound} / {domainType === 'incomplete' ? 2 : 5}
-                </div>
+                   </div>
                 <div className="mt-2 text-[10px] text-slate-500">
                    Controles disponíveis na aba <strong>Combate</strong>.
                 </div>
              </div>
              
-             <button
+                   <button 
               onClick={closeDomain}
               className="w-full py-2 bg-slate-800/50 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
-             >
+                   >
                Encerrar
-             </button>
-          </div>
-        )}
-      </section>
+                   </button>
+                </div>
+              )}
+            </section>
           </section>
 
           {/* MIDDLE COLUMN: Skills (5 cols) */}
@@ -1185,7 +1213,7 @@ const App: React.FC = () => {
             
             {/* Tab Navigation */}
             <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar">
-               {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'campaigns'] as Tab[]).map(tab => (
+               {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'binding-vows', 'campaigns'] as Tab[]).map(tab => (
                  <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -1200,6 +1228,7 @@ const App: React.FC = () => {
                    {tab === 'techniques' && 'Técnicas'}
                    {tab === 'inventory' && 'Invent.'}
                    {tab === 'progression' && 'Progressão'}
+                   {tab === 'binding-vows' && 'Votos'}
                    {tab === 'campaigns' && 'Campanhas'}
                  </button>
                ))}
@@ -1208,7 +1237,7 @@ const App: React.FC = () => {
             {/* Tab Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-100">
                {activeTab === 'combat' && (
-                  <CombatTabs
+                  <CombatTabs 
                     char={character}
                     stats={stats}
                     currentStats={currentStats}
@@ -1226,6 +1255,153 @@ const App: React.FC = () => {
                     onAdvanceDomain={advanceDomainRound}
                     onCloseDomain={closeDomain}
                   />
+
+                  {/* Conditions Section */}
+                  <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden mt-4">
+                     <div className="p-4 border-b border-slate-800">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                           <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
+                             <span className="text-xs font-bold text-white">⚠</span>
+                           </div>
+                           Condições Ativas
+                        </h3>
+                        <p className="text-sm text-slate-400 mt-1">
+                           Status negativos que afetam capacidades e defesas
+                        </p>
+                     </div>
+
+                     <div className="p-4">
+                        {character.conditions && character.conditions.length > 0 ? (
+                           <div className="space-y-3">
+                              {character.conditions.map(condition => (
+                                 <div key={condition.id} className={`border rounded-lg p-3 ${condition.isActive ? getConditionBorderColor(condition.severity) : 'border-slate-700 opacity-50'}`}>
+                                    <div className="flex items-start justify-between">
+                                       <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-1">
+                                             <h4 className={`font-bold ${condition.isActive ? 'text-white' : 'text-slate-500'}`}>{condition.name}</h4>
+                                             <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${getConditionSeverityColor(condition.severity)}`}>
+                                                {condition.severity}
+                                             </span>
+                                             {condition.duration && (
+                                                <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                                                   {condition.duration} turnos
+                                                </span>
+                                             )}
+                                          </div>
+                                          <p className="text-sm text-slate-300 mb-2">{condition.description}</p>
+
+                                          <div className="space-y-1">
+                                             {condition.effects.map((effect, idx) => (
+                                                <div key={idx} className="text-xs text-red-400 flex items-center gap-1">
+                                                   <span>•</span>
+                                                   <span>{effect}</span>
+                                                </div>
+                                             ))}
+                                          </div>
+                                       </div>
+
+                                       <div className="flex flex-col gap-2 ml-4">
+                                          <button
+                                             onClick={() => {
+                                                setCharacter(prev => ({
+                                                   ...prev,
+                                                   conditions: prev.conditions?.map(c =>
+                                                      c.id === condition.id ? { ...c, isActive: !c.isActive } : c
+                                                   ) || []
+                                                }));
+                                             }}
+                                             className={`px-3 py-1 text-xs font-bold rounded transition-colors ${
+                                                condition.isActive
+                                                   ? 'bg-red-600 hover:bg-red-500 text-white'
+                                                   : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                                             }`}
+                                          >
+                                             {condition.isActive ? 'Ativo' : 'Inativo'}
+                                          </button>
+
+                                          <button
+                                             onClick={() => {
+                                                if (confirm(`Remover a condição "${condition.name}"?`)) {
+                                                   setCharacter(prev => ({
+                                                      ...prev,
+                                                      conditions: prev.conditions?.filter(c => c.id !== condition.id) || []
+                                                   }));
+                                                }
+                                             }}
+                                             className="px-3 py-1 text-xs font-bold bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors"
+                                          >
+                                             Remover
+                                          </button>
+                                       </div>
+                                    </div>
+                                 </div>
+                              ))}
+                           </div>
+                        ) : (
+                           <div className="text-center py-8">
+                              <div className="text-4xl mb-4">✅</div>
+                              <p className="text-slate-400">Nenhuma condição ativa</p>
+                              <p className="text-sm text-slate-500 mt-1">O personagem está em perfeitas condições</p>
+                           </div>
+                        )}
+
+                        <div className="border-t border-slate-800 pt-4 mt-4">
+                           <div className="grid grid-cols-2 gap-3">
+                              {/* Quick Add Common Conditions */}
+                              {[
+                                 { name: "Atordoado", desc: "Não pode realizar ações", effects: ["Não pode agir", "-4 em defesas"], severity: 'major' as const },
+                                 { name: "Indefeso", desc: "Não pode se defender", effects: ["Não pode usar reações", "-10 em defesas"], severity: 'extreme' as const },
+                                 { name: "Vulnerável", desc: "Mais suscetível a danos", effects: ["+2 em rolagens de dano contra você"], severity: 'moderate' as const },
+                                 { name: "Exausto", desc: "Fadiga extrema", effects: ["-2 em todos os testes", "-1 ação por turno"], severity: 'moderate' as const }
+                              ].map(cond => (
+                                 <button
+                                    key={cond.name}
+                                    onClick={() => {
+                                       const newCondition: Condition = {
+                                          id: Math.random().toString(36).substring(2, 9),
+                                          name: cond.name,
+                                          description: cond.desc,
+                                          effects: cond.effects,
+                                          severity: cond.severity,
+                                          isActive: true
+                                       };
+
+                                       setCharacter(prev => ({
+                                          ...prev,
+                                          conditions: [...(prev.conditions || []), newCondition]
+                                       }));
+                                    }}
+                                    className="py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-medium rounded-lg transition-colors text-sm"
+                                 >
+                                    + {cond.name}
+                                 </button>
+                              ))}
+
+                              {/* Custom Condition */}
+                              <button
+                                 onClick={() => {
+                                    const newCondition: Condition = {
+                                       id: Math.random().toString(36).substring(2, 9),
+                                       name: "Condição Personalizada",
+                                       description: "Descreva o efeito desta condição",
+                                       effects: ["-2 em testes relacionados"],
+                                       severity: 'minor',
+                                       isActive: true
+                                    };
+
+                                    setCharacter(prev => ({
+                                       ...prev,
+                                       conditions: [...(prev.conditions || []), newCondition]
+                                    }));
+                                 }}
+                                 className="py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors text-sm"
+                              >
+                                 + Personalizada
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
                )}
                {activeTab === 'abilities' && (
                  <AccordionList 
@@ -1253,18 +1429,124 @@ const App: React.FC = () => {
                  />
                )}
                {activeTab === 'inventory' && (
-                <InventoryList
-                  items={character.inventory}
-                  onAdd={(template) => handleArrayAdd('inventory', undefined, template)}
-                  onUpdate={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
-                  onRemove={(id) => handleArrayRemove('inventory', id)}
+                 <InventoryList 
+                   items={character.inventory}
+                   onAdd={(template) => handleArrayAdd('inventory', undefined, template)}
+                   onUpdate={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                   onRemove={(id) => handleArrayRemove('inventory', id)}
                   onOpenLibrary={() => setShowInventoryLibrary(true)}
                   equippedWeapons={character.equippedWeapons}
                   onToggleEquip={handleToggleEquipWeapon}
-                />
+                 />
                )}
                {activeTab === 'progression' && (
                   <LevelUpSummary char={character} onUpdateAptitude={handleAptitudeUpdate} />
+               )}
+               {activeTab === 'binding-vows' && (
+                  <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[400px] flex flex-col">
+                     <div className="p-4 border-b border-slate-800">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                           <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                             <span className="text-xs font-bold text-white">V</span>
+                           </div>
+                           Votos Vinculativos
+                        </h3>
+                        <p className="text-sm text-slate-400 mt-1">
+                           Contratos autoimpostos que garantem benefícios em troca de restrições
+                        </p>
+                     </div>
+
+                     <div className="flex-1 p-4 space-y-4">
+                        {character.bindingVows && character.bindingVows.length > 0 ? (
+                           character.bindingVows.map(vow => (
+                              <div key={vow.id} className={`bg-slate-950 border rounded-lg p-4 ${vow.isActive ? 'border-purple-500/50' : 'border-slate-800 opacity-60'}`}>
+                                 <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                       <h4 className="font-bold text-white">{vow.name}</h4>
+                                       <p className="text-sm text-slate-300 mt-1">{vow.description}</p>
+
+                                       <div className="mt-3 space-y-2">
+                                          <div className="flex items-center gap-2">
+                                             <span className="text-xs font-bold text-emerald-400">BENEFÍCIO:</span>
+                                             <span className="text-sm text-slate-200">{vow.benefit}</span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                             <span className="text-xs font-bold text-red-400">RESTRIÇÃO:</span>
+                                             <span className="text-sm text-slate-200">{vow.restriction}</span>
+                                          </div>
+                                       </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 ml-4">
+                                       <button
+                                          onClick={() => {
+                                             setCharacter(prev => ({
+                                                ...prev,
+                                                bindingVows: prev.bindingVows?.map(v =>
+                                                   v.id === vow.id ? { ...v, isActive: !v.isActive } : v
+                                                ) || []
+                                             }));
+                                          }}
+                                          className={`px-3 py-1 text-xs font-bold rounded transition-colors ${
+                                             vow.isActive
+                                                ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                                                : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                                          }`}
+                                       >
+                                          {vow.isActive ? 'Ativo' : 'Inativo'}
+                                       </button>
+
+                                       <button
+                                          onClick={() => {
+                                             if (confirm(`Remover o voto "${vow.name}"?`)) {
+                                                setCharacter(prev => ({
+                                                   ...prev,
+                                                   bindingVows: prev.bindingVows?.filter(v => v.id !== vow.id) || []
+                                                }));
+                                             }
+                                          }}
+                                          className="px-3 py-1 text-xs font-bold bg-red-600 hover:bg-red-500 text-white rounded transition-colors"
+                                       >
+                                          Remover
+                                       </button>
+                                    </div>
+                                 </div>
+                              </div>
+                           ))
+                        ) : (
+                           <div className="text-center py-12">
+                              <div className="text-4xl mb-4">📜</div>
+                              <p className="text-slate-400">Nenhum Voto Vinculativo ativo</p>
+                              <p className="text-sm text-slate-500 mt-1">Crie contratos autoimpostos para obter benefícios especiais</p>
+                           </div>
+                        )}
+
+                        <div className="border-t border-slate-800 pt-4">
+                           <button
+                              onClick={() => {
+                                 const newVow = {
+                                    id: Math.random().toString(36).substring(2, 9),
+                                    name: "Novo Voto Vinculativo",
+                                    description: "Descreva seu contrato autoimposto",
+                                    benefit: "Benefício garantido",
+                                    restriction: "Restrição imposta",
+                                    isActive: false,
+                                    createdAt: Date.now()
+                                 };
+
+                                 setCharacter(prev => ({
+                                    ...prev,
+                                    bindingVows: [...(prev.bindingVows || []), newVow]
+                                 }));
+                              }}
+                              className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                           >
+                              <span>+</span>
+                              Novo Voto Vinculativo
+                           </button>
+                        </div>
+                     </div>
+                  </div>
                )}
             </div>
 
