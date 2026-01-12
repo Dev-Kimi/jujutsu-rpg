@@ -16,7 +16,7 @@ interface CombatTabsProps {
   activeRollResult: 'skill' | 'combat' | null;
   setActiveRollResult: (type: 'skill' | 'combat' | null) => void;
   onUpdateInventory?: (id: string, field: keyof Item, value: any) => void;
-  onUpdateCharacter?: (field: keyof Character, value: any) => void;
+  onUpdateCharacter?: (field: keyof Character | Partial<Character>, value?: any) => void;
   campaignId?: string; // Optional campaign ID for logging rolls
   
   // Domain Props
@@ -440,10 +440,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     consumeCE(cost);
     const current = char.projectionStacks || 0;
     
+    const updates: any = { ignoreAOO: true };
     if (current < 3) {
-      onUpdateCharacter('projectionStacks', current + 1);
+        updates.projectionStacks = current + 1;
     }
-    onUpdateCharacter('ignoreAOO', true);
+    
+    onUpdateCharacter(updates);
     
     // Visual feedback
     alert(`Projeção ativada! Gasto ${cost} CE. Stacks: ${Math.min(3, current + 1)}`);
@@ -451,8 +453,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
   const handleProjectionViolation = () => {
     if (!onUpdateCharacter) return;
-    onUpdateCharacter('projectionStacks', 0);
-    onUpdateCharacter('ignoreAOO', false);
+    onUpdateCharacter({ projectionStacks: 0, ignoreAOO: false } as any);
     alert("VIOLAÇÃO DE QUADRO! Stacks zerados. Personagem está IMÓVEL e INDEFESO até o fim do turno.");
   };
 
