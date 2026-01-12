@@ -328,6 +328,7 @@ const App: React.FC = () => {
   // Domain Expansion State
   const [domainActive, setDomainActive] = useState(false);
   const [domainRound, setDomainRound] = useState(0);
+  const [domainType, setDomainType] = useState<'incomplete' | 'complete' | null>(null);
 
   // Active Buffs State
   const [activeBuffs, setActiveBuffs] = useState<Ability[]>([]);
@@ -496,6 +497,54 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, [currentUser, character?.id]);
 
+  // Listener for Master updates (e.g. Round Advance)
+  useEffect(() => {
+      if (!currentUser || !character?.id || activeCombatCampaignIds.length === 0) return;
+      
+      // Listen to the first active campaign (assuming single combat focus)
+      const campaignId = activeCombatCampaignIds[0];
+      const key = `${currentUser.uid}_${character.id}`;
+      const stateRef = doc(db, 'campaigns', campaignId, 'characterStates', key);
+
+      const unsub = onSnapshot(stateRef, (snap) => {
+          if (!snap.exists()) return;
+          const data = snap.data();
+          
+          // Sync Domain State from Master
+          // Only update if specifically changed to avoid overwriting local transient state unnecessarily
+          if (data.domainRound !== undefined && data.domainRound !== domainRound) {
+               setDomainRound(data.domainRound);
+               // If Master advanced round and deducted PE, sync PE
+               if (data.currentStats) {
+                   setCurrentStats(prev => ({
+                       ...prev,
+                       pe: data.currentStats.pe,
+                       ce: data.currentStats.ce
+                   }));
+               }
+          }
+          if (data.domainActive !== undefined && data.domainActive !== domainActive) {
+               // If transitioning from Active to Inactive (Remote Close), apply Exhaustion
+               if (domainActive && !data.domainActive) {
+                   const turns = domainType === 'incomplete' ? 2 : 4;
+                   const burnoutDebuff: Ability = {
+                       id: Math.random().toString(36).substring(2, 9),
+                       name: "Exaustão de Técnica",
+                       description: `Técnica inata inutilizável por ${turns} turnos.`,
+                       cost: "",
+                       category: "Status"
+                   };
+                   setActiveBuffs(prev => [...prev, burnoutDebuff]);
+                   setDomainType(null);
+                   setDomainRound(0);
+               }
+               setDomainActive(data.domainActive);
+          }
+      });
+
+      return () => unsub();
+  }, [activeCombatCampaignIds, currentUser, character?.id, domainRound, domainActive]);
+
   useEffect(() => {
     if (!currentUser) return;
     if (!character?.id) return;
@@ -513,6 +562,9 @@ const App: React.FC = () => {
       imageUrl: character.imageUrl,
       currentStats,
       maxStats: { pv: derived.MaxPV, ce: derived.MaxCE, pe: derived.MaxPE },
+      domainActive,
+      domainRound,
+      domainType,
       updatedAt: Date.now()
     };
 
@@ -766,45 +818,81 @@ const App: React.FC = () => {
     }));
   };
 
-  const toggleDomain = (ceCost: number, peCost: number, reqLevel: number = 0) => {
-    // Deactivation
-    if (domainActive) {
-      setDomainActive(false);
-      setDomainRound(0);
-      return;
-    }
-
+  const activateDomain = (type: 'incomplete' | 'complete', ceCost: number, reqLevel: number) => {
     // Activation Logic
     if (character.level < reqLevel) {
       alert(`Nível insuficiente! Requer nível ${reqLevel}.`);
       return;
     }
 
-    if (currentStats.ce < ceCost || currentStats.pe < peCost) {
-      alert(`Recursos insuficientes para Expandir Domínio! Você precisa de ${ceCost} CE e ${peCost} PE.`);
+    if (currentStats.ce < ceCost) {
+      alert(`CE insuficiente para Expandir Domínio! Você precisa de ${ceCost} CE.`);
       return;
     }
 
     consumeCE(ceCost);
-    consumePE(peCost);
     setDomainActive(true);
+    setDomainType(type);
     setDomainRound(1);
   };
 
-  const advanceDomainRound = () => {
-    const nextRound = domainRound + 1;
-    setDomainRound(nextRound);
-    const costPE = calculateDomainCost(nextRound);
-    if (costPE > 0) {
-      if (currentStats.pe < costPE) {
-        alert("PE Esgotado! O domínio colapsou.");
-        setDomainActive(false);
-        setDomainRound(0);
-      } else {
-        updateStat('pe', currentStats.pe - costPE);
-      }
-    }
+  const closeDomain = () => {
+     // Burnout Logic
+     const turns = domainType === 'incomplete' ? 2 : 4;
+     const burnoutDebuff: Ability = {
+       id: Math.random().toString(36).substring(2, 9),
+       name: "Exaustão de Técnica",
+       description: `Técnica inata inutilizável por ${turns} turnos.`,
+       cost: "",
+       category: "Status"
+     };
+     setActiveBuffs(prev => [...prev, burnoutDebuff]);
+
+     setDomainActive(false);
+     setDomainRound(0);
+     setDomainType(null);
   };
+
+  const advanceDomainRound = (force: boolean = false) => {
+    const nextRound = domainRound + 1;
+    let maintenanceCost = 0;
+
+    // Check Duration Limits & Costs
+    if (domainType === 'incomplete') {
+        if (nextRound > 2) {
+            alert("Domínio Incompleto não pode exceder 2 rodadas!");
+            closeDomain();
+            return;
+        }
+        if (nextRound === 2) maintenanceCost = 50;
+    } else if (domainType === 'complete') {
+        if (nextRound > 5) {
+            alert("Domínio Completo não pode exceder 5 rodadas!");
+            closeDomain();
+            return;
+        }
+        // Base duration 3 rounds (1, 2, 3 are free). Round 4 costs 50. Round 5 costs 100.
+        if (nextRound === 4) maintenanceCost = 50;
+        if (nextRound === 5) maintenanceCost = 100;
+    }
+
+    // Process Maintenance
+    if (maintenanceCost > 0) {
+        if (!force) {
+            // Logic handled by UI calling this with force=true
+            return;
+        }
+        if (currentStats.pe < maintenanceCost) {
+            alert(`PE Insuficiente para manter o domínio! Necessário: ${maintenanceCost} PE.`);
+            closeDomain();
+            return;
+        }
+        consumePE(maintenanceCost);
+    }
+
+    setDomainRound(nextRound);
+  };
+
 
   // --- RENDER ---
 
@@ -1014,63 +1102,64 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Domain Expansion Control */}
-            <section className={`rounded-xl border ${borderColor} p-4 transition-all duration-150 ${domainActive ? 'bg-curse-950/30' : 'bg-slate-900/50'}`}>
-              <div className="flex items-center gap-2 mb-4">
-                 <Skull size={20} className={domainActive ? "text-curse-400" : "text-slate-600"} />
-                 <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Controle de Domínio</h2>
-              </div>
-              
-              {!domainActive ? (
-                <div className="flex flex-col gap-2">
-                  {[
-                    { label: 'Incompleto', ce: 150, pe: 100, level: 10 },
-                    { label: 'Completo', ce: 250, pe: 150, level: 16 },
-                    { label: 'Aberto', ce: 350, pe: 200, level: 20 },
-                  ].map((opt) => {
-                    const isDisabled = character.level < opt.level;
-                    return (
-                      <button
-                        key={opt.label}
-                        disabled={isDisabled}
-                        onClick={() => toggleDomain(opt.ce, opt.pe, opt.level)}
-                        className={`py-2 px-3 flex justify-between items-center rounded-lg border text-xs font-bold transition-all duration-100
-                          ${isDisabled
-                            ? 'bg-slate-950/50 border-slate-800 text-slate-700 cursor-not-allowed'
-                            : 'bg-slate-950 border-slate-700 hover:border-curse-500 text-slate-300 hover:text-white hover:bg-slate-900'
-                          }
-                        `}
-                        title={isDisabled ? `Requer Nível ${opt.level}` : ""}
-                      >
-                        <span className="uppercase tracking-wide">{opt.label}</span>
-                        {isDisabled ? (
-                           <span className="text-[10px] font-mono text-red-900 bg-red-950/20 px-1 rounded">Lv.{opt.level}</span>
-                        ) : (
-                           <span className="text-[10px] font-mono text-curse-400">{opt.ce} CE / {opt.pe} PE</span>
-                        )}
-                      </button>
-                    );
-                  })}
+      {/* Domain Expansion Control (Side Panel) */}
+      <section className={`rounded-xl border ${borderColor} p-4 transition-all duration-150 ${domainActive ? 'bg-curse-950/30' : 'bg-slate-900/50'}`}>
+        <div className="flex items-center gap-2 mb-4">
+           <Skull size={20} className={domainActive ? "text-curse-400" : "text-slate-600"} />
+           <h2 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Controle de Domínio</h2>
+        </div>
+        
+        {!domainActive ? (
+          <div className="flex flex-col gap-2">
+            {[
+              { label: 'Incompleto', type: 'incomplete', ce: 150, level: 10 },
+              { label: 'Completo', type: 'complete', ce: 250, level: 16 },
+            ].map((opt) => {
+              const isDisabled = character.level < opt.level;
+              return (
+                <button
+                  key={opt.label}
+                  disabled={isDisabled}
+                  onClick={() => activateDomain(opt.type as any, opt.ce, opt.level)}
+                  className={`py-2 px-3 flex justify-between items-center rounded-lg border text-xs font-bold transition-all duration-100
+                    ${isDisabled
+                      ? 'bg-slate-950/50 border-slate-800 text-slate-700 cursor-not-allowed'
+                      : 'bg-slate-950 border-slate-700 hover:border-curse-500 text-slate-300 hover:text-white hover:bg-slate-900'
+                    }
+                  `}
+                  title={isDisabled ? `Requer Nível ${opt.level}` : ""}
+                >
+                  <span className="uppercase tracking-wide">{opt.label}</span>
+                  {isDisabled ? (
+                     <span className="text-[10px] font-mono text-red-900 bg-red-950/20 px-1 rounded">Lv.{opt.level}</span>
+                  ) : (
+                     <span className="text-[10px] font-mono text-curse-400">{opt.ce} CE</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+             <div className="p-3 bg-slate-950/50 rounded border border-slate-800 text-center">
+                <div className="text-curse-400 text-xs font-bold uppercase mb-1">Domínio Ativo</div>
+                <div className="text-white font-mono text-sm">
+                  Rodada {domainRound} / {domainType === 'incomplete' ? 2 : 5}
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                   <div className="flex gap-2">
-                     <button
-                      onClick={advanceDomainRound}
-                      className="flex-1 py-3 bg-curse-600 hover:bg-curse-500 text-white font-bold rounded-lg text-sm flex items-center justify-center gap-2"
-                     >
-                       <Flame size={16} /> Avançar Rodada
-                     </button>
-                   </div>
-                   <button
-                    onClick={() => toggleDomain(0, 0)}
-                    className="w-full py-2 bg-slate-800 text-slate-400 hover:text-white font-bold rounded-lg text-xs uppercase tracking-wider"
-                   >
-                     Fechar Domínio
-                   </button>
+                <div className="mt-2 text-[10px] text-slate-500">
+                   Controles disponíveis na aba <strong>Combate</strong>.
                 </div>
-              )}
-            </section>
+             </div>
+             
+             <button
+              onClick={closeDomain}
+              className="w-full py-2 bg-slate-800/50 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
+             >
+               Encerrar
+             </button>
+          </div>
+        )}
+      </section>
           </section>
 
           {/* MIDDLE COLUMN: Skills (5 cols) */}
@@ -1118,7 +1207,7 @@ const App: React.FC = () => {
             {/* Tab Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-100">
                {activeTab === 'combat' && (
-                  <CombatTabs 
+                  <CombatTabs
                     char={character}
                     stats={stats}
                     currentStats={currentStats}
@@ -1129,6 +1218,11 @@ const App: React.FC = () => {
                     activeRollResult={activeRollResult}
                     setActiveRollResult={setActiveRollResult}
                     onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                    domainActive={domainActive}
+                    domainRound={domainRound}
+                    domainType={domainType}
+                    onAdvanceDomain={advanceDomainRound}
+                    onCloseDomain={closeDomain}
                   />
                )}
                {activeTab === 'abilities' && (
