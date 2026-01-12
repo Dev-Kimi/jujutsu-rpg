@@ -17,20 +17,32 @@ interface CombatTabsProps {
   setActiveRollResult: (type: 'skill' | 'combat' | null) => void;
   onUpdateInventory?: (id: string, field: keyof Item, value: any) => void;
   campaignId?: string; // Optional campaign ID for logging rolls
+  
+  // Domain Props
+  domainActive?: boolean;
+  domainRound?: number;
+  domainType?: 'incomplete' | 'complete' | null;
+  onAdvanceDomain?: (force: boolean) => void;
+  onCloseDomain?: () => void;
 }
 
-export const CombatTabs: React.FC<CombatTabsProps> = ({ 
-  char, 
-  stats, 
-  currentStats, 
-  consumeCE, 
+export const CombatTabs: React.FC<CombatTabsProps> = ({
+  char,
+  stats,
+  currentStats,
+  consumeCE,
   consumePE,
   activeBuffs = [],
   onConsumeBuffs,
   activeRollResult,
   setActiveRollResult,
   onUpdateInventory,
-  campaignId
+  campaignId,
+  domainActive,
+  domainRound = 0,
+  domainType,
+  onAdvanceDomain,
+  onCloseDomain
 }) => {
   const [activeTab, setActiveTab] = useState<'physical' | 'defense'>('physical');
   const [invested, setInvested] = useState<number>(1);
@@ -454,6 +466,56 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       {/* Content */}
       <div className="space-y-4">
+
+        {/* Domain Status & Controls */}
+        {domainActive && (
+          <div className="bg-curse-950/30 border border-curse-500/50 p-3 rounded-lg mb-4 animate-pulse-slow">
+             <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-curse-400">
+                   <Hexagon size={16} className="animate-spin-slow" />
+                   <span className="text-xs font-bold uppercase tracking-widest">Domínio Ativo</span>
+                </div>
+                <div className="text-xs font-mono text-white bg-curse-900/50 px-2 py-0.5 rounded border border-curse-500/30">
+                   Rodada {domainRound} / {domainType === 'incomplete' ? 2 : 5}
+                </div>
+             </div>
+
+             {/* Maintenance Controls */}
+             <div className="flex gap-2 mt-2">
+                {((domainType === 'incomplete' && domainRound >= 1) || (domainType === 'complete' && domainRound >= 3)) ? (
+                    <button
+                      onClick={() => onAdvanceDomain && onAdvanceDomain(true)}
+                      disabled={
+                        (domainType === 'incomplete' && currentStats.pe < 50) ||
+                        (domainType === 'complete' && domainRound === 3 && currentStats.pe < 50) ||
+                        (domainType === 'complete' && domainRound === 4 && currentStats.pe < 100)
+                      }
+                      className="flex-1 py-1.5 bg-orange-900/40 border border-orange-500/50 hover:bg-orange-900/60 text-orange-200 font-bold rounded text-[10px] uppercase flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                       Manter ({
+                          (domainType === 'incomplete') ? '50 PE' :
+                          (domainRound === 3) ? '50 PE' : '100 PE'
+                       })
+                    </button>
+                ) : (
+                    <button
+                      onClick={() => onAdvanceDomain && onAdvanceDomain(false)}
+                      className="flex-1 py-1.5 bg-emerald-900/40 border border-emerald-500/50 hover:bg-emerald-900/60 text-emerald-200 font-bold rounded text-[10px] uppercase flex items-center justify-center gap-1"
+                    >
+                       Avançar Rodada (Livre)
+                    </button>
+                )}
+                
+                <button
+                   onClick={onCloseDomain}
+                   className="px-3 py-1.5 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-400 hover:text-white rounded text-[10px] uppercase font-bold"
+                   title="Encerrar e sofrer Exaustão"
+                >
+                   <X size={14} />
+                </button>
+             </div>
+          </div>
+        )}
         
         {/* Buffs Summary Indicator */}
         {relevantBuffs.length > 0 && (
