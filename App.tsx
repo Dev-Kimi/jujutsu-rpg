@@ -11,6 +11,7 @@ import { AbilityLibrary } from './components/AbilityLibrary';
 import { CharacterEditor } from './components/CharacterEditor';
 import { TechniqueManager } from './components/TechniqueManager';
 import { LevelUpSummary } from './components/LevelUpSummary';
+import { BindingVowsManager } from './components/BindingVowsManager';
 import { CharacterSelection } from './components/CharacterSelection';
 import { CharacterCreator } from './components/CharacterCreator';
 import { CharacterAttributes } from './components/CharacterAttributes';
@@ -656,8 +657,12 @@ const App: React.FC = () => {
   };
   
   // Update Wrappers
-  const handleCharUpdate = (field: keyof Character, value: any) => {
-    setCharacter(prev => ({ ...prev, [field]: value }));
+  const handleCharUpdate = (field: keyof Character | Partial<Character>, value?: any) => {
+    if (typeof field === 'object') {
+      setCharacter(prev => ({ ...prev, ...field }));
+    } else {
+      setCharacter(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleAttributeUpdate = (attr: keyof Attributes, val: number) => {
@@ -1212,7 +1217,7 @@ const App: React.FC = () => {
           <section className="md:col-span-2 xl:col-span-4 flex flex-col gap-4">
             
             {/* Tab Navigation */}
-            <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar">
+            <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pb-2">
                {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'binding-vows', 'campaigns'] as Tab[]).map(tab => (
                  <button
                     key={tab}
@@ -1439,110 +1444,10 @@ const App: React.FC = () => {
                   <LevelUpSummary char={character} onUpdateAptitude={handleAptitudeUpdate} />
                )}
                {activeTab === 'binding-vows' && (
-                  <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[400px] flex flex-col">
-                     <div className="p-4 border-b border-slate-800">
-                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                           <div className="w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
-                             <span className="text-xs font-bold text-white">V</span>
-                           </div>
-                           Votos Vinculativos
-                        </h3>
-                        <p className="text-sm text-slate-400 mt-1">
-                           Contratos autoimpostos que garantem benefícios em troca de restrições
-                        </p>
-                     </div>
-
-                     <div className="flex-1 p-4 space-y-4">
-                        {character.bindingVows && character.bindingVows.length > 0 ? (
-                           character.bindingVows.map(vow => (
-                              <div key={vow.id} className={`bg-slate-950 border rounded-lg p-4 ${vow.isActive ? 'border-purple-500/50' : 'border-slate-800 opacity-60'}`}>
-                                 <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                       <h4 className="font-bold text-white">{vow.name}</h4>
-                                       <p className="text-sm text-slate-300 mt-1">{vow.description}</p>
-
-                                       <div className="mt-3 space-y-2">
-                                          <div className="flex items-center gap-2">
-                                             <span className="text-xs font-bold text-emerald-400">BENEFÍCIO:</span>
-                                             <span className="text-sm text-slate-200">{vow.benefit}</span>
-                                          </div>
-                                          <div className="flex items-center gap-2">
-                                             <span className="text-xs font-bold text-red-400">RESTRIÇÃO:</span>
-                                             <span className="text-sm text-slate-200">{vow.restriction}</span>
-                                          </div>
-                                       </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-2 ml-4">
-                                       <button
-                                          onClick={() => {
-                                             setCharacter(prev => ({
-                                                ...prev,
-                                                bindingVows: prev.bindingVows?.map(v =>
-                                                   v.id === vow.id ? { ...v, isActive: !v.isActive } : v
-                                                ) || []
-                                             }));
-                                          }}
-                                          className={`px-3 py-1 text-xs font-bold rounded transition-colors ${
-                                             vow.isActive
-                                                ? 'bg-purple-600 hover:bg-purple-500 text-white'
-                                                : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                                          }`}
-                                       >
-                                          {vow.isActive ? 'Ativo' : 'Inativo'}
-                                       </button>
-
-                                       <button
-                                          onClick={() => {
-                                             if (confirm(`Remover o voto "${vow.name}"?`)) {
-                                                setCharacter(prev => ({
-                                                   ...prev,
-                                                   bindingVows: prev.bindingVows?.filter(v => v.id !== vow.id) || []
-                                                }));
-                                             }
-                                          }}
-                                          className="px-3 py-1 text-xs font-bold bg-red-600 hover:bg-red-500 text-white rounded transition-colors"
-                                       >
-                                          Remover
-                                       </button>
-                                    </div>
-                                 </div>
-                              </div>
-                           ))
-                        ) : (
-                           <div className="text-center py-12">
-                              <div className="text-4xl mb-4">📜</div>
-                              <p className="text-slate-400">Nenhum Voto Vinculativo ativo</p>
-                              <p className="text-sm text-slate-500 mt-1">Crie contratos autoimpostos para obter benefícios especiais</p>
-                           </div>
-                        )}
-
-                        <div className="border-t border-slate-800 pt-4">
-                           <button
-                              onClick={() => {
-                                 const newVow = {
-                                    id: Math.random().toString(36).substring(2, 9),
-                                    name: "Novo Voto Vinculativo",
-                                    description: "Descreva seu contrato autoimposto",
-                                    benefit: "Benefício garantido",
-                                    restriction: "Restrição imposta",
-                                    isActive: false,
-                                    createdAt: Date.now()
-                                 };
-
-                                 setCharacter(prev => ({
-                                    ...prev,
-                                    bindingVows: [...(prev.bindingVows || []), newVow]
-                                 }));
-                              }}
-                              className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
-                           >
-                              <span>+</span>
-                              Novo Voto Vinculativo
-                           </button>
-                        </div>
-                     </div>
-                  </div>
+                  <BindingVowsManager 
+                     char={character} 
+                     onUpdateCharacter={handleCharUpdate} 
+                  />
                )}
             </div>
 
