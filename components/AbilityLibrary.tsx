@@ -85,7 +85,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
 
         {/* Scrollable Tabs Area */}
         <div className="shrink-0 bg-slate-950 border-b border-slate-800">
-           <div className="flex w-full overflow-x-auto no-scrollbar scroll-smooth px-2">
+           <div className="flex w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900 scroll-smooth px-2">
             {categories.map(cat => (
               <button
                 key={cat}
@@ -102,7 +102,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
 
         {/* Sub-Tabs (Specific for Habilidades Amaldiçoadas) */}
         {activeTab === 'Habilidades Amaldiçoadas' && (
-          <div className="shrink-0 bg-slate-900 border-b border-slate-800 px-3 py-2 flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="shrink-0 bg-slate-900 border-b border-slate-800 px-3 py-2 flex gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
              {cursedSubCategories.map(sub => (
                <button
                  key={sub}
