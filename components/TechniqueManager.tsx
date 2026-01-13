@@ -1353,6 +1353,9 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   onRemove,
   onOpenLibrary
 }) => {
+  const [editingTechId, setEditingTechId] = useState<string | null>(null);
+  const [rollResult, setRollResult] = useState<{ name: string; result: number; total: string } | null>(null);
+
   const handleAdd = () => {
     const newTechnique: import('../types').Technique = {
       id: Math.random().toString(36).substring(2, 9),
@@ -1362,17 +1365,6 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
       subTechniques: []
     };
     onAdd(newTechnique);
-  };
-
-  const handleAddSubTechnique = (techId: string, currentSubTechniques: import('../types').SubTechnique[]) => {
-    const newSub: import('../types').SubTechnique = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: 'Nova Habilidade',
-      description: '',
-      usage: '1 PE',
-      diceFace: ''
-    };
-    onUpdate(techId, 'subTechniques', [...currentSubTechniques, newSub]);
   };
 
   const handleUpdateSubTechnique = (techId: string, subId: string, field: keyof import('../types').SubTechnique, value: any, currentSubTechniques: import('../types').SubTechnique[]) => {
@@ -1385,8 +1377,46 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     onUpdate(techId, 'subTechniques', updated);
   };
 
+  const handleRoll = (subName: string, diceFace?: string) => {
+    if (!diceFace) return;
+    
+    const match = diceFace.match(/(\d+)?d(\d+)([+-]\d+)?/);
+    if (match) {
+      const count = parseInt(match[1] || '1');
+      const faces = parseInt(match[2]);
+      const modifier = parseInt(match[3] || '0');
+      
+      let total = 0;
+      const rolls = [];
+      for (let i = 0; i < count; i++) {
+        const roll = Math.floor(Math.random() * faces) + 1;
+        rolls.push(roll);
+        total += roll;
+      }
+      total += modifier;
+      
+      setRollResult({
+        name: subName,
+        result: total,
+        total: `${rolls.join('+')}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`
+      });
+      
+      setTimeout(() => setRollResult(null), 4000);
+    }
+  };
+
   return (
-    <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[300px] flex flex-col">
+    <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[300px] flex flex-col relative">
+      {rollResult && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900 border border-curse-500 text-curse-100 px-4 py-2 rounded-lg shadow-2xl animate-in fade-in slide-in-from-top-4 flex items-center gap-3 pointer-events-none">
+            <Dices className="text-curse-400 animate-pulse" />
+            <div>
+                <div className="text-xs text-curse-300 font-bold uppercase">{rollResult.name}</div>
+                <div className="text-lg font-black">{rollResult.result} <span className="text-xs text-slate-500 font-normal">({rollResult.total})</span></div>
+            </div>
+        </div>
+      )}
+
       <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
         <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Técnicas</h4>
         <div className="flex gap-2">
@@ -1413,8 +1443,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
         )}
 
         {techniques.map((tech) => (
-          <div key={tech.id} className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
-            {/* Header da Técnica */}
+          <div key={tech.id} className={`bg-slate-950 border rounded-lg overflow-hidden transition-colors ${editingTechId === tech.id ? 'border-curse-500/50' : 'border-slate-800'}`}>
             <div className="p-3 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1">
                 <Wand2 size={16} className="text-curse-400 shrink-0" />
@@ -1422,71 +1451,91 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                   type="text"
                   value={tech.name}
                   onChange={(e) => onUpdate(tech.id, 'name', e.target.value)}
-                  className="bg-transparent border-none outline-none text-white text-sm font-bold w-full placeholder-slate-500"
+                  readOnly={editingTechId !== tech.id}
+                  className={`bg-transparent border-none outline-none text-white text-sm font-bold w-full placeholder-slate-500 ${editingTechId === tech.id ? 'cursor-text' : 'cursor-default'}`}
                   placeholder="Nome da Técnica"
                 />
               </div>
-              <button
-                onClick={() => onRemove(tech.id)}
-                className="text-slate-500 hover:text-red-400 transition-colors p-1"
-                title="Remover técnica"
-              >
-                <Trash2 size={14} />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                    onClick={() => setEditingTechId(editingTechId === tech.id ? null : tech.id)}
+                    className={`px-2 py-1.5 rounded transition-all flex items-center gap-1 text-[10px] font-bold ${editingTechId === tech.id ? 'bg-curse-500 text-white shadow-lg shadow-curse-500/20' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+                    title={editingTechId === tech.id ? "Concluir Edição" : "Editar Extensões"}
+                >
+                    <Edit2 size={14} />
+                    <span>{editingTechId === tech.id ? 'Editando' : 'Editar Extensões'}</span>
+                </button>
+                <button
+                    onClick={() => onRemove(tech.id)}
+                    className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-slate-800 rounded"
+                    title="Remover técnica"
+                >
+                    <Trash2 size={14} />
+                </button>
+              </div>
             </div>
 
             <div className="p-3 space-y-4">
-              {/* Descrição da Técnica */}
               <textarea
                 value={tech.description || ''}
                 onChange={(e) => onUpdate(tech.id, 'description', e.target.value)}
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded p-2 text-sm text-slate-300 focus:border-curse-500/50 focus:outline-none resize-none"
+                readOnly={editingTechId !== tech.id}
+                className={`w-full bg-slate-900/50 border rounded p-2 text-sm text-slate-300 focus:outline-none resize-none ${editingTechId === tech.id ? 'border-slate-700 focus:border-curse-500/50' : 'border-transparent'}`}
                 placeholder="Descrição geral da técnica..."
                 rows={2}
               />
 
-              {/* Sub-técnicas */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                    <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Habilidades / Extensões</h5>
-                   <button
-                     onClick={() => handleAddSubTechnique(tech.id, tech.subTechniques || [])}
-                     className="text-[10px] bg-slate-800 hover:bg-slate-700 text-curse-300 px-2 py-1 rounded flex items-center gap-1 transition-colors"
-                   >
-                     <Plus size={10} /> Adicionar
-                   </button>
                 </div>
 
                 <div className="space-y-2 pl-2 border-l-2 border-slate-800">
                   {(tech.subTechniques || []).map(sub => (
-                    <div key={sub.id} className="bg-slate-900/30 rounded p-2 border border-slate-800/50 hover:border-slate-700 transition-colors group">
+                    <div key={sub.id} className="bg-slate-900/30 rounded p-2 border border-slate-800/50 hover:border-slate-700 transition-colors group relative">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-curse-500 shrink-0" />
+                        {sub.diceFace && (
+                            <button
+                                onClick={() => handleRoll(sub.name, sub.diceFace)}
+                                className="text-curse-400 hover:text-curse-300 hover:bg-curse-950/30 p-1 rounded transition-colors"
+                                title={`Rolar ${sub.diceFace}`}
+                            >
+                                <Dices size={14} />
+                            </button>
+                        )}
+                        {!sub.diceFace && <div className="w-1.5 h-1.5 rounded-full bg-curse-500 shrink-0 ml-1" />}
+
                         <input
                           type="text"
                           value={sub.name}
                           onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'name', e.target.value, tech.subTechniques)}
-                          className="bg-transparent border-none outline-none text-slate-200 text-xs font-bold flex-1 placeholder-slate-600"
+                          readOnly={editingTechId !== tech.id}
+                          className={`bg-transparent border-none outline-none text-slate-200 text-xs font-bold flex-1 placeholder-slate-600 ${editingTechId === tech.id ? 'cursor-text' : 'cursor-default'}`}
                           placeholder="Nome da Habilidade"
                         />
                         <input
                           type="text"
                           value={sub.usage || ''}
                           onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'usage', e.target.value, tech.subTechniques)}
-                          className="bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] text-slate-400 w-20 text-center focus:border-curse-500/50 focus:outline-none"
+                          readOnly={editingTechId !== tech.id}
+                          className={`bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] text-slate-400 w-20 text-center focus:outline-none ${editingTechId === tech.id ? 'focus:border-curse-500/50' : ''}`}
                           placeholder="Custo"
                         />
-                        <button
-                          onClick={() => handleRemoveSubTechnique(tech.id, sub.id, tech.subTechniques)}
-                          className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                          <X size={12} />
-                        </button>
+                        
+                        {editingTechId === tech.id && (
+                            <button
+                            onClick={() => handleRemoveSubTechnique(tech.id, sub.id, tech.subTechniques)}
+                            className="text-slate-600 hover:text-red-400 transition-colors"
+                            >
+                            <X size={12} />
+                            </button>
+                        )}
                       </div>
                       <textarea
                         value={sub.description || ''}
                         onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'description', e.target.value, tech.subTechniques)}
-                        className="w-full bg-transparent text-xs text-slate-400 focus:text-slate-300 outline-none resize-none placeholder-slate-700"
+                        readOnly={editingTechId !== tech.id}
+                        className={`w-full bg-transparent text-xs text-slate-400 focus:text-slate-300 outline-none resize-none placeholder-slate-700 ${editingTechId === tech.id ? 'cursor-text' : 'cursor-default'}`}
                         placeholder="Descrição da habilidade..."
                         rows={1}
                         style={{ minHeight: '1.5em' }}
