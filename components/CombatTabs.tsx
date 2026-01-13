@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap } from 'lucide-react';
+import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap, CheckCircle } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
 import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
@@ -27,6 +27,33 @@ interface CombatTabsProps {
   onCloseDomain?: () => void;
 }
 
+const Notification: React.FC<{
+  notification: { id: string; message: string; type: 'success' | 'error' };
+  onClose: (id: string) => void;
+}> = ({ notification, onClose }) => {
+  return (
+    <div
+      className={`flex items-center gap-3 p-3 rounded-lg border shadow-lg animate-in slide-in-from-right-2 duration-300 ${
+        notification.type === 'success'
+          ? 'bg-emerald-950/90 border-emerald-800 text-emerald-200'
+          : 'bg-red-950/90 border-red-800 text-red-200'
+      }`}
+    >
+      <CheckCircle
+        size={18}
+        className={notification.type === 'success' ? 'text-emerald-400' : 'text-red-400'}
+      />
+      <span className="text-sm flex-1">{notification.message}</span>
+      <button
+        onClick={() => onClose(notification.id)}
+        className="text-slate-400 hover:text-white transition-colors"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+};
+
 export const CombatTabs: React.FC<CombatTabsProps> = ({
   char,
   stats,
@@ -53,6 +80,18 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
   const [incomingDamage, setIncomingDamage] = useState<number>(0);
   const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, attackRolls?: number[], isCritical?: boolean, isCritSuccess?: boolean, isCritFail?: boolean, damageTotal?: number, defenseRoll?: number, defenseRollDetail?: string, attackHits?: boolean } | null>(null);
+  const [notifications, setNotifications] = useState<
+    Array<{ id: string; message: string; type: 'success' | 'error' }>
+  >([]);
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setNotifications(prev => [...prev, { id, message, type }]);
+
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
+  };
 
     // Identify equipped weapons from inventory
     const equippedWeapons = char.inventory.filter(item => {
@@ -188,7 +227,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          isCritSuccess = baseAttackRoll === 20;
          isCritFail = baseAttackRoll === 1;
          if (isCritSuccess) isCritical = true;
-      } else {
+  } else {
          currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
          if (currentWeaponItem) {
              const diceStr = getWeaponDamageString(currentWeaponItem);
@@ -282,9 +321,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     } 
     else if (activeTab === 'defense') {
        if (isHR) {
-         alert("Restrição Celestial não usa CE para defesa.");
-         return;
-       }
+        showNotification("Restrição Celestial não usa CE para defesa.", 'error');
+        return;
+      }
       actionCostCE = invested > 0 ? Math.ceil(invested / 2) : 0;
       const reductionAmount = invested;
       
@@ -311,12 +350,18 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     const finalCostCE = actionCostCE + totalBuffCost.ce;
 
     if (currentStats.pe < finalCostPE) {
-        alert(`PE Insuficiente! Necessário: ${finalCostPE} (Ação+Buffs), Atual: ${currentStats.pe}`);
-        return;
+      showNotification(
+        `PE Insuficiente! Necessário: ${finalCostPE} (Ação+Buffs), Atual: ${currentStats.pe}`,
+        'error'
+      );
+      return;
     }
     if (currentStats.ce < finalCostCE) {
-        alert(`CE Insuficiente! Necessário: ${finalCostCE} (Ação+Buffs), Atual: ${currentStats.ce}`);
-        return;
+      showNotification(
+        `CE Insuficiente! Necessário: ${finalCostCE} (Ação+Buffs), Atual: ${currentStats.ce}`,
+        'error'
+      );
+      return;
     }
 
     // 4. Consume
@@ -373,7 +418,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     const cost = stats.LL;
     
     if (currentStats.ce < cost) {
-        alert(`CE Insuficiente! Necessário: ${cost} (LL)`);
+        showNotification(`CE Insuficiente! Necessário: ${cost} (LL)`, 'error');
         return;
     }
 
@@ -387,32 +432,40 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     
     onUpdateCharacter(updates);
     
-    // Visual feedback
-    alert(`Projeção ativada! Gasto ${cost} CE. Stacks: ${Math.min(3, current + 1)}`);
+    showNotification(
+      `Projeção ativada! Gasto ${cost} CE. Stacks: ${Math.min(3, current + 1)}`,
+      'success'
+    );
   };
 
   const handleProjectionViolation = () => {
     if (!onUpdateCharacter) return;
     onUpdateCharacter({ projectionStacks: 0, ignoreAOO: false } as any);
-    alert("VIOLAÇÃO DE QUADRO! Stacks zerados. Personagem está IMÓVEL e INDEFESO até o fim do turno.");
+    showNotification(
+      'VIOLAÇÃO DE QUADRO! Stacks zerados. Personagem está IMÓVEL e INDEFESO até o fim do turno.',
+      'error'
+    );
   };
 
   const handleFrameBarrier = () => {
     // Reaction: Spend CE = LL.
     const cost = stats.LL;
     if (currentStats.ce < cost) {
-        alert(`CE Insuficiente para Barreira! Necessário: ${cost} (LL)`);
+        showNotification(`CE Insuficiente para Barreira! Necessário: ${cost} (LL)`, 'error');
         return;
     }
     
     consumeCE(cost);
-    alert(`Barreira de Quadros ativada! (Custo: ${cost} CE). Dano de projéteis/energia anulado e ataques em área redirecionados.`);
+    showNotification(
+      `Barreira de Quadros ativada! (Custo: ${cost} CE). Dano de projéteis/energia anulado e ataques em área redirecionados.`,
+      'success'
+    );
   };
 
   const handleFrameTrap = () => {
     // 2 PE. Opposed Roll.
     if (currentStats.pe < 2) {
-      alert("PE Insuficiente.");
+      showNotification('PE Insuficiente.', 'error');
       return;
     }
     consumePE(2);
@@ -466,9 +519,20 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   };
 
   return (
-    <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-xl p-4">
+    <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800 shadow-xl p-4 relative">
 
-      {/* Projection Sorcery Visualizer (Stacks) */}
+      {notifications.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+          {notifications.map(notification => (
+            <Notification
+              key={notification.id}
+              notification={notification}
+              onClose={id => setNotifications(prev => prev.filter(n => n.id !== id))}
+            />
+          ))}
+        </div>
+      )}
+
       {hasProjection && (
         <div className="bg-slate-950/80 border border-curse-500/30 rounded-lg p-3 mb-4 animate-in slide-in-from-top-2">
           <div className="flex items-center justify-between">
@@ -500,7 +564,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         </div>
       )}
 
-      {/* Tabs Header */}
       <div className="flex border-b border-slate-800 mb-4">
         <button
           onClick={() => { setActiveTab('physical'); reset(); }}
@@ -521,7 +584,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         </button>
       </div>
 
-      {/* Content */}
       <div className="space-y-4">
 
         {/* Domain Status & Controls */}
