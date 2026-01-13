@@ -1435,6 +1435,8 @@ const App: React.FC = () => {
                     onRemove={handleTechniqueRemove}
                     onOpenLibrary={() => setShowTechniqueLibrary(true)}
                     llValue={stats.LL}
+                    currentCE={currentStats.ce}
+                    onConsumeCE={consumeCE}
                  />
                )}
                {activeTab === 'inventory' && (
