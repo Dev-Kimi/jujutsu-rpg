@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats, DiceRollLog as DiceRollLogType } from '../types';
-import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw, Square, Wand2, Hexagon } from 'lucide-react';
+import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw, Square, Wand2, Hexagon, CheckCircle } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
 import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc, where, limit, writeBatch } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
@@ -1345,7 +1345,36 @@ interface TechniqueManagerProps {
   onRemove: (id: string) => void;
   onOpenLibrary: () => void;
   llValue: number;
+  currentCE: number;
+  onConsumeCE: (amount: number) => void;
 }
+
+const Notification: React.FC<{
+  notification: { id: string; message: string; type: 'success' | 'error' };
+  onClose: (id: string) => void;
+}> = ({ notification, onClose }) => {
+  return (
+    <div
+      className={`flex items-center gap-3 p-3 rounded-lg border shadow-lg animate-in slide-in-from-right-2 duration-300 ${
+        notification.type === 'success'
+          ? 'bg-emerald-950/90 border-emerald-800 text-emerald-200'
+          : 'bg-red-950/90 border-red-800 text-red-200'
+      }`}
+    >
+      <CheckCircle
+        size={18}
+        className={notification.type === 'success' ? 'text-emerald-400' : 'text-red-400'}
+      />
+      <span className="text-sm flex-1">{notification.message}</span>
+      <button
+        onClick={() => onClose(notification.id)}
+        className="text-slate-400 hover:text-white transition-colors"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  );
+};
 
 export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   techniques,
@@ -1353,10 +1382,24 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   onUpdate,
   onRemove,
   onOpenLibrary,
-  llValue
+  llValue,
+  currentCE,
+  onConsumeCE
 }) => {
   const [editingTechId, setEditingTechId] = useState<string | null>(null);
   const [rollResult, setRollResult] = useState<{ name: string; result: number; total: string } | null>(null);
+  const [notifications, setNotifications] = useState<
+    Array<{ id: string; message: string; type: 'success' | 'error' }>
+  >([]);
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setNotifications(prev => [...prev, { id, message, type }]);
+
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 3000);
+  };
 
   const handleAdd = () => {
     const newTechnique: import('../types').Technique = {
@@ -1389,6 +1432,16 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
       const faces = parseInt(match[2]);
       const modifier = parseInt(match[3] || '0');
       
+      // CE Verification
+      if (currentCE < count) {
+        showNotification(`Energia insuficiente para esta técnica! Necessário: ${count} CE, Atual: ${currentCE} CE`, 'error');
+        return;
+      }
+
+      // Consume CE
+      onConsumeCE(count);
+      showNotification(`Técnica ativada! Consumido ${count} CE.`, 'success');
+
       let total = 0;
       const rolls = [];
       for (let i = 0; i < count; i++) {
@@ -1408,6 +1461,18 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
 
   return (
     <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[300px] flex flex-col relative">
+      {notifications.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
+          {notifications.map(notification => (
+            <Notification
+              key={notification.id}
+              notification={notification}
+              onClose={id => setNotifications(prev => prev.filter(n => n.id !== id))}
+            />
+          ))}
+        </div>
+      )}
+
       {rollResult && (
         <div className="fixed bottom-6 right-6 z-50 w-80 border-2 border-purple-500 rounded-lg shadow-2xl bg-[#15131d] overflow-visible animate-in slide-in-from-bottom-4 fade-in duration-300">
           <div className="relative p-4 pr-10">
