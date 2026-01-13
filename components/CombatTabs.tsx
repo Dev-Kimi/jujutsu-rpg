@@ -83,6 +83,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const [notifications, setNotifications] = useState<
     Array<{ id: string; message: string; type: 'success' | 'error' }>
   >([]);
+  const [manualDiceFormula, setManualDiceFormula] = useState('');
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -178,6 +179,48 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     const cost = parseAbilityCost(buff.cost);
     return { pe: acc.pe + cost.pe, ce: acc.ce + cost.ce };
   }, { pe: 0, ce: 0 });
+
+  const handleManualRoll = () => {
+    if (!manualDiceFormula) return;
+    
+    const match = manualDiceFormula.match(/(\d+)?d(\d+)([+-]\d+)?/i);
+    if (!match) {
+        showNotification("Formato inválido. Use algo como '1d20', '4d6+2', etc.", 'error');
+        return;
+    }
+
+    const count = parseInt(match[1] || '1');
+    const faces = parseInt(match[2]);
+    const modifier = parseInt(match[3] || '0');
+
+    const rolls = [];
+    let total = 0;
+    for(let i=0; i<count; i++) {
+        const r = Math.floor(Math.random() * faces) + 1;
+        rolls.push(r);
+        total += r;
+    }
+    total += modifier;
+
+    const detail = `${count}d${faces}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}: [${rolls.join(', ')}]${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`;
+
+    setLastResult({
+        total,
+        detail,
+        title: "Rolagem Manual",
+        attackRoll: total,
+        attackRollDetail: detail,
+        isCritical: false,
+        isCritSuccess: false,
+        isCritFail: false,
+        damageTotal: total
+    });
+    setActiveRollResult('combat');
+    
+    if (campaignId) {
+        logDiceRoll(campaignId, char.name, "Rolagem Manual", rolls, total, detail).catch(console.error);
+    }
+  };
 
   const handleRoll = () => {
     let total = 0;
@@ -802,6 +845,27 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
           'Ataque Desarmado'}
       </button>
+
+      {/* Manual Roll Section */}
+      <div className="mt-6 pt-4 border-t border-slate-800">
+        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Rolagem Manual</label>
+        <div className="flex gap-2">
+            <input 
+                type="text" 
+                value={manualDiceFormula}
+                onChange={(e) => setManualDiceFormula(e.target.value)}
+                placeholder="Ex: 1d20, 4d6+5"
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-curse-500 focus:outline-none font-mono"
+                onKeyDown={(e) => e.key === 'Enter' && handleManualRoll()}
+            />
+            <button 
+                onClick={handleManualRoll}
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-lg font-bold text-sm transition-colors"
+            >
+                Rolar
+            </button>
+        </div>
+      </div>
 
       {/* Visual Roll Result Notification (Bottom Right) */}
       {lastResult && activeRollResult === 'combat' && (
