@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats, DiceRollLog as DiceRollLogType } from '../types';
-import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw, Square, Wand2 } from 'lucide-react';
+import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw, Square, Wand2, Hexagon } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
 import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc, where, limit, writeBatch } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
@@ -1403,20 +1403,46 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
         result: total,
         total: `${count}d${faces}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}: ${rolls.join('+')}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`
       });
-      
-      setTimeout(() => setRollResult(null), 4000);
     }
   };
 
   return (
     <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[300px] flex flex-col relative">
       {rollResult && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 bg-slate-900 border border-curse-500 text-curse-100 px-4 py-2 rounded-lg shadow-2xl animate-in fade-in slide-in-from-top-4 flex items-center gap-3 pointer-events-none">
-            <Dices className="text-curse-400 animate-pulse" />
-            <div>
-                <div className="text-xs text-curse-300 font-bold uppercase">{rollResult.name}</div>
-                <div className="text-lg font-black">{rollResult.result} <span className="text-xs text-slate-500 font-normal">({rollResult.total})</span></div>
+        <div className="fixed bottom-6 right-6 z-50 w-80 border-2 border-purple-500 rounded-lg shadow-2xl bg-[#15131d] overflow-visible animate-in slide-in-from-bottom-4 fade-in duration-300">
+          <div className="relative p-4 pr-10">
+            <button
+              onClick={() => setRollResult(null)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-white p-1 rounded-full hover:bg-[#1f1b2a]"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="flex items-center gap-2 text-white mb-4">
+              <Hexagon
+                size={22}
+                strokeWidth={1.5}
+                fill="currentColor"
+                className="text-purple-500"
+              />
+              <h3 className="font-semibold text-sm uppercase tracking-wide truncate">
+                {rollResult.name}
+              </h3>
             </div>
+
+            <div className="flex items-center justify-center gap-4">
+              <div className="flex-1 flex flex-col items-center text-center relative group">
+                <span className="text-3xl font-black text-white">
+                  {rollResult.result}
+                </span>
+                <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Resultado</span>
+                
+                <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 right-0 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
+                    <span>{rollResult.total}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
