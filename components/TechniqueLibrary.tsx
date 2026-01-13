@@ -389,7 +389,7 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                               {subTech.diceFace && (
                                 <div>
                                     <span className="text-[9px] font-bold text-slate-500 uppercase">Dado:</span>
-                                    <p className="text-xs text-slate-300 mt-1 font-mono">LL + {subTech.diceFace}</p>
+                                    <p className="text-xs text-slate-300 mt-1 font-mono">(LL){subTech.diceFace}</p>
                                 </div>
                               )}
                               <div>
