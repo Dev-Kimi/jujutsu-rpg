@@ -82,7 +82,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, 
     
     if (!subTech.diceFace) return;
     
-    const count = stats.LL;
+    const count = stats?.LL || 0;
     const sides = parseInt(subTech.diceFace.replace('d', ''));
     
     if (isNaN(sides)) {
