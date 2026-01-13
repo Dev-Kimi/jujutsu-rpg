@@ -621,21 +621,28 @@ const App: React.FC = () => {
   };
 
   const handleUseAbility = (cost: { pe: number, ce: number }, abilityName: string, abilityId?: string) => {
-    const ability = character.abilities.find(a => a.id === abilityId);
-    const effects = ability ? parseAbilityEffect(ability.description) : { attack: 0, defense: 0 };
+    const ability = abilityId
+      ? character.abilities.find(a => a.id === abilityId)
+      : character.abilities.find(a => a.name === abilityName);
+
+    if (!ability) {
+      return false;
+    }
+
+    const effects = parseAbilityEffect(ability.description || '');
     const hasCombatBuff = effects.attack > 0 || effects.defense > 0;
-    const skillTrigger = ability ? parseAbilitySkillTrigger(ability.description) : null;
+    const skillTrigger = parseAbilitySkillTrigger(ability.description || '');
     const shouldQueue = hasCombatBuff || skillTrigger;
 
-    if (shouldQueue && ability) {
-        const isAlreadyActive = activeBuffs.some(b => b.id === ability.id);
-        if (isAlreadyActive) {
-            setActiveBuffs(prev => prev.filter(b => b.id !== ability.id));
-            return false;
-        } else {
-            setActiveBuffs(prev => [...prev, ability]);
-            return true;
-        }
+    if (shouldQueue) {
+      const isAlreadyActive = activeBuffs.some(b => b.id === ability.id);
+      if (isAlreadyActive) {
+        setActiveBuffs(prev => prev.filter(b => b.id !== ability.id));
+        return false;
+      } else {
+        setActiveBuffs(prev => [...prev, ability]);
+        return true;
+      }
     }
 
     if (currentStats.pe < cost.pe) {
