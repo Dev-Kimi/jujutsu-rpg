@@ -1356,12 +1356,33 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   const handleAdd = () => {
     const newTechnique: import('../types').Technique = {
       id: Math.random().toString(36).substring(2, 9),
-      name: 'Técnica Inata',
+      name: 'Nova Técnica',
       category: 'Inata',
       description: '',
       subTechniques: []
     };
     onAdd(newTechnique);
+  };
+
+  const handleAddSubTechnique = (techId: string, currentSubTechniques: import('../types').SubTechnique[]) => {
+    const newSub: import('../types').SubTechnique = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: 'Nova Habilidade',
+      description: '',
+      usage: '1 PE',
+      diceFace: ''
+    };
+    onUpdate(techId, 'subTechniques', [...currentSubTechniques, newSub]);
+  };
+
+  const handleUpdateSubTechnique = (techId: string, subId: string, field: keyof import('../types').SubTechnique, value: any, currentSubTechniques: import('../types').SubTechnique[]) => {
+    const updated = currentSubTechniques.map(s => s.id === subId ? { ...s, [field]: value } : s);
+    onUpdate(techId, 'subTechniques', updated);
+  };
+
+  const handleRemoveSubTechnique = (techId: string, subId: string, currentSubTechniques: import('../types').SubTechnique[]) => {
+    const updated = currentSubTechniques.filter(s => s.id !== subId);
+    onUpdate(techId, 'subTechniques', updated);
   };
 
   return (
@@ -1386,55 +1407,100 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {techniques.length === 0 && (
           <div className="text-center text-slate-600 text-sm py-10 italic">Nenhuma técnica adicionada.</div>
         )}
 
         {techniques.map((tech) => (
           <div key={tech.id} className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+            {/* Header da Técnica */}
             <div className="p-3 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wand2 size={16} className="text-curse-400" />
+              <div className="flex items-center gap-2 flex-1">
+                <Wand2 size={16} className="text-curse-400 shrink-0" />
                 <input
                   type="text"
                   value={tech.name}
                   onChange={(e) => onUpdate(tech.id, 'name', e.target.value)}
-                  className="bg-transparent border-none outline-none text-white text-sm font-bold"
+                  className="bg-transparent border-none outline-none text-white text-sm font-bold w-full placeholder-slate-500"
                   placeholder="Nome da Técnica"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <select
-                  value={tech.category || 'Inata'}
-                  onChange={(e) => onUpdate(tech.id, 'category', e.target.value)}
-                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white"
-                >
-                  <option value="Inata">Inata</option>
-                  <option value="Estilo">Estilo</option>
-                  <option value="Ritual">Ritual</option>
-                </select>
-                <button
-                  onClick={() => onRemove(tech.id)}
-                  className="text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded px-2 py-1 text-xs font-bold transition-colors"
-                  title="Remover técnica"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
+              <button
+                onClick={() => onRemove(tech.id)}
+                className="text-slate-500 hover:text-red-400 transition-colors p-1"
+                title="Remover técnica"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
 
-            <div className="p-3 space-y-2">
+            <div className="p-3 space-y-4">
+              {/* Descrição da Técnica */}
               <textarea
                 value={tech.description || ''}
                 onChange={(e) => onUpdate(tech.id, 'description', e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
-                placeholder="Descrição da técnica"
-                rows={3}
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded p-2 text-sm text-slate-300 focus:border-curse-500/50 focus:outline-none resize-none"
+                placeholder="Descrição geral da técnica..."
+                rows={2}
               />
 
-              <div className="text-[10px] text-slate-500">
-                Sub-técnicas: {tech.subTechniques?.length || 0}
+              {/* Sub-técnicas */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                   <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Habilidades / Extensões</h5>
+                   <button
+                     onClick={() => handleAddSubTechnique(tech.id, tech.subTechniques || [])}
+                     className="text-[10px] bg-slate-800 hover:bg-slate-700 text-curse-300 px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                   >
+                     <Plus size={10} /> Adicionar
+                   </button>
+                </div>
+
+                <div className="space-y-2 pl-2 border-l-2 border-slate-800">
+                  {(tech.subTechniques || []).map(sub => (
+                    <div key={sub.id} className="bg-slate-900/30 rounded p-2 border border-slate-800/50 hover:border-slate-700 transition-colors group">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-curse-500 shrink-0" />
+                        <input
+                          type="text"
+                          value={sub.name}
+                          onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'name', e.target.value, tech.subTechniques)}
+                          className="bg-transparent border-none outline-none text-slate-200 text-xs font-bold flex-1 placeholder-slate-600"
+                          placeholder="Nome da Habilidade"
+                        />
+                        <input
+                          type="text"
+                          value={sub.usage || ''}
+                          onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'usage', e.target.value, tech.subTechniques)}
+                          className="bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-[10px] text-slate-400 w-20 text-center focus:border-curse-500/50 focus:outline-none"
+                          placeholder="Custo"
+                        />
+                        <button
+                          onClick={() => handleRemoveSubTechnique(tech.id, sub.id, tech.subTechniques)}
+                          className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                      <textarea
+                        value={sub.description || ''}
+                        onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'description', e.target.value, tech.subTechniques)}
+                        className="w-full bg-transparent text-xs text-slate-400 focus:text-slate-300 outline-none resize-none placeholder-slate-700"
+                        placeholder="Descrição da habilidade..."
+                        rows={1}
+                        style={{ minHeight: '1.5em' }}
+                        onInput={(e) => {
+                          e.currentTarget.style.height = 'auto';
+                          e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                        }}
+                      />
+                    </div>
+                  ))}
+                  {(tech.subTechniques || []).length === 0 && (
+                    <div className="text-[10px] text-slate-600 italic pl-2">Nenhuma habilidade registrada.</div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
