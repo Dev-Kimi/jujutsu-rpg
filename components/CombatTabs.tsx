@@ -46,12 +46,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   onCloseDomain,
   onUpdateCharacter
 }) => {
-  const [activeTab, setActiveTab] = useState<'physical' | 'defense' | 'innate'>('physical');
+  const [activeTab, setActiveTab] = useState<'physical' | 'defense'>('physical');
   const [invested, setInvested] = useState<number>(1);
   const [unarmedDamageDie, setUnarmedDamageDie] = useState<string>('1d4');
   const [selectedWeaponId, setSelectedWeaponId] = useState<string>('unarmed');
-  const [selectedTechniqueId, setSelectedTechniqueId] = useState<string>('');
-  const [techniqueDie, setTechniqueDie] = useState<string>('1d6');
 
   const [incomingDamage, setIncomingDamage] = useState<number>(0);
   const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, attackRolls?: number[], isCritical?: boolean, isCritSuccess?: boolean, isCritFail?: boolean, damageTotal?: number, defenseRoll?: number, defenseRollDetail?: string, attackHits?: boolean } | null>(null);
@@ -280,65 +278,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         detail = `[DanoBase]${baseDamageText} + [Reforço]${reforcoText} + [Força]${strBonus}`;
 
         detail = `ATAQUE ACERTOU: ${attackRollDetail} | ${detail}`;
-      }
-    } 
-    else if (activeTab === 'technique' || activeTab === 'innate') {
-      if (isHR) {
-         alert("Restrição Celestial não pode usar Técnicas Inatas.");
-         return;
-      }
-      
-      const selectedTech = char.techniques.find(t => t.id === selectedTechniqueId);
-      
-      if (!selectedTech) {
-          alert("Selecione uma técnica válida.");
-          return;
-      }
-
-      rollTitle = selectedTech.name;
-      actionCostCE = invested; 
-      const intBonus = char.attributes.INT;
-      
-      // Check for "Economia de Fluxo" passive ability
-      const hasEconomiaFluxo = char.abilities.some(ability => 
-        ability.name === "Economia de Fluxo" && ability.category === "Feiticeiro"
-      );
-      
-      // Apply "Economia de Fluxo" cost reduction (reduce CE cost by full INT value)
-      let economiaReduction = 0;
-      if (hasEconomiaFluxo) {
-        economiaReduction = intBonus;
-        actionCostCE = Math.max(1, actionCostCE - economiaReduction); // Minimum cost of 1 CE
-      }
-      
-      // Roll individual dice for logging
-      // Parse techniqueDie from string '1d6' etc to number if needed, but state is '1d6' (string) or just '6'
-      // Current state techniqueDie is '1d6' by default (line 54), but generic roller select sets '4', '6' etc.
-      // Let's ensure we parse it correctly.
-      let sides = 6;
-      if (techniqueDie.includes('d')) {
-          sides = parseInt(techniqueDie.split('d')[1]);
-      } else {
-          sides = parseInt(techniqueDie);
-      }
-
-      for (let i = 0; i < invested; i++) {
-        loggedRolls.push(rollDice(sides, 1));
-      }
-      const magicRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
-      total = magicRoll + intBonus;
-      
-      // If using 10 CE (after reduction check original invested amount), reduce INT from total
-      if (invested >= 10) {
-        total = Math.max(0, total - intBonus);
-        detail = `[${invested}d${sides}]${magicRoll} + [INT]${intBonus} - [INT]${intBonus} (10+ CE)`;
-      } else {
-        detail = `[${invested}d${sides}]${magicRoll} + [INT]${intBonus}`;
-      }
-      
-      // Add economia de fluxo reduction to detail if applicable
-      if (hasEconomiaFluxo && economiaReduction > 0) {
-        detail += ` (Economia de Fluxo: -${economiaReduction} CE)`;
       }
     } 
     else if (activeTab === 'defense') {
@@ -571,16 +510,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           <Sword size={16} /> <span className="hidden sm:inline">Ataque</span>
         </button>
         <button
-          onClick={() => { setActiveTab('innate'); reset(); }}
-          className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
-            ${activeTab === 'innate' ? 'border-purple-500 text-purple-300 bg-purple-900/10' : 'border-transparent text-slate-400 hover:text-slate-200'}
-            ${isHR ? 'opacity-50 cursor-not-allowed' : ''}
-          `}
-          disabled={isHR}
-        >
-          <Zap size={16} /> <span className="hidden sm:inline">Técnicas</span>
-        </button>
-        <button
           onClick={() => { setActiveTab('defense'); reset(); }}
           className={`flex-1 py-3 flex justify-center items-center gap-2 text-sm font-medium transition-colors duration-75 border-b-2
             ${activeTab === 'defense' ? 'border-blue-500 text-blue-300 bg-blue-900/10' : 'border-transparent text-slate-400 hover:text-slate-200'}
@@ -687,98 +616,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                       placeholder="0"
                    />
                 </div>
-             </div>
-          )}
-
-          {activeTab === 'innate' && (
-             <div className="space-y-4">
-               {hasProjection ? (
-                  <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-bottom-2">
-                     <button
-                        onClick={handleProjectionActivate}
-                        className="bg-curse-900/40 hover:bg-curse-800/60 border border-curse-500/30 text-curse-200 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
-                     >
-                        <span>Movimento (Ação)</span>
-                        <span className="text-[9px] opacity-60">Gasta {stats.LL} CE • +1 Stack</span>
-                     </button>
-                     
-                     <button
-                        onClick={handleProjectionViolation}
-                        className="bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 text-red-300 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
-                     >
-                        <span>Violação de Frame</span>
-                        <span className="text-[9px] opacity-60">Zerar Stacks / Imóvel</span>
-                     </button>
-
-                     <button
-                        onClick={handleFrameBarrier}
-                        className="bg-blue-900/20 hover:bg-blue-900/40 border border-blue-500/30 text-blue-300 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
-                     >
-                        <span>Barreira (Reação)</span>
-                        <span className="text-[9px] opacity-60">Gasta {stats.LL} CE • Anular/Redirecionar</span>
-                     </button>
-
-                     <button
-                        onClick={handleFrameTrap}
-                        className="bg-emerald-900/20 hover:bg-emerald-900/40 border border-emerald-500/30 text-emerald-300 text-[10px] font-bold uppercase py-3 rounded flex flex-col items-center gap-1 transition-colors"
-                     >
-                        <span>Quadro de Frame</span>
-                        <span className="text-[9px] opacity-60">2 PE - Prender Alvo</span>
-                     </button>
-                  </div>
-               ) : (
-                  <div className="text-center p-4 border border-dashed border-slate-700 rounded-lg text-slate-500 text-xs">
-                     Nenhuma técnica inata especial detectada.
-                  </div>
-               )}
-               
-               {/* Generic Technique Roller - Always available if user wants to just roll dice */}
-               <div className="mt-4 pt-4 border-t border-slate-800">
-                  <label className="block text-xs text-slate-400 mb-2 font-bold uppercase">Rolagem Genérica de Técnica</label>
-                  <div className="flex items-center gap-3">
-                     <input
-                        type="range"
-                        min="0"
-                        max={stats.LL}
-                        step="1"
-                        value={invested}
-                        onChange={(e) => setInvested(parseInt(e.target.value))}
-                        className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
-                     />
-                     <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
-                        {invested}
-                     </span>
-                  </div>
-                  <div className="text-[10px] text-slate-500 mt-1">
-                     Gasta {invested} CE • Rola {invested}d{techniqueDie} + INT
-                  </div>
-                  
-                  <div className="mt-2 flex items-center gap-2">
-                     <select
-                        value={techniqueDie}
-                        onChange={(e) => setTechniqueDie(e.target.value)}
-                        className="bg-slate-950 border border-slate-700 rounded text-xs p-1 text-slate-300"
-                     >
-                        <option value="4">d4</option>
-                        <option value="6">d6</option>
-                        <option value="8">d8</option>
-                        <option value="10">d10</option>
-                        <option value="12">d12</option>
-                     </select>
-                     <button
-                        onClick={() => {
-                           // Set active tab to technique strictly for the roll logic processing
-                           // We need to temporarily "fool" the handleRoll or refactor handleRoll
-                           // For now, let's just make sure handleRoll handles 'innate' like 'technique'
-                           // Or we update handleRoll to check 'innate'
-                           handleRoll();
-                        }}
-                        className="flex-1 py-1.5 bg-purple-900/30 hover:bg-purple-800/50 border border-purple-500/30 text-purple-200 text-xs font-bold rounded uppercase transition-colors"
-                     >
-                        Rolar Dano de Técnica
-                     </button>
-                  </div>
-               </div>
              </div>
           )}
 
@@ -890,21 +727,19 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       </div>
 
       {/* Action Button (Hidden for Innate since it has its own buttons, shown for Physical/Defense) */}
-      {activeTab !== 'innate' && (
-        <button
-          onClick={handleRoll}
-          disabled={!isHR && invested <= 0 && activeTab !== 'physical'}
-          className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
-             ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
-          `}
-        >
-          {activeTab === 'defense' ? <ArrowRight size={20} /> : <Dices size={20} />}
-          {activeTab === 'defense' ? 'Calcular Dano Final' :
-           willBreak ? 'Atacar e Quebrar Arma' :
-           activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
-           'Ataque Desarmado'}
-        </button>
-      )}
+      <button
+        onClick={handleRoll}
+        disabled={!isHR && invested <= 0 && activeTab !== 'physical'}
+        className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+            ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
+        `}
+      >
+        {activeTab === 'defense' ? <ArrowRight size={20} /> : <Dices size={20} />}
+        {activeTab === 'defense' ? 'Calcular Dano Final' :
+          willBreak ? 'Atacar e Quebrar Arma' :
+          activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
+          'Ataque Desarmado'}
+      </button>
 
       {/* Visual Roll Result Notification (Bottom Right) */}
       {lastResult && activeRollResult === 'combat' && (
