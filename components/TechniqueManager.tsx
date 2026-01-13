@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Technique, SubTechnique } from '../types';
-import { Zap, Plus, Trash2, ChevronDown, ChevronRight, Wand2, Book, Sparkles, BookOpen } from 'lucide-react';
+import { Technique, SubTechnique, DerivedStats } from '../types';
+import { Zap, Plus, Trash2, ChevronDown, ChevronRight, Wand2, Book, Sparkles, BookOpen, Dices } from 'lucide-react';
+import { rollDice } from '../utils/calculations';
+import { logDiceRoll } from '../utils/diceRollLogger';
 
 interface TechniqueManagerProps {
   techniques: Technique[];
@@ -8,9 +10,11 @@ interface TechniqueManagerProps {
   onUpdate: (id: string, field: keyof Technique, value: any) => void;
   onRemove: (id: string) => void;
   onOpenLibrary?: () => void;
+  stats: DerivedStats;
+  campaignId?: string;
 }
 
-export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, onAdd, onUpdate, onRemove, onOpenLibrary }) => {
+export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, onAdd, onUpdate, onRemove, onOpenLibrary, stats, campaignId }) => {
   const [expandedTechniqueId, setExpandedTechniqueId] = useState<string | null>(null);
   const [expandedSubTechniqueId, setExpandedSubTechniqueId] = useState<string | null>(null);
 
@@ -43,7 +47,8 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, 
       id: Math.random().toString(36).substring(2, 9),
       name: "Nova Habilidade",
       description: "Descreva os efeitos desta habilidade.",
-      usage: "Ação Padrão"
+      usage: "Ação Padrão",
+      diceFace: "d6"
     };
 
     const updatedSubTechniques = [...technique.subTechniques, newSubTechnique];
@@ -69,6 +74,47 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, 
     onUpdate(techniqueId, 'subTechniques', updatedSubTechniques);
     if (expandedSubTechniqueId === subTechniqueId) {
       setExpandedSubTechniqueId(null);
+    }
+  };
+
+  const handleRollTechnique = (e: React.MouseEvent, subTech: SubTechnique, techName: string) => {
+    e.stopPropagation(); // Prevent toggling accordion
+    
+    if (!subTech.diceFace) return;
+    
+    const count = stats.LL;
+    const sides = parseInt(subTech.diceFace.replace('d', ''));
+    
+    if (isNaN(sides)) {
+        alert("Dado inválido.");
+        return;
+    }
+
+    // Roll individually to show details if needed, but rollDice sums it up.
+    // Let's replicate what CombatTabs usually does for logging.
+    let total = 0;
+    const rolls: number[] = [];
+    for(let i=0; i<count; i++) {
+        const r = Math.floor(Math.random() * sides) + 1;
+        rolls.push(r);
+        total += r;
+    }
+
+    const rollStr = `${count}${subTech.diceFace}`;
+    const detail = `[${rolls.join(', ')}]`;
+    
+    alert(`Rolagem de ${subTech.name}: ${total} \nDetalhes: ${detail}`);
+
+    if (campaignId) {
+        logDiceRoll(campaignId, {
+            characterName: "Personagem", // Should ideally be passed in or available
+            rollName: `${techName}: ${subTech.name}`,
+            rollType: "damage",
+            result: total,
+            resultDetail: detail,
+            dice: rollStr,
+            isPrivate: false
+        });
     }
   };
 
@@ -195,47 +241,80 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, 
                       
                       {/* Sub-Technique Header */}
                       <div 
-                        className="flex items-center gap-2 p-2 cursor-pointer hover:bg-slate-800/50 transition-colors duration-100"
+                        className="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-800/50 transition-colors duration-100"
                         onClick={() => toggleExpandSubTechnique(subTech.id)}
                       >
-                        <div className="text-slate-500 transition-transform duration-100">
-                          {expandedSubTechniqueId === subTech.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                        </div>
-                        
-                        <Sparkles size={12} className="text-emerald-400" />
-                        
-                        <div className="flex-1 min-w-0">
-                          <span className="font-bold text-slate-200 text-xs">{subTech.name}</span>
-                          {expandedSubTechniqueId !== subTech.id && (
-                            <span className="text-[10px] text-slate-500 ml-2">({subTech.usage})</span>
-                          )}
-                        </div>
+                         <div className="flex items-center gap-3">
+                             <div className="text-slate-500 transition-transform duration-100">
+                               {expandedSubTechniqueId === subTech.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                             </div>
+                             
+                             <div>
+                                <h4 className="font-bold text-white text-sm">{subTech.name}</h4>
+                                <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider mt-0.5">
+                                    {subTech.usage || "Ação Padrão"}
+                                </div>
+                             </div>
+                         </div>
+
+                         {/* Roll Button in Header */}
+                         <div className="flex items-center gap-3">
+                             <div className="text-sm font-mono text-slate-300 font-bold bg-slate-900 px-2 py-1 rounded border border-slate-800">
+                                 {stats.LL}{subTech.diceFace || 'd6'}
+                             </div>
+                             <button
+                                onClick={(e) => handleRollTechnique(e, subTech, tech.name)}
+                                className="p-2 bg-curse-600 hover:bg-curse-500 text-white rounded-full transition-colors shadow-lg shadow-curse-900/20"
+                                title="Rolar Dados"
+                             >
+                                <Dices size={16} />
+                             </button>
+                         </div>
                       </div>
 
                       {/* Sub-Technique Editor */}
                       {expandedSubTechniqueId === subTech.id && (
-                        <div className="p-3 border-t border-slate-700 bg-slate-900/30 space-y-2 animate-in slide-in-from-top-1">
+                        <div className="p-4 border-t border-slate-700 bg-slate-900/30 space-y-4 animate-in slide-in-from-top-1">
                           
-                          <div>
-                            <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Nome da Habilidade</label>
-                            <input 
-                              type="text"
-                              value={subTech.name}
-                              onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'name', e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
-                              placeholder="Ex: Lâmina de Sangue"
-                            />
+                          <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Nome da Habilidade</label>
+                                <input 
+                                  type="text"
+                                  value={subTech.name}
+                                  onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'name', e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                                />
+                              </div>
+                              
+                              <div>
+                                <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Modo de Usar</label>
+                                <input 
+                                  type="text"
+                                  value={subTech.usage}
+                                  onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'usage', e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                                />
+                              </div>
                           </div>
-                          
+
                           <div>
-                            <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Modo de Usar</label>
-                            <input 
-                              type="text"
-                              value={subTech.usage}
-                              onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'usage', e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
-                              placeholder="Ex: Ação Padrão, Reação, Passiva..."
-                            />
+                             <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Dado de Dano/Efeito</label>
+                             <select
+                                value={subTech.diceFace || 'd6'}
+                                onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'diceFace', e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white focus:border-emerald-500 focus:outline-none"
+                             >
+                                 <option value="d4">d4</option>
+                                 <option value="d6">d6</option>
+                                 <option value="d8">d8</option>
+                                 <option value="d10">d10</option>
+                                 <option value="d12">d12</option>
+                                 <option value="d20">d20</option>
+                             </select>
+                             <p className="text-[10px] text-slate-500 mt-1">
+                                 Quantidade de dados é igual à Liberação ({stats.LL}).
+                             </p>
                           </div>
                           
                           <div>
@@ -243,21 +322,20 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, 
                             <textarea 
                               value={subTech.description}
                               onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'description', e.target.value)}
-                              className="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-slate-300 focus:border-emerald-500 focus:outline-none min-h-[60px]"
-                              placeholder="Descreva os efeitos, alcance, custo, etc..."
+                              className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-slate-300 focus:border-emerald-500 focus:outline-none min-h-[80px]"
                             />
                           </div>
 
-                          <div className="flex justify-end pt-1">
+                          <div className="flex justify-end pt-2 border-t border-slate-800">
                             <button 
                               onClick={() => {
                                 if (confirm(`Excluir "${subTech.name}"?`)) {
                                   handleRemoveSubTechnique(tech.id, subTech.id);
                                 }
                               }}
-                              className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-red-950/30 transition-colors duration-100"
+                              className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 px-3 py-1.5 rounded hover:bg-red-950/30 transition-colors duration-100"
                             >
-                              <Trash2 size={10} /> Excluir
+                              <Trash2 size={12} /> Excluir Habilidade
                             </button>
                           </div>
 
