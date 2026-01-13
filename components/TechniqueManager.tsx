@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Campaign, CampaignParticipant, Character, CurrentStats, DiceRollLog as DiceRollLogType } from '../types';
-import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw, Square } from 'lucide-react';
+import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw, Square, Wand2 } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
 import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc, where, limit, writeBatch } from 'firebase/firestore';
 import { CharacterAttributes } from './CharacterAttributes';
