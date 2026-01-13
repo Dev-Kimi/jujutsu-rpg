@@ -1337,3 +1337,109 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     </div>
   );
 };
+
+interface TechniqueManagerProps {
+  techniques: import('../types').Technique[];
+  onAdd: (technique: import('../types').Technique) => void;
+  onUpdate: (id: string, field: keyof import('../types').Technique, value: any) => void;
+  onRemove: (id: string) => void;
+  onOpenLibrary: () => void;
+}
+
+export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
+  techniques,
+  onAdd,
+  onUpdate,
+  onRemove,
+  onOpenLibrary
+}) => {
+  const handleAdd = () => {
+    const newTechnique: import('../types').Technique = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: 'Técnica Inata',
+      category: 'Inata',
+      description: '',
+      subTechniques: []
+    };
+    onAdd(newTechnique);
+  };
+
+  return (
+    <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[300px] flex flex-col">
+      <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+        <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Técnicas</h4>
+        <div className="flex gap-2">
+          <button
+            onClick={onOpenLibrary}
+            className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+            title="Abrir biblioteca de técnicas"
+          >
+            <Eye size={14} /> Biblioteca
+          </button>
+          <button
+            onClick={handleAdd}
+            className="flex items-center gap-1 text-xs bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+            title="Adicionar nova técnica"
+          >
+            <Plus size={14} /> Nova Técnica
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
+        {techniques.length === 0 && (
+          <div className="text-center text-slate-600 text-sm py-10 italic">Nenhuma técnica adicionada.</div>
+        )}
+
+        {techniques.map((tech) => (
+          <div key={tech.id} className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+            <div className="p-3 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wand2 size={16} className="text-curse-400" />
+                <input
+                  type="text"
+                  value={tech.name}
+                  onChange={(e) => onUpdate(tech.id, 'name', e.target.value)}
+                  className="bg-transparent border-none outline-none text-white text-sm font-bold"
+                  placeholder="Nome da Técnica"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={tech.category || 'Inata'}
+                  onChange={(e) => onUpdate(tech.id, 'category', e.target.value)}
+                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-white"
+                >
+                  <option value="Inata">Inata</option>
+                  <option value="Estilo">Estilo</option>
+                  <option value="Ritual">Ritual</option>
+                </select>
+                <button
+                  onClick={() => onRemove(tech.id)}
+                  className="text-red-400 hover:text-red-300 hover:bg-red-950/30 rounded px-2 py-1 text-xs font-bold transition-colors"
+                  title="Remover técnica"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3 space-y-2">
+              <textarea
+                value={tech.description || ''}
+                onChange={(e) => onUpdate(tech.id, 'description', e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
+                placeholder="Descrição da técnica"
+                rows={3}
+              />
+
+              <div className="text-[10px] text-slate-500">
+                Sub-técnicas: {tech.subTechniques?.length || 0}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
