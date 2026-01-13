@@ -1344,6 +1344,7 @@ interface TechniqueManagerProps {
   onUpdate: (id: string, field: keyof import('../types').Technique, value: any) => void;
   onRemove: (id: string) => void;
   onOpenLibrary: () => void;
+  llValue: number;
 }
 
 export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
@@ -1351,7 +1352,8 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   onAdd,
   onUpdate,
   onRemove,
-  onOpenLibrary
+  onOpenLibrary,
+  llValue
 }) => {
   const [editingTechId, setEditingTechId] = useState<string | null>(null);
   const [rollResult, setRollResult] = useState<{ name: string; result: number; total: string } | null>(null);
@@ -1382,7 +1384,8 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     
     const match = diceFace.match(/(\d+)?d(\d+)([+-]\d+)?/);
     if (match) {
-      const count = parseInt(match[1] || '1');
+      // Use LL value for dice count if available, otherwise fallback to parsed count or 1
+      const count = llValue > 0 ? llValue : parseInt(match[1] || '1');
       const faces = parseInt(match[2]);
       const modifier = parseInt(match[3] || '0');
       
@@ -1398,7 +1401,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
       setRollResult({
         name: subName,
         result: total,
-        total: `${rolls.join('+')}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`
+        total: `${count}d${faces}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}: ${rolls.join('+')}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`
       });
       
       setTimeout(() => setRollResult(null), 4000);
