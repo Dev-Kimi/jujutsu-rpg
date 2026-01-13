@@ -40,6 +40,7 @@ export interface SubTechnique {
   name: string;
   description: string;
   usage: string; // Modo de usar (ação padrão, reação, etc.)
+  diceFace?: string; // e.g. "d4", "d6", "d8", "d10", "d12"
 }
 
 // Técnica agora é um conjunto com conceito principal e sub-habilidades
