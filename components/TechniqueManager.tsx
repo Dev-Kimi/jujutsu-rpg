@@ -260,7 +260,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({ techniques, 
                          {/* Roll Button in Header */}
                          <div className="flex items-center gap-3">
                              <div className="text-sm font-mono text-slate-300 font-bold bg-slate-900 px-2 py-1 rounded border border-slate-800">
-                                 {stats.LL}{subTech.diceFace || 'd6'}
+                                 {stats?.LL || 0}{subTech.diceFace || 'd6'}
                              </div>
                              <button
                                 onClick={(e) => handleRollTechnique(e, subTech, tech.name)}
