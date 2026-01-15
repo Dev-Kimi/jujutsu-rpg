@@ -244,121 +244,103 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
     name: "Visão de Campo",
     category: "Especialista",
     cost: "2 PE",
-    description: "[Movimento/Reação] Concede +2 no ataque ou defesa de aliado a 10m."
+    description: "[Movimento/Reação] Requisitos: Nível 1. Usando sua inteligência tática, uma vez por turno, você pode conceder +2 no seu próximo teste de ataque ou no de um aliado a até 10m de você. Alternativamente, pode conceder +2 na defesa contra um ataque específico (deve ser declarado antes da rolagem)."
   },
   {
     name: "Primeiros Socorros",
     category: "Especialista",
     cost: "3 PE",
-    description: "[Completa] Medicina cura PV igual ao teste ou remove condição física."
+    description: "[Completa] Requisitos: Nível 2. Você usa conhecimentos médicos e suprimentos para estabilizar um aliado adjacente. Faça um teste de Medicina. O aliado recupera PV igual ao resultado do seu teste. Se o aliado estiver com uma condição física (como Envenenado ou Sangrando), você pode remover a condição em vez de curar."
   },
   {
     name: "Análise Tática",
     category: "Especialista",
     cost: "3 PE",
-    description: "[Movimento] Tática vs Luta. Sucesso: Vantagem no próximo ataque contra o alvo."
+    description: "[Movimento] Requisitos: Nível 3. Após um inimigo lutar ou usar sua técnica pelo menos 3 vezes, faça um teste de Tática contra Luta (ou outra perícia) do alvo. Se bem-sucedido, você identifica uma fraqueza no alvo. Até o final do seu próximo turno, o primeiro ataque contra esse alvo tem vantagem."
   },
   {
     name: "Formação Falange",
     category: "Especialista",
     cost: "5 PE",
-    description: "[Completa] Aliados adjacentes ganham +2 na Defesa."
-  },
-  {
-    name: "Olhar Desmoralizante",
-    category: "Especialista",
-    cost: "6 CE",
-    description: "[Movimento] Intimidação vs Vontade. Falha: Alvo Prejudicado (-2) no próximo turno."
+    description: "[Completa] Requisitos: Nível 4. Aliados que estejam adjacentes a você ou a outro aliado ganham +2 na Defesa (Reflexos/Fortitude). Você coordena o posicionamento para que um cubra o ponto cego do outro."
   },
   {
     name: "Comando Tático",
     category: "Especialista",
     cost: "10 PE",
-    description: "[Padrão] Aliado usa Reação para realizar Movimento ou Ataque Básico."
+    description: "[Padrão] Requisitos: Nível 6. Escolha um aliado que possa te ouvir. O aliado pode usar a reação dele para imediatamente fazer uma Ação de Movimento ou um único ataque básico contra um inimigo que esteja adjacente a ele."
   },
   {
     name: "Rota de Fuga",
     category: "Especialista",
     cost: "8 PE",
-    description: "[Reação] Aliado move metade do deslocamento sem ataque de oportunidade."
+    description: "[Reação] Requisitos: Nível 7. Se um aliado terminar seu turno em uma posição perigosa (cercado ou em área de efeito), você pode gritar instruções. O aliado pode usar uma Reação dele para se mover imediatamente até metade do deslocamento dele, sem provocar ataques de oportunidade."
   },
   {
     name: "Explorar Abertura",
     category: "Especialista",
     cost: "8 PE",
-    description: "[Reação] Quando inimigo falha ataque, ele sofre -2 na defesa contra próximo acerto."
+    description: "[Reação] Requisitos: Nível 8. Quando um inimigo a até 10m de você falha em um teste de ataque (rolando 10 ou menos no dado), você pode usar sua reação para apontar a falha dele. O inimigo sofre a condição -2 na defesa contra o próximo ataque que o atingir."
   },
   {
     name: "Sabotagem Localizada",
     category: "Especialista",
     cost: "12 PE",
-    description: "[Padrão] Cria Terreno Difícil 3x3m. Inimigos ficam Prejudicados na área."
+    description: "[Padrão] Requisitos: Nível 9. Você interage com o ambiente (derrubar uma estante, atirar num extintor, destruir o chão). Uma área de 3x3 metros se torna Terreno Difícil. Inimigos nessa área ficam Prejudicados (-2 em testes) enquanto permanecerem nela."
   },
   {
     name: "Intervenção Protetora",
     category: "Especialista",
     cost: "15 PE",
-    description: "[Reação] Aliado a 3m recebe +5 Defesa contra um ataque."
+    description: "[Reação] Requisitos: Nível 10. Quando um aliado a até 3m de você é alvo de um ataque, você pode usar sua reação para gritar um alerta ou empurrá-lo. O aliado recebe um bônus de +5 em sua defesa contra aquele único ataque."
   },
   {
     name: "Plano de Contingência",
     category: "Especialista",
     cost: "20 PE",
-    description: "[Reação] Aliado rerrola teste de resistência falho."
+    description: "[Reação] Requisitos: Nível 11. Um aliado falha em um teste de Resistência, você pode revelar que já esperava por isso. O aliado pode rolar o teste novamente. Ele deve aceitar o segundo resultado."
   },
   {
     name: "Ataque Sincronizado",
     category: "Especialista",
     cost: "15 PE",
-    description: "[Padrão] Você e aliado atacam. Alvo recebe desvantagem na defesa."
+    description: "[Padrão] Requisitos: Nível 12. Você pode atrasar seu turno ou forçar um aliado seu a atacar junto com você no turno dele. Se você e seu aliado atacarem juntos, o alvo recebe desvantagem no teste de defesa."
   },
   {
     name: "Maestria de Recurso",
     category: "Especialista",
-    cost: "Passiva",
-    description: "Recupera 1 PE ao usar habilidade de Especialista que custe PE."
+    cost: "Nenhum",
+    description: "[Passiva] Requisitos: Nível 13. Você se torna tão eficiente em gerenciar a equipe que sempre que você usar uma habilidade de Classe de Especialista que custe PE, você recupera 1 de PE."
   },
   {
     name: "Orquestrar Campo",
     category: "Especialista",
     cost: "25 PE",
-    description: "[Padrão] Dois aliados movem metade do deslocamento imediatamente."
+    description: "[Padrão] Requisitos: Nível 14. Escolha até dois aliados em sua linha de visão. Esses aliados podem usar imediatamente suas reações para se moverem até metade de seu deslocamento. Este movimento não provoca ataques de oportunidade."
   },
   {
     name: "Cura Avançada",
     category: "Especialista",
     cost: "20 PE + 10 CE",
-    description: "[Completa] Cura PV e remove condições graves (Veneno, Paralisia, Cegueira, Surdez, Atordoamento)."
-  },
-  {
-    name: "Antecipar Movimento",
-    category: "Especialista",
-    cost: "40 PE",
-    description: "[Reação] Tática vs Intuição. Sucesso: Ação do inimigo falha e é perdida."
-  },
-  {
-    name: "Reviver",
-    category: "Especialista",
-    cost: "60 PE + 20 CE",
-    description: "[Completa] Acorda aliado caído/moribundo com PV = (INT/2 + Nível)."
+    description: "[Completa] Requisitos: Nível 15, Primeiros Socorros. Ao usar uma ação de cura em um aliado, você também purifica o sistema nervoso dele. Além de restaurar PV, você remove imediatamente uma das seguintes condições físicas: Envenenado, Paralisado, Cego, Surdo ou Atordoado."
   },
   {
     name: "Plano Mestre",
     category: "Especialista",
     cost: "50 PE",
-    description: "[Completa] Troca ordem de iniciativa de dois aliados permanentemente."
+    description: "[Completa] Requisitos: Nível 18. Uma vez por cena, ao enfrentar um inimigo que já viu antes, antes de começar a luta, você cria um plano com toda sua equipe. No início da luta, antes que qualquer personagem aja, você pode trocar a posição na ordem de iniciativa de quaisquer dois personagens. A nova ordem de iniciativa permanece pelo resto do combate."
   },
   {
     name: "Xeque-Mate",
     category: "Especialista",
     cost: "40 PE",
-    description: "[Livre] Maximiza dano de aliado contra inimigo com condição negativa."
+    description: "[Livre] Requisitos: Nível 19. Se um inimigo estiver com uma condição negativa (como Caído, Impedido ou Vulnerável) e sofrer dano de um aliado seu, você pode gastar essa habilidade para maximizar o dano."
   },
   {
     name: "Veterano de Guerra",
     category: "Especialista",
-    cost: "Passiva",
-    description: "Pode usar habilidade de comando como Ação Livre 1x/rodada."
+    cost: "Nenhum",
+    description: "[Passiva] Requisitos: Nível 20. Uma vez por rodada, você pode usar uma habilidade de \"Comando\" ou \"Instrução\" (que gaste PE) como Ação Livre, permitindo que você lute e comande ao mesmo tempo."
   },
 
   // --- RESTRIÇÃO CELESTIAL ---
