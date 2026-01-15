@@ -300,7 +300,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
                       </div>
                     )}
                     {/* Extract effect description (everything after the tier/requisitos line) */}
-                    {isAdmin && editingName === (ability.name || '') ? (
+                    {isAdmin && editingName === ((ability as any).baseName || (ability.name || '')) ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <label className="text-[10px] text-slate-500 uppercase">Nome</label>
