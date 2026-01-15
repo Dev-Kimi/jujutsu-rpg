@@ -203,6 +203,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     total += modifier;
 
     const detail = `${count}d${faces}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}: [${rolls.join(', ')}]${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`;
+    const formula = `${count}d${faces}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`;
 
     setLastResult({
         total,
@@ -216,6 +217,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         damageTotal: total
     });
     setActiveRollResult('combat');
+    showNotification(`${formula} ➜ ${total}`, 'success');
     
     if (campaignId) {
         logDiceRoll(campaignId, char.name, "Rolagem Manual", rolls, total, detail).catch(console.error);
