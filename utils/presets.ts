@@ -6,121 +6,121 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
     name: "Ataque Especial",
     category: "Combatente",
     cost: "3 PE",
-    description: "[Livre] Uma vez por turno, ganha +5 no próximo ataque corpo a corpo."
+    description: "[Livre] Uma vez por turno, você pode ganhar um bônus de +3 em seu próximo ataque corpo a corpo. Requisitos: Nenhum."
   },
   {
     name: "Investida de Ombro",
     category: "Combatente",
     cost: "3 PE",
-    description: "[Livre] Ao mover 3m em linha reta e terminar adjacente, teste de Atletismo vs Fortitude. Vitória: empurra 3m e deixa Caído."
+      description: "[Livre] Ao se mover em linha reta por pelo menos 3 metros e terminar adjacente a um inimigo, você pode fazer um teste de Atletismo vs Fortitude dele. Se vencer, o alvo é empurrado 3 metros e fica Caído. Requisitos: Nível 2."
   },
   {
     name: "Redirecionamento",
     category: "Combatente",
     cost: "5 PE",
-    description: "[Reação] Quando inimigo erra ataque corpo a corpo, teste Luta vs Reflexos para derrubá-lo."
+    description: "[Reação] Quando um inimigo errar um ataque corpo a corpo contra você, faça um teste oposto de Luta vs. Reflexos para derrubá-lo. Requisitos: Nível 3."
   },
   {
     name: "Golpe Pesado",
     category: "Combatente",
     cost: "3 PE",
-    description: "[Livre] Aceita -5 no ataque para adicionar +1 dado da arma no dano (ou metade da Liberação se desarmado)."
+    description: "[Livre] Antes de fazer um único ataque corpo a corpo no seu turno, você pode gastar 3 de PE e escolher sofrer uma penalidade de -5 no teste de ataque para adicionar mais 1 dado de dano da sua arma no seu ataque. Se usado desarmado, o dano aumenta em metade da sua liberação. Requisitos: Nível 4."
   },
   {
     name: "Aceleração Repentina",
     category: "Combatente",
     cost: "10 PE",
-    description: "[Livre] No início do turno, seu movimento dobra e ganha uma Ação de Movimento extra."
+    description: "[Livre] No início do seu turno, sua velocidade de movimento dobra e você ganha uma Ação de Movimento adicional. Requisitos: Nível 5."
   },
   {
     name: "Resistência Inabalável",
     category: "Combatente",
     cost: "8 PE",
-    description: "[Reação] Ao falhar em Fortitude, rerrola o teste. Deve usar o novo resultado."
+    description: "[Livre] Quando você falha em um teste de Fortitude, você pode imediatamente rerrolar o teste. Você deve usar o novo resultado. Requisitos: Nível 6."
   },
   {
     name: "Intervenção",
     category: "Combatente",
     cost: "5 PE",
-    description: "[Reação] Interfere em ataque contra aliado a até 9m (ex: bloqueando ou jogando arma)."
+    description: "[Reação] Quando um aliado a até 9 metros de você é alvo de um ataque, você pode interferir dependendo da distância que está do seu aliado. Se estiver longe, por exemplo, você pode jogar sua arma para proteger seu aliado. Requisitos: Nível 7."
   },
   {
     name: "Ataque Oportunista",
     category: "Combatente",
     cost: "4 PE",
-    description: "[Padrão] Ataque contra inimigo adjacente a parede/objeto. Acerto: Dano + Empurra 3m ou Caído."
+    description: "[Padrão] Faça um ataque corpo a corpo contra um inimigo adjacente a um objeto ou parede. Se o ataque acertar, além do dano normal, você pode empurrar o inimigo 3 metros ou derrubá-lo (condição Caído). Requisitos: Nível 8."
   },
   {
     name: "Golpes Consecutivos",
     category: "Combatente",
     cost: "12 PE",
-    description: "[Padrão] Dois ataques corpo a corpo rápidos. Ambos com -2 no teste de acerto."
+    description: "[Padrão] Você realiza dois ataques corpo a corpo rápidos contra o mesmo alvo ou alvos diferentes ao seu alcance. Ambos os ataques sofrem uma penalidade de -2 no teste de acerto. Requisitos: Nível 9."
   },
   {
     name: "Impacto Ressonante",
     category: "Combatente",
     cost: "15 PE",
-    description: "[Padrão] Ataque corpo a corpo com onda de choque. Acerto: Dano + Teste de Fortitude do alvo. Falha: Atordoado."
+    description: "[Padrão] Faça um ataque corpo a corpo. Se acertar, além do dano normal, envia uma onda de choque de energia amaldiçoada pelo corpo do alvo. O alvo deve fazer um teste de Fortitude, e se falhar, fica atordoado por um turno. Requisitos: Nível 10."
   },
   {
     name: "Quebra-Barreiras",
     category: "Combatente",
     cost: "8 PE",
-    description: "[Livre] Próximo ataque ignora qualquer Redução de Dano (RD) simples."
+    description: "[Livre] Seu próximo ataque ignora qualquer Redução de Dano (RD) do alvo proveniente de armaduras, pele rígida ou barreiras simples. Requisitos: Nível 11."
   },
   {
     name: "Parry",
     category: "Combatente",
     cost: "15 PE",
-    description: "[Reação] Ao bloquear ataque corpo a corpo, desvia o dano e contra-ataca instantaneamente."
+    description: "[Reação] Ao receber um ataque corpo-a-corpo, se escolher bloquear em vez de desviar, você pode desviar o ataque e contra-atacar instantaneamente. Requisitos: Nível 12."
   },
   {
     name: "Pisão",
     category: "Combatente",
     cost: "20 PE",
-    description: "[Movimento] Golpeia o chão. Raio 4m: Reflexos ou Caído. Torna terreno difícil."
+    description: "[Movimento] Você golpeia o chão com força total. Todas as criaturas num raio de 4 metros devem passar num teste de Reflexos ou sofrem a condição Caídos. O terreno se torna difícil. Requisitos: Nível 13."
   },
   {
     name: "Vontade Assassina",
     category: "Combatente",
     cost: "10 PE",
-    description: "[Livre] Aura de pressão. Quem vê faz Vontade vs Presença. Falha: Prejudicado por 1 rodada."
+    description: "[Livre] Você projeta uma aura de pressão de batalha em todos que possam te ver. Alvos que estiverem sob esse efeito devem passar em um teste de Vontade (teste oposto 1d20 + seu bônus de Presença) ou sofrem a condição Prejudicado por 1 rodada. Requisitos: Nível 14."
   },
   {
     name: "Interromper Técnica",
     category: "Combatente",
     cost: "25 PE",
-    description: "[Livre] Ao acertar inimigo concentrando, ele faz Fortitude. Falha: Perde a técnica."
+    description: "[Livre] Quando você acerta um inimigo que esteja se concentrando em uma técnica ele deve fazer um teste de Fortitude (CD baseada no seu teste de Luta). Se falhar, ele perde a concentração e a técnica é interrompida. Requisitos: Nível 15."
   },
   {
     name: "Reforço Corporal Concentrado",
     category: "Combatente",
     cost: "30 PE",
-    description: "[Reação] Ao sofrer Crítico, teste Reflexos vs Ataque para transformar em acerto normal. Fica Atordoado após uso."
+    description: "[Reação] Ao sofrer um acerto crítico, você pode, instintivamente, concentrar toda sua energia na região do impacto para transformar o crítico em um acerto normal. Faça um teste de Reflexos contra o acerto do inimigo para transformar o acerto crítico em um acerto normal. Após o uso dessa habilidade o usuário fica Atordoado. (Uma vez por combate). Requisitos: Nível 16."
   },
   {
     name: "Berserker",
     category: "Combatente",
     cost: "20 PE",
-    description: "[Livre] Ao zerar PV de inimigo ou Critar, ganha 1 Ação Padrão extra."
+    description: "[Livre] Ative ao reduzir um inimigo a 0 PV ou acertar um Crítico. Você ganha imediatamente uma Ação Padrão extra. (Uma vez por combate). Requisitos: Nível 17."
   },
   {
     name: "Finalizador Implacável",
     category: "Combatente",
     cost: "Passivo",
-    description: "Ataques contra caídos/atordoados/imóveis causam dano extra igual ao bônus de Luta."
+    description: "Seus ataques corpo-a-corpo contra inimigos caídos, atordoados, imóveis ou paralisados causam dano extra. Este dano adicional é igual a seu bônus de treinamento na perícia de Luta. Requisitos: Nível 18."
   },
   {
     name: "Último Recurso",
     category: "Combatente",
-    cost: "Todo PE",
-    description: "[Completa] Ao chegar a 0 PV, ignora Moribundo por 2 rodadas. Se não curar, morre ao fim."
+    cost: "Todo seu PE restante",
+    description: "[Completa] Quando seus PV chegarem a 0 você não cai inconsciente e não morre. Em vez disso, por 2 rodadas você fica imune à condição Moribundo. No final do efeito, se você não tiver sido curado para um PV acima de 0 você morre. Requisitos: Nível 19."
   },
   {
     name: "Reforço Corporal Avançado",
     category: "Combatente",
     cost: "Passivo",
-    description: "Aumenta o dado de reforço corporal (ex: d4 para d6)."
+    description: "Você atingiu o ápice do Reforço Corporal. Agora o multiplicador de dano do seu reforço corporal passivo vai de d4 para d5. Requisitos: Nível 20."
   },
 
   // --- FEITICEIRO ---
