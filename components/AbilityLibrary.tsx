@@ -48,8 +48,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
 
   const allAbilities = PRESET_ABILITIES.map(p => {
     const ov = overrides[p.name || ''];
-    if (!ov) return p;
-    return { ...p, ...ov };
+    return { ...p, ...(ov || {}), baseName: p.name };
   });
 
   const filteredAbilities = allAbilities.filter(item => {
@@ -94,9 +93,9 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
     }
   };
 
-  const beginEdit = (ability: Partial<Ability>) => {
+  const beginEdit = (ability: any) => {
     setExpandedId(ability.name || null);
-    setEditingName(ability.name || '');
+    setEditingName(ability.baseName || ability.name || '');
     setEditForm({
       name: ability.name || '',
       cost: ability.cost || '',
@@ -341,9 +340,9 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
                           >
                             Cancelar
                           </button>
-                          {overrides[ability.name || ''] && (
+                          {overrides[(ability as any).baseName || (ability.name || '')] && (
                             <button
-                              onClick={() => removeOverride(ability.name || '')}
+                              onClick={() => removeOverride((ability as any).baseName || (ability.name || ''))}
                               className="px-3 py-1.5 text-xs font-bold rounded bg-red-700 hover:bg-red-600 text-white flex items-center gap-1"
                             >
                               <Trash2 size={14} /> Remover Override
