@@ -118,9 +118,15 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
       subCategory: activeTab === 'Habilidades Amaldiçoadas' ? activeSubTab : undefined
     };
     try {
+      const safePayload: Record<string, any> = { ...payload };
+      Object.keys(safePayload).forEach(k => {
+        if (safePayload[k] === undefined) {
+          delete safePayload[k];
+        }
+      });
       const ref = doc(db, 'config', 'abilityOverrides');
-      await setDoc(ref, { [editingName]: payload }, { merge: true });
-      setOverrides(prev => ({ ...prev, [editingName]: payload }));
+      await setDoc(ref, { [editingName]: safePayload }, { merge: true });
+      setOverrides(prev => ({ ...prev, [editingName]: safePayload }));
       setEditingName(null);
     } catch (err) {
       console.error('Erro ao salvar override de habilidade', err);
