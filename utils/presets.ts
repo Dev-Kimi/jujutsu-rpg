@@ -128,115 +128,115 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
     name: "Economia de Fluxo",
     category: "Feiticeiro",
     cost: "Passivo",
-    description: "Reduz custo de CE de técnicas em metade do bônus de Inteligência."
+    description: "[Passivo] Requisitos: Nenhum. Sempre que você usar técnica ou habilidade, reduza seu custo de CE em um valor igual à sua Inteligência (arredondado para cima)."
   },
   {
     name: "Técnica Precisa",
     category: "Feiticeiro",
     cost: "3 PE",
-    description: "[Movimento] Em técnica de área, seleciona INT criaturas para não serem afetadas."
+    description: "[Movimento] Requisitos: Nível 2. Quando você usa uma técnica que afeta uma área (cone, explosão, linha), você pode escolher um número de criaturas igual a sua Inteligência para não serem afetadas pelo dano."
   },
   {
     name: "Técnica Penetrante",
     category: "Feiticeiro",
     cost: "3 PE",
-    description: "[Livre] Força penalidade de -2 na resistência do alvo contra a técnica."
+    description: "[Livre] Requisitos: Nível 3. Ao usar uma habilidade ou técnica, você pode gastar 3 PE para forçar o alvo a ter uma penalidade de -2 em seu teste de resistência contra algum efeito dela."
   },
   {
     name: "Previsão",
     category: "Feiticeiro",
     cost: "4 PE",
-    description: "[Reação] Feitiçaria vs Ataque (Projétil). Sucesso: +2 na Defesa."
+    description: "[Reação] Requisitos: Nível 4. Ao ser atacado por um projétil, você faz um teste de Feitiçaria contra o teste de ataque do inimigo. Se vencer, você antecipa a trajetória da energia e ganha +2 na Defesa contra aquele ataque."
   },
   {
     name: "Técnica Persistente",
     category: "Feiticeiro",
-    cost: "5 PE/Rodada",
-    description: "[Livre] Mantém técnica ativa sem gastar ação ou CE novamente (gasta 2 PE/turno)."
+    cost: "5 PE por rodada",
+    description: "[Livre] Requisitos: Nível 5. Ao usar uma técnica com duração, você pode gastar 2 PE no início de seus turnos subsequentes para mantê-la ativa, sem precisar usar a ação ou pagar o custo de CE novamente; o inimigo ainda pode retirar a condição se tiver tempo. Só pode ser usado uma vez por rodada."
   },
   {
     name: "Disparo Curvo",
     category: "Feiticeiro",
     cost: "5 PE",
-    description: "[Livre] Projétil ignora cobertura se houver trajeto possível."
+    description: "[Livre] Requisitos: Nível 6. Se o mestre permitir, você altera a trajetória de um projétil ou ataque à distância. O ataque ignora bônus de Cobertura (parcial ou total) do alvo, contanto que exista um caminho livre até ele (mesmo que fazendo uma curva)."
   },
   {
     name: "Amortecer Queda",
     category: "Feiticeiro",
     cost: "2 PE + X CE",
-    description: "[Reação] Reduz dano de impacto em 2x o CE gasto."
+    description: "[Reação] Requisitos: Nível 7. Você libera uma onda de energia contra a superfície para frear a inércia. Reduz o dano de impacto em 2x o CE gasto (até sua liberação). Se o dano for reduzido a 0, você aterrissa suavemente sem danificar o chão."
   },
   {
     name: "Análise de Energia Avançada",
     category: "Feiticeiro",
     cost: "3 PE",
-    description: "[Padrão] Teste de Feitiçaria para revelar informações mecânicas do alvo."
+    description: "[Padrão] Requisitos: Nível 8. Faça um teste de Feitiçaria contra o teste de um alvo que você possa ver. Se bem-sucedido, o mestre dará uma informação útil sobre o alvo."
   },
   {
     name: "Leitura de Centelha",
     category: "Feiticeiro",
     cost: "5 PE",
-    description: "[Reação] Intuição vs Enganação. Sucesso: Soma Presença nos Reflexos contra o ataque."
+    description: "[Reação] Requisitos: Nível 9. Quando um inimigo declara um ataque ou técnica contra você, faça um teste de Intuição contra a Enganação (ou Feitiçaria) dele. Se você vencer, você antecipa o golpe e ganha um bônus de +2 contra aquele ataque."
   },
   {
     name: "Manifestação Rápida",
     category: "Feiticeiro",
     cost: "10 PE",
-    description: "[Livre] Usa técnica de Ação Padrão como Movimento. (1/combate)."
+    description: "[Livre] Requisitos: Nível 10. Você pode gastar 10 PE para usar uma técnica ou uma habilidade que normalmente exigiria uma Ação Padrão como uma Ação de Movimento. Você só pode fazer isso uma vez por combate."
   },
   {
     name: "Passo de Hermes",
     category: "Feiticeiro",
     cost: "8 PE",
-    description: "[Movimento] Impulso aéreo para mudar direção ou dar passo extra."
+    description: "[Movimento] Requisitos: Nível 11. Libera uma onda de energia amaldiçoada sob os pés dar um impulso no ar que te permite mudar sua direção no ar ou dar um passo a mais como se fosse chão sólido."
   },
   {
     name: "Foco Arcano",
     category: "Feiticeiro",
     cost: "5 PE",
-    description: "[Movimento] Próxima técnica ganha +2 no acerto."
+    description: "[Movimento] Requisitos: Nível 12. Você gasta um momento para alinhar seu fluxo de energia. Seu próximo uso de qualquer técnica neste turno recebe um bônus de +2 na rolagem de acerto."
   },
   {
     name: "Liberação Máxima",
     category: "Feiticeiro",
     cost: "50 PE + 20 CE",
-    description: "[Completa] Alcance dobra, dano maximizado."
-  },
-  {
-    name: "Domínio de Técnica",
-    category: "Feiticeiro",
-    cost: "Passivo",
-    description: "Multiplicador de dados da técnica aumenta em 1."
+    description: "[Completa] Requisitos: Nível 13. Você carrega sua técnica ao limite absoluto. O alcance dobra e o dano é maximizado (trate todos os dados de dano como se tivessem caído no valor máximo)."
   },
   {
     name: "Marca de Energia",
     category: "Feiticeiro",
     cost: "5 PE",
-    description: "[Livre] Ao causar dano com técnica, marca inimigo por 1h (impede furtividade)."
+    description: "[Livre] Requisitos: Nível 15. Se você causar dano a um inimigo com sua técnica, você deixa uma \"marca\" sutil nele por 1 hora. Enquanto marcado, o inimigo não pode se esconder de você usando furtividade ou invisibilidade mundana; você sente a direção exata de onde ele está."
   },
   {
     name: "Técnica Adaptativa",
     category: "Feiticeiro",
-    cost: "Variável PE",
-    description: "[Livre] Gaste PE para alterar propriedade da técnica (tipo de dano, área, condição)."
+    cost: "X PE",
+    description: "[Livre] Requisitos: Nível 16. Ao usar sua Técnica Inata, você pode gastar PE para alterar uma de suas propriedades. Exemplos: gastar 5 PE para mudar seu tipo de dano, 10 PE para alterar sua área de efeito (ex: de cone para linha), ou 15 PE para adicionar uma condição secundária (ex: Impedido em uma falha no teste de resistência). As modificações e custos exatos são definidos com o Mestre por conta das variações."
   },
   {
-    name: "Conjuração Múltipla",
+    name: "Pensamento Paralelo",
     category: "Feiticeiro",
-    cost: "30 PE",
-    description: "[Movimento] Permite manter duas habilidades de Concentração ativas."
+    cost: "Nenhum",
+    description: "[Livre] Requisitos: Nível 17. Permite manter duas habilidades de Concentração ativas ao mesmo tempo (ex: manter uma Barreira enquanto usa uma técnica sustentada como o Fluxo das Escamas Vermelhas). Se você sofrer dano, faz 2 testes para manter elas separadamente; técnicas internas, como o Fluxo das Escamas Vermelhas, não podem ser interrompidas."
   },
   {
     name: "Ativação Remota",
     category: "Feiticeiro",
     cost: "15 PE",
-    description: "[Movimento] Projeta origem da técnica a até 5m (ignora cobertura frontal)."
+    description: "[Movimento] Requisitos: Nível 18. Ao usar uma técnica de longo alcance, você pode projetar o ponto de origem dela em qualquer lugar adjacente à você contanto que não esteja coberto por nada (atrás de um oponente adjacente a você, por exemplo)."
   },
   {
-    name: "Restauração de Técnica",
+    name: "Técnica Guiada",
     category: "Feiticeiro",
-    cost: "50 PE + 40 CE",
-    description: "[Completa] Remove condição Exaustão de Técnica usando RCT. (1/sessão)."
+    cost: "10 PE",
+    description: "[Movimento] Requisitos: Nível 19. Ao errar um ataque de técnica no seu turno, você pode continuar se concentrando nela para guiá-la de volta ao adversário. Deve esperar até o turno do adversário acabar para você usar esta habilidade, efetivamente conseguindo acertar 2 ataques em um único turno."
+  },
+  {
+    name: "Domínio de Técnica",
+    category: "Feiticeiro",
+    cost: "Passivo",
+    description: "[Passivo] Requisitos: Nível 20. O domínio sobre sua técnica atinge seu ápice. O multiplicador de sua técnica aumenta em 1."
   },
 
   // --- ESPECIALISTA ---
