@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Ability } from '../types';
 import { PRESET_ABILITIES } from '../utils/presets';
-import { Search, Plus, X, BookOpen, ChevronRight, Sword, Wand2, Brain, Hammer, Ghost } from 'lucide-react';
+import { Search, Plus, X, BookOpen, ChevronRight, Sword, Wand2, Brain, Hammer, Ghost, Edit2, Save, Trash2 } from 'lucide-react';
+import { db, auth } from '../firebase';
+import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 
 interface AbilityLibraryProps {
   onSelect: (ability: Partial<Ability>) => void;
@@ -14,6 +16,10 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
   const [activeSubTab, setActiveSubTab] = useState('Manipulação');
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ name: string; cost: string; description: string }>({ name: '', cost: '', description: '' });
+  const [overrides, setOverrides] = useState<Record<string, Partial<Ability>>>({});
+  const isAdmin = auth.currentUser?.uid === 'qSsTOdiZE2N2LjDuf4R3CC49cAq2';
 
   const categories = ['Combatente', 'Feiticeiro', 'Especialista', 'Restrição Celestial', 'Habilidades Amaldiçoadas'];
   const cursedSubCategories = ['Manipulação', 'Barreiras', 'Energia Reversa'];
@@ -25,7 +31,28 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
     }
   }, [initialCategory]);
 
-  const filteredAbilities = PRESET_ABILITIES.filter(item => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const ref = doc(db, 'config', 'abilityOverrides');
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data() as Record<string, Partial<Ability>>;
+          setOverrides(data || {});
+        }
+      } catch (err) {
+        console.error('Erro ao carregar overrides de habilidades', err);
+      }
+    })();
+  }, []);
+
+  const allAbilities = PRESET_ABILITIES.map(p => {
+    const ov = overrides[p.name || ''];
+    if (!ov) return p;
+    return { ...p, ...ov };
+  });
+
+  const filteredAbilities = allAbilities.filter(item => {
     const matchesTab = item.category === activeTab;
     const matchesSearch = item.name?.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -64,6 +91,54 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
       case 'Restrição Celestial': return <Hammer size={14} className="text-slate-200" />;
       case 'Habilidades Amaldiçoadas': return <Ghost size={14} className="text-purple-400" />;
       default: return <BookOpen size={14} className="text-slate-500" />;
+    }
+  };
+
+  const beginEdit = (ability: Partial<Ability>) => {
+    setExpandedId(ability.name || null);
+    setEditingName(ability.name || '');
+    setEditForm({
+      name: ability.name || '',
+      cost: ability.cost || '',
+      description: ability.description || ''
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingName(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingName) return;
+    const payload: Partial<Ability> = {
+      name: editForm.name,
+      cost: editForm.cost,
+      description: editForm.description,
+      category: activeTab,
+      subCategory: activeTab === 'Habilidades Amaldiçoadas' ? activeSubTab : undefined
+    };
+    try {
+      const ref = doc(db, 'config', 'abilityOverrides');
+      await setDoc(ref, { [editingName]: payload }, { merge: true });
+      setOverrides(prev => ({ ...prev, [editingName]: payload }));
+      setEditingName(null);
+    } catch (err) {
+      console.error('Erro ao salvar override de habilidade', err);
+    }
+  };
+
+  const removeOverride = async (abilityName: string) => {
+    try {
+      const ref = doc(db, 'config', 'abilityOverrides');
+      await updateDoc(ref, { [abilityName]: deleteField() });
+      setOverrides(prev => {
+        const next = { ...prev };
+        delete next[abilityName];
+        return next;
+      });
+      if (editingName === abilityName) setEditingName(null);
+    } catch (err) {
+      console.error('Erro ao remover override de habilidade', err);
     }
   };
 
@@ -172,16 +247,27 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
                    </div>
                 </div>
                 
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelect(ability);
-                  }}
-                  className="bg-slate-800 hover:bg-curse-600 text-slate-300 hover:text-white p-2 rounded-lg transition-all active:scale-95 flex items-center gap-2"
-                  title="Adicionar à ficha"
-                >
-                  <Plus size={16} />
-                </button>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); beginEdit(ability); }}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg transition-all active:scale-95 flex items-center gap-1"
+                      title="Editar"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                  )}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(ability);
+                    }}
+                    className="bg-slate-800 hover:bg-curse-600 text-slate-300 hover:text-white p-2 rounded-lg transition-all active:scale-95 flex items-center gap-2"
+                    title="Adicionar à ficha"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
               </div>
 
               {expandedId === ability.name && (
@@ -209,14 +295,66 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
                       </div>
                     )}
                     {/* Extract effect description (everything after the tier/requisitos line) */}
-                    <div className="whitespace-pre-line text-slate-300 leading-relaxed">
-                      {(() => {
-                        const desc = ability.description || '';
-                        // Remove the action type, tier and requisitos part
-                        const cleaned = desc.replace(/\[([^\]]+)\]\s*Tier\s*\d+\s*-\s*Requisitos:\s*[^.]*\.\s*/i, '');
-                        return cleaned.trim() || desc;
-                      })()}
-                    </div>
+                    {isAdmin && editingName === (ability.name || '') ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] text-slate-500 uppercase">Nome</label>
+                          <input
+                            value={editForm.name}
+                            onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
+                            className="flex-1 bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] text-slate-500 uppercase">Custo</label>
+                          <input
+                            value={editForm.cost}
+                            onChange={(e) => setEditForm(f => ({ ...f, cost: e.target.value }))}
+                            className="w-40 bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 uppercase mb-1">Descrição</label>
+                          <textarea
+                            value={editForm.description}
+                            onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
+                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                            rows={5}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={saveEdit}
+                            className="px-3 py-1.5 text-xs font-bold rounded bg-emerald-700 hover:bg-emerald-600 text-white flex items-center gap-1"
+                          >
+                            <Save size={14} /> Salvar
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="px-3 py-1.5 text-xs font-bold rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                          >
+                            Cancelar
+                          </button>
+                          {overrides[ability.name || ''] && (
+                            <button
+                              onClick={() => removeOverride(ability.name || '')}
+                              className="px-3 py-1.5 text-xs font-bold rounded bg-red-700 hover:bg-red-600 text-white flex items-center gap-1"
+                            >
+                              <Trash2 size={14} /> Remover Override
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="whitespace-pre-line text-slate-300 leading-relaxed">
+                        {(() => {
+                          const desc = ability.description || '';
+                          // Remove the action type, tier and requisitos part
+                          const cleaned = desc.replace(/\[([^\]]+)\]\s*Tier\s*\d+\s*-\s*Requisitos:\s*[^.]*\.\s*/i, '');
+                          return cleaned.trim() || desc;
+                        })()}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
