@@ -1268,7 +1268,6 @@ const App: React.FC = () => {
                         onAdvanceDomain={advanceDomainRound}
                         onCloseDomain={closeDomain}
                      />
-)
                   </>
                )}
                {activeTab === 'abilities' && (
