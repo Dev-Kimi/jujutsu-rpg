@@ -1,12 +1,29 @@
 import { Attributes, Character, DerivedStats, Origin, Item } from '../types';
 import { MUNDANE_WEAPONS } from './equipmentData';
+const LL_GAIN_TABLE = [
+  2, 2, 2,
+  3, 3, 3, 3,
+  4, 4, 4, 4,
+  5, 5, 5, 5,
+  6, 6, 6, 6,
+  7,
+  8, 8, 8,
+  9, 9, 9, 9,
+  10, 10, 10
+];
+const getLLForLevel = (level: number): number => {
+  if (level <= 0) return 0;
+  const capped = Math.min(level, LL_GAIN_TABLE.length);
+  let sum = 0;
+  for (let i = 0; i < capped; i++) sum += LL_GAIN_TABLE[i];
+  return sum;
+};
 
 export const calculateDerivedStats = (char: Character): DerivedStats => {
   const { level, origin, attributes } = char;
   const { VIG, INT, PRE } = attributes;
 
-  // A. Liberação (LL) = 2 * Nível
-  const LL = 2 * level;
+  const LL = getLLForLevel(level);
 
   // B. Pontos de Vida (PV)
   let MaxPV = 0;
