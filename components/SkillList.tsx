@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Character, Skill, Attributes, Ability, CurrentStats } from '../types';
 import { BookOpen, Dices, Search, Lock, Sparkles, Plus, Trash2, Zap, X, Hexagon } from 'lucide-react';
-import { rollDice, parseAbilityCost, parseAbilitySkillTrigger } from '../utils/calculations';
+import { rollDice, parseAbilityCost, parseAbilitySkillTrigger, calculateDerivedStats } from '../utils/calculations';
 import { logDiceRoll } from '../utils/diceRollLogger';
 
 interface SkillListProps {
@@ -50,8 +50,7 @@ export const SkillList: React.FC<SkillListProps> = ({
 
   if (!char.skills) return null;
 
-  // Liberação (LL) value
-  const LL = char.level * 2;
+  const LL = calculateDerivedStats(char).LL;
 
   // Helper to normalize strings for comparison (remove accents, lowercase)
   const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -256,7 +255,8 @@ export const SkillList: React.FC<SkillListProps> = ({
           const isCustom = !skill.isBase;
           
           const isPhysical = skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute);
-          const llBonus = isPhysical ? LL : 0;
+          const isSorcery = normalize(skill.name) === normalize('Feitiçaria');
+          const llBonus = (isPhysical || isSorcery) ? LL : 0;
           const totalBonus = skill.value + otherBonus + llBonus;
           
           const hasQueuedBuff = activeBuffs.some(b => {
@@ -304,7 +304,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                           }`}>
                               {skill.name}
                           </span>
-                          {(skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) && <span className="text-[9px] text-slate-500 font-mono">+LL</span>}
+                          {(((skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) || isSorcery)) && <span className="text-[9px] text-slate-500 font-mono">+LL</span>}
                       </div>
                    )}
                  </div>
