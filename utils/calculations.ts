@@ -25,7 +25,7 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
 
   const LL = getLLForLevel(level);
 
-  const MaxPV = (VIG * 12) + (level * 8) + LL + 10;
+  const MaxPV = Math.floor(VIG * (LL / 3)) + (level * 10) + 20;
   const MaxCE = (INT * LL) + (level * 20) + 30;
   const MaxPE = Math.floor(PRE * level * 1.5) + Math.floor(LL / 2);
 
