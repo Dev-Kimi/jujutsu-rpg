@@ -25,19 +25,9 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
 
   const LL = getLLForLevel(level);
 
-  // Pontos de Vida (PV) simplificados:
-  // (20 + (Nível * 10)) + (VIG * 5) + LL
-  const MaxPV = (20 + (level * 10)) + (VIG * 5) + LL;
-
-  // Energia Amaldiçoada (CE) simplificada:
-  // (20 + (INT * 2)) * Nível + LL
-  const MaxCE = origin === Origin.RestricaoCelestial
-    ? 0
-    : (20 + (INT * 2)) * level + LL;
-
-  // Pontos de Esforço (PE) simplificados:
-  // (10 + (PRE * 3)) + (Nível * 2) + LL
-  const MaxPE = (10 + (PRE * 3)) + (level * 2) + LL;
+  const MaxPV = (VIG * 12) + (level * 8) + LL + 10;
+  const MaxCE = (INT * 12) + (level * 8) + LL + 5;
+  const MaxPE = (PRE * level) + Math.floor(LL / 2) + 1;
 
   // E. Movement
   let Movement = 0;
