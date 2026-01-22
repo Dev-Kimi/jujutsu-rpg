@@ -308,61 +308,17 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          }
       }
 
-      // Add Attributes
-      const strBonus = char.attributes.FOR;
-      
-      if (isHR) {
-        const hrDiceCount = char.level * 2;
-        // Roll individual dice for logging
-        for (let i = 0; i < hrDiceCount; i++) {
-          loggedRolls.push(rollDice(3, 1));
-        }
-        const hrRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
-        if (isCritical) {
-          if (selectedWeaponId === 'unarmed') {
-            baseDamageValue = getMaxRollFromDice(unarmedDamageDie);
-            baseDamageText = `max(${unarmedDamageDie}) = ${baseDamageValue} (Crítico!)`;
-          }
-        }
-
-        total = baseDamageValue + hrRoll + strBonus;
-        detail = `${baseDamageText} + ${hrRoll} (HR) + ${strBonus} (FOR)`;
-        actionCostCE = 0;
-      } else {
-        // CE Reinforcement for Physical Attack
-        actionCostCE = invested > 0 ? Math.ceil(invested / 2) : 0;
-        
-        // DURABILITY CHECK
-        if (currentWeaponItem && onUpdateInventory) {
-             const durability = getWeaponCELimit(currentWeaponItem);
-             if (actionCostCE > durability) {
-                 weaponBroken = true;
-                 onUpdateInventory(currentWeaponItem.id, 'isBroken', true);
-             }
-        }
-
-        let reinforcementRoll = 0;
-        if (isCritical) {
-          // Critical: maximize reinforcement dice too
-          loggedRolls = Array.from({ length: invested }, () => 4);
-          reinforcementRoll = invested * 4;
-        } else {
-          // Roll individual dice for logging
-          for (let i = 0; i < invested; i++) {
-            loggedRolls.push(rollDice(4, 1));
-          }
-          reinforcementRoll = loggedRolls.reduce((sum, roll) => sum + roll, 0);
-        }
-        if (isCritical && selectedWeaponId === 'unarmed') {
+      // Simplificação: Dano físico = Dano Base + LL (sem reforço por dados, sem bônus de FOR)
+      if (isCritical) {
+        // Maximize apenas o dano base em crítico
+        if (selectedWeaponId === 'unarmed') {
           baseDamageValue = getMaxRollFromDice(unarmedDamageDie);
           baseDamageText = `max(${unarmedDamageDie}) = ${baseDamageValue} (Crítico!)`;
         }
-        total = baseDamageValue + reinforcementRoll + strBonus;
-        const reforcoText = isCritical ? `max(${invested}d4) = ${reinforcementRoll}` : `${reinforcementRoll}`;
-        detail = `[DanoBase]${baseDamageText} + [Reforço]${reforcoText} + [Força]${strBonus}`;
-
-        detail = `ATAQUE ACERTOU: ${attackRollDetail} | ${detail}`;
       }
+      total = baseDamageValue + (stats.LL || 0);
+      detail = `ATAQUE ACERTOU: ${attackRollDetail} | [DanoBase]${baseDamageText} + [LL]${stats.LL || 0}`;
+      actionCostCE = 0; // Sem custo de CE para reforço corporal
     } 
     else if (activeTab === 'defense') {
        if (isHR) {
@@ -789,11 +745,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             </div>
           )}
 
-          {!isHR && activeTab !== 'innate' && (
+          {!isHR && activeTab === 'defense' && (
             <div>
                 <label className="block text-xs text-slate-400 mb-1">
-                  {activeTab === 'physical' && `Dados de Reforço (Max LL: ${stats.LL})`}
-                  {activeTab === 'defense' && `Pontos de Redução (Max LL: ${stats.LL})`}
+                  {`Pontos de Redução (Max LL: ${stats.LL})`}
                 </label>
                 <div className="flex items-center gap-3">
                 <input 
@@ -803,23 +758,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                     step="1"
                     value={invested}
                     onChange={(e) => setInvested(parseInt(e.target.value))}
-                    className={`flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer ${activeTab === 'defense' ? 'accent-blue-500' : 'accent-curse-500'}`}
+                    className={`flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500`}
                 />
                 <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
                     {invested}
                 </span>
                 </div>
-                 {/* Durability Warning */}
-                 {activeTab === 'physical' && weaponLimit !== null && (
-                    <div className="flex justify-between items-center mt-2 px-1">
-                       <span className="text-[10px] text-slate-500">Durabilidade da Arma: {weaponLimit} CE</span>
-                       {willBreak && (
-                          <span className="text-[10px] font-bold text-red-500 flex items-center gap-1 animate-pulse">
-                             <Hammer size={10} /> Quebrará após o ataque!
-                          </span>
-                       )}
-                    </div>
-                 )}
             </div>
           )}
 
@@ -836,14 +780,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       {/* Action Button (Hidden for Innate since it has its own buttons, shown for Physical/Defense) */}
       <button
         onClick={handleRoll}
-        disabled={!isHR && invested <= 0 && activeTab !== 'physical'}
+        disabled={activeTab === 'defense' && invested <= 0}
         className={`w-full py-3 text-slate-900 font-bold rounded-lg flex items-center justify-center gap-2 transition-all duration-75 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
-            ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : willBreak ? 'bg-red-500 hover:bg-red-400 text-white' : 'bg-slate-100 hover:bg-white'}
+            ${activeTab === 'defense' ? 'bg-blue-200 hover:bg-blue-100' : 'bg-slate-100 hover:bg-white'}
         `}
       >
         {activeTab === 'defense' ? <ArrowRight size={20} /> : <Dices size={20} />}
         {activeTab === 'defense' ? 'Calcular Dano Final' :
-          willBreak ? 'Atacar e Quebrar Arma' :
           activeTab === 'physical' && selectedWeaponId !== 'unarmed' ? 'Ataque com Arma' :
           'Ataque Desarmado'}
       </button>
