@@ -25,34 +25,19 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
 
   const LL = getLLForLevel(level);
 
-  // B. Pontos de Vida (PV)
-  let MaxPV = 0;
-  if (origin === Origin.RestricaoCelestial) {
-    // HR Formula: 50 + (VIG * 5) + (level * (30 + VIG))
-    MaxPV = 50 + (VIG * 5) + (level * (30 + VIG));
-  } else {
-    // Sorcerer Formula: 15 + (Nível * (10 + (Vigor * 5)))
-    MaxPV = 15 + (level * (10 + (VIG * 5)));
-  }
+  // Pontos de Vida (PV) simplificados:
+  // (20 + (Nível * 10)) + (VIG * 5) + LL
+  const MaxPV = (20 + (level * 10)) + (VIG * 5) + LL;
 
-  // C. Energia Amaldiçoada (CE)
-  let MaxCE = 0;
-  if (origin === Origin.RestricaoCelestial) {
-    MaxCE = 0;
-  } else {
-    // Sorcerer: (10 + (INT * 4)) * Nível
-    MaxCE = (10 + (INT * 4)) * level;
-  }
+  // Energia Amaldiçoada (CE) simplificada:
+  // (20 + (INT * 2)) * Nível + LL
+  const MaxCE = origin === Origin.RestricaoCelestial
+    ? 0
+    : (20 + (INT * 2)) * level + LL;
 
-  // D. Pontos de Esforço (PE)
-  let MaxPE = 0;
-  if (origin === Origin.RestricaoCelestial) {
-    // HR: (5 + VIG + PRE) * Nível
-    MaxPE = (5 + VIG + PRE) * level;
-  } else {
-    // Sorcerer: (Presença x 4) x Nível
-    MaxPE = (PRE * 4) * level;
-  }
+  // Pontos de Esforço (PE) simplificados:
+  // (10 + (PRE * 3)) + (Nível * 2) + LL
+  const MaxPE = (10 + (PRE * 3)) + (level * 2) + LL;
 
   // E. Movement
   let Movement = 0;
