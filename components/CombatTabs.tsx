@@ -135,6 +135,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     if (!match) return { count: 1, sides: 4 };
     return { count: parseInt(match[1]), sides: parseInt(match[2]) };
   };
+  
+  const getUnarmedImpactDie = (level: number): string => {
+    if (level >= 16) return '2d10';
+    if (level >= 11) return '2d8';
+    if (level >= 6) return '2d6';
+    return '2d4';
+  };
 
   const getMaxRollFromDice = (diceStr: string) => {
     const { count, sides } = parseDice(diceStr);
@@ -257,10 +264,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       // Determine Weapon and Attack Skill
       if (selectedWeaponId === 'unarmed') {
-         const { count: dieCount, sides: dieSides } = parseDice(unarmedDamageDie);
-         const unarmedRoll = rollDice(dieSides, dieCount);
-         baseDamageValue = unarmedRoll;
-         baseDamageText = `${unarmedRoll} (${unarmedDamageDie})`;
+         const impactDie = getUnarmedImpactDie(char.level);
+         const { count: dieCount, sides: dieSides } = parseDice(impactDie);
+         const impactRoll = rollDice(dieSides, dieCount);
+         const strengthBonus = (char.attributes.FOR || 0) * 5;
+         baseDamageValue = impactRoll + strengthBonus;
+         baseDamageText = `${impactRoll} (${impactDie}) + ${strengthBonus} (FOR*5)`;
          rollTitle = "Ataque Desarmado";
 
          // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
@@ -317,8 +326,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       if (isCritical) {
         // Maximize apenas o dano base em crítico
         if (selectedWeaponId === 'unarmed') {
-          baseDamageValue = getMaxRollFromDice(unarmedDamageDie);
-          baseDamageText = `max(${unarmedDamageDie}) = ${baseDamageValue} (Crítico!)`;
+          const impactDie = getUnarmedImpactDie(char.level);
+          const strengthBonus = (char.attributes.FOR || 0) * 5;
+          const maxImpact = getMaxRollFromDice(impactDie);
+          baseDamageValue = maxImpact + strengthBonus;
+          baseDamageText = `max(${impactDie}) = ${maxImpact} + ${strengthBonus} (FOR*5) (Crítico!)`;
         }
       }
       total = baseDamageValue + (stats.LL || 0) + (isHR ? 0 : invested);
@@ -735,17 +747,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
                   {/* Manual Input (Only if Unarmed) */}
                   {selectedWeaponId === 'unarmed' && (
-                    <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                      <select
-                        value={unarmedDamageDie}
-                        onChange={(e) => setUnarmedDamageDie(e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white focus:outline-none focus:border-curse-500 text-sm"
-                      >
-                        <option value="1d4">1d4</option>
-                        <option value="1d6">1d6</option>
-                        <option value="2d4">2d4</option>
-                        <option value="2d6">2d6</option>
-                      </select>
+                    <div className="flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-1">
+                      <span className="text-xs text-slate-400">Dado de Impacto (por nível)</span>
+                      <span className="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-white font-mono text-sm">
+                        {getUnarmedImpactDie(char.level)}
+                      </span>
                     </div>
                   )}
                 </div>
