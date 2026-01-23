@@ -77,10 +77,17 @@ export const SkillList: React.FC<SkillListProps> = ({
     const isCritical = d20 === 20;
     const isFailure = d20 === 1;
 
-    const total = d20 + rankValue + otherValue + llBonus;
+    const voteBonus = (char.bindingVows || [])
+      .filter(v => v.isActive)
+      .reduce((sum, v) => {
+        const mods = v.skillModifiers || [];
+        const match = mods.find(m => normalize(m.skillName) === normalize(skillName));
+        return sum + (match ? match.value : 0);
+      }, 0);
+    const total = d20 + rankValue + otherValue + llBonus + voteBonus;
     
     // Construct breakdown string
-    const totalBonuses = rankValue + otherValue + llBonus;
+    const totalBonuses = rankValue + otherValue + llBonus + voteBonus;
     const sign = totalBonuses >= 0 ? '+' : '';
     
     // Format: "[5, 18, 2] -> 18+5" or just "[15]+5" if single die
@@ -90,7 +97,7 @@ export const SkillList: React.FC<SkillListProps> = ({
         breakdown += ` ➜ ${d20}`;
     }
     
-    breakdown += `${sign}${totalBonuses}`;
+    breakdown += `${sign}${totalBonuses}${voteBonus ? ` (+${voteBonus} Votos)` : ''}`;
 
     // --- Active Buffs Trigger Logic ---
     let buffsTriggered: Ability[] = [];
@@ -257,7 +264,14 @@ export const SkillList: React.FC<SkillListProps> = ({
           const isPhysical = skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute);
           const isSorcery = normalize(skill.name) === normalize('Feitiçaria');
           const llBonus = (isPhysical || isSorcery) ? LL : 0;
-          const totalBonus = skill.value + otherBonus + llBonus;
+          const voteBonus = (char.bindingVows || [])
+            .filter(v => v.isActive)
+            .reduce((sum, v) => {
+              const mods = v.skillModifiers || [];
+              const match = mods.find(m => normalize(m.skillName) === normalize(skill.name));
+              return sum + (match ? match.value : 0);
+            }, 0);
+          const totalBonus = skill.value + otherBonus + llBonus + voteBonus;
           
           const hasQueuedBuff = activeBuffs.some(b => {
              const triggerRaw = parseAbilitySkillTrigger(b.description);
@@ -304,6 +318,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                               {skill.name}
                           </span>
                           {(((skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) || isSorcery)) && <span className="text-[9px] text-slate-500 font-mono">+LL</span>}
+                          {voteBonus !== 0 && <span className="text-[9px] text-curse-300 font-mono ml-1">{voteBonus > 0 ? `+${voteBonus}` : voteBonus}</span>}
                       </div>
                    )}
                  </div>
