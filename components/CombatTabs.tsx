@@ -333,8 +333,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           baseDamageText = `max(${impactDie}) = ${maxImpact} + ${strengthBonus} (FOR*5) (Crítico!)`;
         }
       }
-      total = baseDamageValue + (stats.LL || 0) + (isHR ? 0 : invested);
-      detail = `ATAQUE ACERTOU: ${attackRollDetail} | [DanoBase]${baseDamageText} + [LL]${stats.LL || 0}${!isHR && invested > 0 ? ` + [Reforço]${invested}` : ''}`;
+      total = baseDamageValue + (isHR ? 0 : invested);
+      detail = `ATAQUE ACERTOU: ${attackRollDetail} | [DanoBase]${baseDamageText}${!isHR && invested > 0 ? ` + [Reforço]${invested}` : ''}`;
       actionCostCE = isHR ? 0 : Math.ceil(invested / 2);
     } 
     else if (activeTab === 'defense') {
