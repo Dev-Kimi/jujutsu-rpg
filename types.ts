@@ -80,7 +80,7 @@ export interface BindingVow {
   isActive: boolean;
   createdAt: number;
   skillModifiers?: { skillName: string; value: number }[];
-  advantageType?: 'attack' | 'physicalSkills' | null;
+  advantageType?: 'attackTests' | 'physicalSkills' | 'defense' | 'mentalSkills' | 'resistance' | null;
 }
 
 export interface Condition {
