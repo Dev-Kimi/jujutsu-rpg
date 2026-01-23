@@ -243,6 +243,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     let damageTotal = 0;
 
     const isHR = char.origin === Origin.RestricaoCelestial;
+    const hasAdvAttack = (char.bindingVows || []).some(v => v.isActive && v.advantageType === 'attack');
 
     // 1. Calculate Action Specifics
     if (activeTab === 'physical') {
@@ -263,12 +264,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          const lutaBonus = lutaSkill ? lutaSkill.value : 0;
          const llBonus = stats.LL || 0;
          const attrKey = getSkillAttribute('Luta');
-         const { rolls, best } = rollD20Pool(char.attributes[attrKey]);
+         const { rolls, best } = rollD20Pool(char.attributes[attrKey] + (hasAdvAttack ? 1 : 0));
          attackRolls = rolls;
          const baseAttackRoll = best;
          attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus + projectionBonus;
          const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
-         attackRollDetail = `${dicePart} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
+         attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
          isCritSuccess = baseAttackRoll === 20;
          isCritFail = baseAttackRoll === 1;
          if (isCritSuccess) isCritical = true;
@@ -288,13 +289,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
              const llBonus = stats.LL || 0;
              const attrKey = getSkillAttribute(attackSkillName);
-             const { rolls, best } = rollD20Pool(char.attributes[attrKey]);
+             const { rolls, best } = rollD20Pool(char.attributes[attrKey] + (hasAdvAttack ? 1 : 0));
              attackRolls = rolls;
              const baseAttackRoll = best;
 
              attackRoll = baseAttackRoll + attackBonus + totalBuffBonus + llBonus + projectionBonus;
              const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
-             attackRollDetail = `${dicePart} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
+             attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
              isCritSuccess = baseAttackRoll === 20;
              isCritFail = baseAttackRoll === 1;
 
