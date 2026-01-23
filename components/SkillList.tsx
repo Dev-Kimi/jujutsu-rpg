@@ -266,6 +266,7 @@ export const SkillList: React.FC<SkillListProps> = ({
           });
 
           const currentLevel = TRAINING_LEVELS.find(l => l.value === skill.value) || TRAINING_LEVELS[0];
+          const trainingColor = currentLevel.color;
           
           // Get Attribute Value for Display
           const attrVal = skill.attribute ? char.attributes[skill.attribute] : 0;
@@ -295,13 +296,11 @@ export const SkillList: React.FC<SkillListProps> = ({
                         disabled={readOnly}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => onUpdateSkill(skill.id, 'name', e.target.value)}
-                        className="bg-transparent border-none p-0 text-xs font-medium text-white w-full focus:ring-0"
+                        className={`bg-transparent border-none p-0 text-xs font-medium ${trainingColor} w-full focus:ring-0`}
                       />
                    ) : (
                       <div className="flex items-baseline gap-1">
-                          <span className={`font-medium truncate text-white ${
-                            hasQueuedBuff ? 'text-emerald-400' : ''
-                          }`}>
+                          <span className={`font-medium truncate ${hasQueuedBuff ? 'text-emerald-400' : trainingColor}`}>
                               {skill.name}
                           </span>
                           {(((skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) || isSorcery)) && <span className="text-[9px] text-slate-500 font-mono">+LL</span>}
@@ -316,7 +315,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                     <select
                       value={skill.attribute || ""}
                       onChange={(e) => onUpdateSkill(skill.id, 'attribute', e.target.value)}
-                      className="w-full bg-transparent text-xs text-white font-mono text-center cursor-pointer appearance-none focus:outline-none border-none hover:bg-slate-800/50 rounded px-1 py-0.5 transition-colors duration-100"
+                      className={`w-full bg-transparent text-xs ${trainingColor} font-mono text-center cursor-pointer appearance-none focus:outline-none border-none hover:bg-slate-800/50 rounded px-1 py-0.5 transition-colors duration-100`}
                     >
                       <option value="" className="bg-slate-900 text-slate-300">-</option>
                       {attributeOptions.map(attr => (
@@ -326,7 +325,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                       ))}
                     </select>
                  ) : (
-                   <div className="text-xs font-mono text-white">
+                   <div className={`text-xs font-mono ${trainingColor}`}>
                      {skill.attribute || '-'}
                    </div>
                  )}
@@ -338,7 +337,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                     value={skill.value}
                     disabled={readOnly}
                     onChange={(e) => onUpdateSkill(skill.id, 'value', parseInt(e.target.value) || 0)}
-                    className="bg-transparent text-center text-xs font-mono text-white appearance-none focus:outline-none border-none hover:bg-slate-800/50 rounded px-1 py-0.5 transition-colors duration-100 cursor-pointer"
+                    className={`bg-transparent text-center text-xs font-mono ${trainingColor} appearance-none focus:outline-none border-none hover:bg-slate-800/50 rounded px-1 py-0.5 transition-colors duration-100 cursor-pointer`}
                  >
                     {TRAINING_LEVELS.map(level => (
                         <option key={level.value} value={level.value} className="bg-slate-900 text-white">
