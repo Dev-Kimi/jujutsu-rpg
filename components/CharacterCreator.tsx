@@ -30,7 +30,7 @@ export const CharacterCreator: React.FC<CharacterCreatorProps> = ({ onFinish, on
   });
 
   const totalPoints = 9;
-  const currentTotal = Object.values(attributes).reduce((a, b) => a + b, 0);
+  const currentTotal = (Object.values(attributes) as number[]).reduce((a, b) => a + b, 0);
   const remainingPoints = totalPoints - currentTotal;
 
   const handleAttrChange = (key: keyof Attributes, delta: number) => {
