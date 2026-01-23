@@ -1087,7 +1087,7 @@ const App: React.FC = () => {
       {activeTab === 'campaigns' ? (
           <div className="max-w-[1600px] mx-auto p-4 pb-24 h-full">
             <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar mb-6">
-                {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'campaigns'] as Tab[]).map(tab => (
+                {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'campaigns', 'binding-vows'] as Tab[]).map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
@@ -1103,6 +1103,7 @@ const App: React.FC = () => {
                     {tab === 'inventory' && 'Invent.'}
                     {tab === 'progression' && 'Progressão'}
                     {tab === 'campaigns' && 'Campanhas'}
+                    {tab === 'binding-vows' && 'Votos'}
                     </button>
                 ))}
             </div>
