@@ -10,9 +10,10 @@ interface StatBarProps {
   onChange: (newVal: number) => void;
   icon?: React.ReactNode;
   readOnly?: boolean;
+  className?: string;
 }
 
-export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, onChange, icon, readOnly }) => {
+export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClass, onChange, icon, readOnly, className = '' }) => {
   const percentage = max > 0 ? (current / max) * 100 : 0;
   const isOvercharged = current > max;
   const isLow = current <= max * 0.25 && current > 0;
@@ -27,7 +28,7 @@ export const StatBar: React.FC<StatBarProps> = ({ label, current, max, colorClas
   };
 
   return (
-    <div className={`mb-4 bg-slate-900/50 p-3 rounded-xl border relative group overflow-hidden transition-colors duration-75 ${isLow ? 'border-red-900/30' : 'border-slate-800'}`}>
+    <div className={`bg-slate-900/50 p-3 rounded-xl border relative group overflow-hidden transition-colors duration-75 min-w-0 ${isLow ? 'border-red-900/30' : 'border-slate-800'} ${className}`}>
       
       <div className="flex justify-between items-end mb-2 relative z-10">
         <div className="flex items-center gap-2 font-bold text-sm uppercase tracking-wider text-slate-300">
