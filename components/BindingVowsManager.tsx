@@ -214,6 +214,19 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
                             placeholder="Descrição narrativa do voto..."
                         />
                     </div>
+                    
+                    <div>
+                        <label className="block text-xs font-bold text-curse-400 uppercase mb-1">Tipo de Vantagem</label>
+                        <select
+                            value={formData.advantageType ?? ''}
+                            onChange={e => setFormData({ ...formData, advantageType: (e.target.value || null) as any })}
+                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white focus:border-curse-500 outline-none text-xs"
+                        >
+                            <option value="">Nenhuma</option>
+                            <option value="attack">Ataque</option>
+                            <option value="physicalSkills">Perícias Físicas</option>
+                        </select>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
