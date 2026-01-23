@@ -241,9 +241,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     let isCritFail = false;
     let attackRolls: number[] = [];
     let damageTotal = 0;
+    let defenseRoll: number | undefined = undefined;
+    let defenseRollDetail = "";
+    let defenseRolls: number[] = [];
 
     const isHR = char.origin === Origin.RestricaoCelestial;
     const hasAdvAttack = (char.bindingVows || []).some(v => v.isActive && v.advantageType === 'attack');
+    const hasAdvDefense = (char.bindingVows || []).some(v => v.isActive && v.advantageType === 'defense');
 
     // 1. Calculate Action Specifics
     if (activeTab === 'physical') {
@@ -326,6 +330,14 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         showNotification("Restrição Celestial não usa CE para defesa.", 'error');
         return;
       }
+      const baseDefenseDice = char.attributes.AGI || 1;
+      const { rolls, best } = rollD20Pool(baseDefenseDice + (hasAdvDefense ? 1 : 0));
+      defenseRolls = rolls;
+      const baseDefenseRoll = best;
+      defenseRoll = baseDefenseRoll + (stats.LL || 0);
+      const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
+      defenseRollDetail = `${dicePart}${hasAdvDefense && rolls.length > 1 ? ' + Vantagem' : ''}${stats.LL ? ` + ${stats.LL} (LL)` : ''}`;
+      loggedRolls = rolls;
       actionCostCE = invested > 0 ? Math.ceil(invested / 2) : 0;
       const reductionAmount = invested;
       
@@ -384,6 +396,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       attackRoll,
       attackRollDetail,
       attackRolls,
+        defenseRoll,
+        defenseRollDetail,
+        attackHits,
       isCritical: isCritical || isCritSuccess,
       isCritSuccess,
       isCritFail,
