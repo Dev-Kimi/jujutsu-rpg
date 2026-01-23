@@ -480,16 +480,18 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
                                   <p className="text-sm text-slate-300">{vow.description}</p>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                                    <div className="bg-emerald-950/20 border border-emerald-500/20 rounded p-2">
-                                        <span className="text-xs font-bold text-emerald-400 block mb-1">BENEFÍCIO</span>
-                                        <span className="text-xs text-emerald-100">{vow.benefit || '-'}</span>
+                                {expandedMap[vow.id] && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                        <div className="bg-emerald-950/20 border border-emerald-500/20 rounded p-2">
+                                            <span className="text-xs font-bold text-emerald-400 block mb-1">BENEFÍCIO</span>
+                                            <span className="text-xs text-emerald-100">{vow.benefit || '-'}</span>
+                                        </div>
+                                        <div className="bg-red-950/20 border border-red-500/20 rounded p-2">
+                                            <span className="text-xs font-bold text-red-400 block mb-1">RESTRIÇÃO</span>
+                                            <span className="text-xs text-red-100">{vow.restriction || '-'}</span>
+                                        </div>
                                     </div>
-                                    <div className="bg-red-950/20 border border-red-500/20 rounded p-2">
-                                        <span className="text-xs font-bold text-red-400 block mb-1">RESTRIÇÃO</span>
-                                        <span className="text-xs text-red-100">{vow.restriction || '-'}</span>
-                                    </div>
-                                </div>
+                                )}
 
                                 {vow.bonuses && vow.bonuses.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-2">
