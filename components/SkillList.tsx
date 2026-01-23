@@ -23,7 +23,7 @@ interface SkillListProps {
 }
 
 const TRAINING_LEVELS = [
-  { value: 0, label: "0", name: "Destreinado", color: "text-slate-600 font-normal" },
+  { value: 0, label: "0", name: "Destreinado", color: "text-white font-normal" },
   { value: 5, label: "+5", name: "Treinado", color: "text-emerald-500 font-bold" },
   { value: 10, label: "+10", name: "Veterano", color: "text-blue-500 font-bold" },
   { value: 15, label: "+15", name: "Expert", color: "text-orange-500 font-black" },
