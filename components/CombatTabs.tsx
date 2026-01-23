@@ -233,7 +233,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     let weaponBroken = false;
     let rollTitle = "Ataque";
     let loggedRolls: number[] = []; // Store rolls for logging
-    let attackRoll = 0;
+    let attackRoll: number | undefined = undefined;
     let attackRollDetail = "";
     let attackHits = true; // Always hits now that we removed opposed test
     let isCritical = false;
@@ -330,13 +330,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         showNotification("Restrição Celestial não usa CE para defesa.", 'error');
         return;
       }
-      const baseDefenseDice = char.attributes.AGI || 1;
-      const { rolls, best } = rollD20Pool(baseDefenseDice + (hasAdvDefense ? 1 : 0));
-      defenseRolls = rolls;
-      const baseDefenseRoll = best;
-      defenseRoll = baseDefenseRoll + (stats.LL || 0);
-      const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
-      defenseRollDetail = `${dicePart}${hasAdvDefense && rolls.length > 1 ? ' + Vantagem' : ''}${stats.LL ? ` + ${stats.LL} (LL)` : ''}`;
+      // Não rolar d20 de acerto/defesa: apenas aplicar mitigação baseada em LL
       // --- Nova Fórmula de Mitigação ---
       const ll = stats.LL || 0;
       const mitigDiceCount = Math.floor(ll / 5);
@@ -890,28 +884,30 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             </div>
 
             <div className="flex items-center justify-between gap-4">
-              {/* Attack Column */}
-              <div className="flex-1 flex flex-col items-center text-center relative group">
-                <span
-                  className={`text-3xl font-black ${
-                    lastResult.isCritFail
-                      ? 'text-red-400'
-                      : lastResult.isCritSuccess || lastResult.isCritical
-                      ? 'text-emerald-300'
-                      : 'text-white'
-                  }`}
-                >
-                  {lastResult.attackRoll}
-                </span>
-                <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Ataque</span>
-                {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
-                  <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 right-0 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
-                    <span>{lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}</span>
-                    {lastResult.isCritSuccess && <span className="text-emerald-300">Crítico natural</span>}
-                    {lastResult.isCritFail && <span className="text-red-300">Falha natural</span>}
-                  </div>
-                )}
-              </div>
+              {/* Attack Column (omit when sem rolagem de acerto/defesa) */}
+              {lastResult.attackRoll !== undefined && (
+                <div className="flex-1 flex flex-col items-center text-center relative group">
+                  <span
+                    className={`text-3xl font-black ${
+                      lastResult.isCritFail
+                        ? 'text-red-400'
+                        : lastResult.isCritSuccess || lastResult.isCritical
+                        ? 'text-emerald-300'
+                        : 'text-white'
+                    }`}
+                  >
+                    {lastResult.attackRoll}
+                  </span>
+                  <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Ataque</span>
+                  {(lastResult.attackRollDetail || lastResult.attackRolls?.length) && (
+                    <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 right-0 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
+                      <span>{lastResult.attackRollDetail || `[${lastResult.attackRolls?.join(', ')}]`}</span>
+                      {lastResult.isCritSuccess && <span className="text-emerald-300">Crítico natural</span>}
+                      {lastResult.isCritFail && <span className="text-red-300">Falha natural</span>}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Defense Column - Only show for physical attacks */}
               {lastResult.defenseRoll !== undefined && (
