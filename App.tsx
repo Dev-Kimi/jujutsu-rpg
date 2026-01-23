@@ -1396,7 +1396,7 @@ const App: React.FC = () => {
             
             {/* Tab Navigation */}
             <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pb-2">
-               {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'binding-vows', 'campaigns'] as Tab[]).map(tab => (
+               {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'campaigns', 'binding-vows'] as Tab[]).map(tab => (
                  <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -1411,8 +1411,8 @@ const App: React.FC = () => {
                    {tab === 'techniques' && 'Técnicas'}
                    {tab === 'inventory' && 'Invent.'}
                    {tab === 'progression' && 'Progressão'}
-                   {tab === 'binding-vows' && 'Votos'}
                    {tab === 'campaigns' && 'Campanhas'}
+                   {tab === 'binding-vows' && 'Votos'}
                  </button>
                ))}
             </div>
