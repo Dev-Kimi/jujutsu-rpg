@@ -178,7 +178,7 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
          
          {/* The Pentagon (Smaller) */}
          <div className="relative w-full flex justify-center mb-3">
-            <div className="relative w-[180px] h-[180px]">
+            <div className="relative w-full max-w-[180px] aspect-square">
                 <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="drop-shadow-[0_0_10px_rgba(124,58,237,0.1)]">
                     {webPoints.map((points, i) => (
                         <polygon key={i} points={points} fill="none" stroke="#1e293b" strokeWidth="1" />
