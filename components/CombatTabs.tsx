@@ -755,9 +755,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                   </span>
                )}
 
-              <div className="text-[10px] text-slate-500 italic">
-                <strong>Sistema de Teste Oposto:</strong> Seu ataque (Luta/Pontaria + LL + buffs) vs defesa do oponente (Reflexos/Vontade + bônus). Ataque deve ser maior que defesa para acertar.
-              </div>
             </div>
           )}
 
