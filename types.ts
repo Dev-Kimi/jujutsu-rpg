@@ -79,6 +79,7 @@ export interface BindingVow {
   bonuses?: string[]; // Lista de bônus mecânicos (ex: "+2 FOR", "+10 CE")
   isActive: boolean;
   createdAt: number;
+  skillModifiers?: { skillName: string; value: number }[];
 }
 
 export interface Condition {
