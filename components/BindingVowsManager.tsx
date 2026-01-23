@@ -255,6 +255,9 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
                             <option value="">Nenhuma</option>
                             <option value="attack">Ataque</option>
                             <option value="physicalSkills">Perícias Físicas</option>
+                            <option value="defense">Defesa</option>
+                            <option value="mentalSkills">Perícias Mentais</option>
+                            <option value="resistance">Resistência</option>
                         </select>
                     </div>
 
