@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BindingVow, Character, Skill } from '../types';
-import { Plus, Trash2, Edit2, X, Check, Scroll, Filter, ArrowUpDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Check, Scroll, Filter, ArrowUpDown, ChevronDown } from 'lucide-react';
 
 interface BindingVowsManagerProps {
   char: Character;
@@ -11,6 +11,7 @@ interface BindingVowsManagerProps {
 export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, onUpdateCharacter, readOnly = false }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingVow, setEditingVow] = useState<BindingVow | null>(null);
+  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
   
   // Form State
   const [formData, setFormData] = useState<Partial<BindingVow>>({
@@ -459,10 +460,25 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
+                                    <button
+                                      type="button"
+                                      aria-expanded={expandedMap[vow.id] ? 'true' : 'false'}
+                                      aria-controls={`desc-${vow.id}`}
+                                      onClick={() => setExpandedMap(prev => ({ ...prev, [vow.id]: !prev[vow.id] }))}
+                                      className="p-1 rounded hover:bg-slate-800 text-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+                                      title={expandedMap[vow.id] ? 'Recolher descrição' : 'Expandir descrição'}
+                                    >
+                                      <ChevronDown size={16} className={`${expandedMap[vow.id] ? 'rotate-180' : 'rotate-0'} transition-transform`} />
+                                    </button>
                                     <h4 className={`font-bold text-lg ${vow.isActive ? 'text-white' : 'text-slate-400'}`}>{vow.name}</h4>
                                     {!vow.isActive && <span className="text-[10px] uppercase font-bold bg-slate-800 text-slate-500 px-2 py-0.5 rounded">Inativo</span>}
                                 </div>
-                                <p className="text-sm text-slate-300 mb-3">{vow.description}</p>
+                                <div
+                                  id={`desc-${vow.id}`}
+                                  className={`overflow-hidden transition-all duration-200 ${expandedMap[vow.id] ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'} mb-3`}
+                                >
+                                  <p className="text-sm text-slate-300">{vow.description}</p>
+                                </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                     <div className="bg-emerald-950/20 border border-emerald-500/20 rounded p-2">
