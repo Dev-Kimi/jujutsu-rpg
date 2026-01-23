@@ -93,17 +93,18 @@ export const getWeaponCriticalThreshold = (weaponItem: Item | undefined): number
   return 20; // Default
 };
 
-export const parseAbilityCost = (costStr: string): { pe: number, ce: number } => {
+export const parseAbilityCost = (costStr: string): { pe: number, ce: number, isVariable: boolean } => {
   let pe = 0;
   let ce = 0;
+  let isVariable = false;
   
-  if (!costStr) return { pe: 0, ce: 0 };
+  if (!costStr) return { pe: 0, ce: 0, isVariable: false };
 
   const lower = costStr.toLowerCase();
 
   // Check for "Passivo" or "Passiva"
   if (lower.includes("passivo") || lower.includes("passiva")) {
-    return { pe: 0, ce: 0 };
+    return { pe: 0, ce: 0, isVariable: false };
   }
   
   // Extract PE values
@@ -126,13 +127,15 @@ export const parseAbilityCost = (costStr: string): { pe: number, ce: number } =>
   
   // Handle variable costs (X PE, X CE)
   if (lower.includes("x pe") || lower.includes("xpe")) {
-    pe = 1; // Placeholder for variable
+    pe = 1;
+    isVariable = true;
   }
   if (lower.includes("x ce") || lower.includes("xce")) {
-    ce = 1; // Placeholder for variable
+    ce = 1;
+    isVariable = true;
   }
   
-  return { pe, ce };
+  return { pe, ce, isVariable };
 };
 
 export const parseAbilityEffect = (description: string): { attack: number, defense: number } => {
