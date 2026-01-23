@@ -102,6 +102,28 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
     setNewBonus('');
   };
 
+  const addAdvantageBonus = () => {
+    if (!newBonus.trim()) return;
+    const txt = newBonus.trim();
+    setFormData(prev => ({
+      ...prev,
+      bonuses: [...(prev.bonuses || []), txt]
+    }));
+    setNewBonus('');
+  };
+
+  const addDisadvantageBonus = () => {
+    if (!newBonus.trim()) return;
+    const txt = newBonus.trim();
+    const hasNegHint = (/(^|\s)-/.test(txt)) || /\b(desvantagem|penalidade|reduz|redução|diminui|malus)\b/i.test(txt);
+    const content = hasNegHint ? txt : `Desvantagem: ${txt}`;
+    setFormData(prev => ({
+      ...prev,
+      bonuses: [...(prev.bonuses || []), content]
+    }));
+    setNewBonus('');
+  };
+
   const removeBonus = (index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -156,6 +178,13 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
     if (!term) return allSkills;
     return allSkills.filter(s => s.name.toLowerCase().includes(term));
   }, [allSkills, skillSearch]);
+
+  const classifyBonus = (text: string): 'adv' | 'dis' => {
+    const t = (text || '').toLowerCase();
+    if ((/(^|\s)-/.test(text)) || /\b(desvantagem|penalidade|reduz|redução|diminui|malus)\b/.test(t)) return 'dis';
+    if ((/(^|\s)\+/.test(text)) || /\b(vantagem|bônus|bonus|aumenta|melhora|incrementa)\b/.test(t)) return 'adv';
+    return 'adv';
+  };
 
   return (
     <div className="bg-slate-900 rounded-xl border border-slate-800 shadow-xl overflow-hidden min-h-[400px] flex flex-col">
@@ -252,29 +281,61 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
 
                     <div className="bg-slate-950/50 p-3 rounded border border-slate-800">
                         <label className="block text-xs font-bold text-purple-400 uppercase mb-2">Bônus Específicos</label>
-                        <div className="flex gap-2 mb-2">
+                        <div className="flex gap-2 mb-3">
                             <input 
                                 type="text" 
                                 value={newBonus}
                                 onChange={e => setNewBonus(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && addBonus()}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter') addAdvantageBonus();
+                                }}
                                 className="flex-1 bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white"
                                 placeholder="Ex: +20% de Dano, +1 Dado em Testes"
                             />
                             <button 
-                                onClick={addBonus}
-                                className="bg-slate-800 hover:bg-slate-700 text-purple-300 px-3 rounded font-bold"
+                                onClick={addAdvantageBonus}
+                                className="bg-emerald-800 hover:bg-emerald-700 text-emerald-200 px-3 rounded font-bold"
+                                title="Adicionar como Vantagem"
                             >
-                                +
+                                Vantagem
+                            </button>
+                            <button 
+                                onClick={addDisadvantageBonus}
+                                className="bg-red-800 hover:bg-red-700 text-red-200 px-3 rounded font-bold"
+                                title="Adicionar como Desvantagem"
+                            >
+                                Desvantagem
                             </button>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                            {formData.bonuses?.map((bonus, idx) => (
-                                <span key={idx} className="bg-purple-900/30 border border-purple-500/30 text-purple-200 text-xs px-2 py-1 rounded flex items-center gap-1">
-                                    {bonus}
-                                    <button onClick={() => removeBonus(idx)} className="hover:text-white"><X size={12} /></button>
-                                </span>
-                            ))}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <div className="text-[10px] uppercase font-bold text-emerald-400 mb-1">Vantagens</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(formData.bonuses || []).filter(b => classifyBonus(b) === 'adv').map((bonus) => {
+                                        const i = (formData.bonuses || []).findIndex(x => x === bonus);
+                                        return (
+                                            <span key={`${bonus}-${i}`} className="bg-emerald-900/30 border border-emerald-500/30 text-emerald-200 text-xs px-2 py-1 rounded flex items-center gap-1">
+                                                {bonus}
+                                                <button onClick={() => removeBonus(i)} className="hover:text-white"><X size={12} /></button>
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-[10px] uppercase font-bold text-red-400 mb-1">Desvantagens</div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(formData.bonuses || []).filter(b => classifyBonus(b) === 'dis').map((bonus) => {
+                                        const i = (formData.bonuses || []).findIndex(x => x === bonus);
+                                        return (
+                                            <span key={`${bonus}-${i}`} className="bg-red-900/30 border border-red-500/30 text-red-200 text-xs px-2 py-1 rounded flex items-center gap-1">
+                                                {bonus}
+                                                <button onClick={() => removeBonus(i)} className="hover:text-white"><X size={12} /></button>
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -494,12 +555,27 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
                                 )}
 
                                 {vow.bonuses && vow.bonuses.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {vow.bonuses.map((bonus, idx) => (
-                                            <span key={idx} className="text-[10px] font-bold bg-purple-900/40 text-purple-200 border border-purple-500/30 px-2 py-1 rounded">
-                                                {bonus}
-                                            </span>
-                                        ))}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                                        <div>
+                                            <span className="text-[10px] font-bold text-emerald-400 block mb-1">VANTAGENS</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(vow.bonuses || []).filter(b => classifyBonus(b) === 'adv').map((bonus, idx) => (
+                                                    <span key={`adv-${idx}`} className="text-[10px] font-bold bg-emerald-900/40 text-emerald-200 border border-emerald-500/30 px-2 py-1 rounded">
+                                                        {bonus}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] font-bold text-red-400 block mb-1">DESVANTAGENS</span>
+                                            <div className="flex flex-wrap gap-2">
+                                                {(vow.bonuses || []).filter(b => classifyBonus(b) === 'dis').map((bonus, idx) => (
+                                                    <span key={`dis-${idx}`} className="text-[10px] font-bold bg-red-900/40 text-red-200 border border-red-500/30 px-2 py-1 rounded">
+                                                        {bonus}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>
