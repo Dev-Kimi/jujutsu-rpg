@@ -13,24 +13,40 @@ const classifyBonus = (text: string): 'adv' | 'dis' => {
 
 export const computeVoteBonus = (vows: BindingVow[] | undefined): BonusPercent => {
   const active = (vows || []).filter(v => v.isActive);
-  let advCount = 0;
-  let disCount = 0;
+
+  let pvPct = 0;
+  let cePct = 0;
+  let pePct = 0;
 
   active.forEach(v => {
-    (v.bonuses || []).forEach(b => {
-      const kind = classifyBonus(b);
-      if (kind === 'adv') advCount += 1;
-      else disCount += 1;
+    (v.bonuses || []).forEach(raw => {
+      const text = (raw || '').toLowerCase();
+
+      const matches = text.match(/([+-]?\d+)\s*%/g);
+      if (!matches) return;
+
+      matches.forEach(m => {
+        const numMatch = m.match(/([+-]?\d+)\s*%/);
+        if (!numMatch) return;
+        const value = Number(numMatch[1] || 0);
+        if (!value) return;
+
+        const appliesPv = /\bpv\b|\bvida\b/.test(text);
+        const appliesCe = /\bce\b|\benergia\b/.test(text);
+        const appliesPe = /\bpe\b|\besforc[oo]\b/.test(text);
+
+        if (appliesPv) pvPct += value;
+        if (appliesCe) cePct += value;
+        if (appliesPe) pePct += value;
+      });
     });
   });
 
-  // Mapping: each advantage increases PV +2%, CE +3%, PE +1%
-  // each disadvantage decreases PV/CE/PE by -1%
-  const pvPct = clamp((advCount * 2) - (disCount * 1));
-  const cePct = clamp((advCount * 3) - (disCount * 1));
-  const pePct = clamp((advCount * 1) - (disCount * 1));
-
-  return { pvPct, cePct, pePct };
+  return {
+    pvPct: clamp(pvPct),
+    cePct: clamp(cePct),
+    pePct: clamp(pePct)
+  };
 };
 
 export const combineBonuses = (auto: BonusPercent, manual: BonusPercent | null, manualActive: boolean): BonusPercent => {
