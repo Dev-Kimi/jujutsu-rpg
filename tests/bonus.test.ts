@@ -13,21 +13,31 @@ const mkVow = (bonuses: string[], isActive = true) => ({
 } as any);
 
 describe('computeVoteBonus', () => {
-  it('classifies advantages and disadvantages and maps to percents', () => {
+  it('lê apenas porcentagens explícitas em PV/CE/PE', () => {
     const vows = [
-      mkVow(['+10% PV', 'Vantagem: CE +5%']),
-      mkVow(['Desvantagem: -5% PE']),
+      mkVow(['+10% PV', 'CE +5%']),
+      mkVow(['-5% PE']),
       mkVow(['penalidade de movimento'], true),
     ];
     const res = computeVoteBonus(vows as any);
-    // 2 adv, 2 dis → PV: (2*2)-(2*1)=2; CE: (2*3)-2=4; PE: (2*1)-2=0
-    expect(res.pvPct).toBe(2);
-    expect(res.cePct).toBe(4);
+    expect(res.pvPct).toBe(10);
+    expect(res.cePct).toBe(5);
+    expect(res.pePct).toBe(-5);
+  });
+
+  it('desconsidera textos sem porcentagem ou sem PV/CE/PE', () => {
+    const vows = [
+      mkVow(['Vantagem: dano aumentado']),
+      mkVow(['penalidade de movimento']),
+    ];
+    const res = computeVoteBonus(vows as any);
+    expect(res.pvPct).toBe(0);
+    expect(res.cePct).toBe(0);
     expect(res.pePct).toBe(0);
   });
 
-  it('caps values within [-50, 50]', () => {
-    const vows = new Array(100).fill(0).map(() => mkVow(['+adv']));
+  it('corta valores dentro de [-50, 50]', () => {
+    const vows = new Array(100).fill(0).map(() => mkVow(['+10% PV', '+10% CE', '+10% PE']));
     const res = computeVoteBonus(vows as any);
     expect(res.pvPct).toBeLessThanOrEqual(50);
     expect(res.cePct).toBeLessThanOrEqual(50);
