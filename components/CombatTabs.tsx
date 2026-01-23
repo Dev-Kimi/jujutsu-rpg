@@ -321,9 +321,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           baseDamageText = `max(${unarmedDamageDie}) = ${baseDamageValue} (Crítico!)`;
         }
       }
-      total = baseDamageValue + (stats.LL || 0);
-      detail = `ATAQUE ACERTOU: ${attackRollDetail} | [DanoBase]${baseDamageText} + [LL]${stats.LL || 0}`;
-      actionCostCE = 0; // Sem custo de CE para reforço corporal
+      total = baseDamageValue + (stats.LL || 0) + (isHR ? 0 : invested);
+      detail = `ATAQUE ACERTOU: ${attackRollDetail} | [DanoBase]${baseDamageText} + [LL]${stats.LL || 0}${!isHR && invested > 0 ? ` + [Reforço]${invested}` : ''}`;
+      actionCostCE = isHR ? 0 : Math.ceil(invested / 2);
     } 
     else if (activeTab === 'defense') {
        if (isHR) {
@@ -758,6 +758,28 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             </div>
           )}
 
+          {!isHR && activeTab === 'physical' && (
+            <div>
+                <label className="block text-xs text-slate-400 mb-1">
+                  {`Pontos de Reforço (Max LL: ${stats.LL})`}
+                </label>
+                <div className="flex items-center gap-3">
+                <input 
+                    type="range" 
+                    min="0" 
+                    max={maxInvest} 
+                    step="1"
+                    value={invested}
+                    onChange={(e) => setInvested(parseInt(e.target.value))}
+                    className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
+                />
+                <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
+                    {invested}
+                </span>
+                </div>
+            </div>
+          )}
+
           {!isHR && activeTab === 'defense' && (
             <div>
                 <label className="block text-xs text-slate-400 mb-1">
@@ -771,7 +793,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                     step="1"
                     value={invested}
                     onChange={(e) => setInvested(parseInt(e.target.value))}
-                    className={`flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500`}
+                  className={`flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500`}
                 />
                 <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
                     {invested}
@@ -785,7 +807,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                 <p className="text-xs text-slate-300">
                     <span className="text-curse-400 font-bold">Restrição Celestial:</span> Dano extra passivo aplicado automaticamente.
                 </p>
-                <p className="text-xs font-mono text-slate-500 mt-1">Bônus: {char.level * 2}d3</p>
+                <p className="text-xs font-mono text-slate-500 mt-1">Bônus: {stats.LL}d3</p>
             </div>
         )}
       </div>
