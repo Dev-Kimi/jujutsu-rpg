@@ -337,18 +337,28 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       defenseRoll = baseDefenseRoll + (stats.LL || 0);
       const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
       defenseRollDetail = `${dicePart}${hasAdvDefense && rolls.length > 1 ? ' + Vantagem' : ''}${stats.LL ? ` + ${stats.LL} (LL)` : ''}`;
-      loggedRolls = rolls;
-      actionCostCE = invested > 0 ? Math.ceil(invested / 2) : 0;
-      const reductionAmount = invested;
-      
+      // --- Nova Fórmula de Mitigação ---
+      const ll = stats.LL || 0;
+      const mitigDiceCount = Math.floor(ll / 5);
+      const mitigFixed = ll % 5;
+      const mitigRolls: number[] = [];
+      let mitigSum = 0;
+      for (let i = 0; i < mitigDiceCount; i++) {
+        const r = rollDice(10, 1);
+        mitigRolls.push(r);
+        mitigSum += r;
+      }
+      const reductionAmount = mitigSum + mitigFixed;
       const finalReduction = reductionAmount + totalBuffBonus;
       const finalDamage = Math.max(0, incomingDamage - finalReduction);
+      loggedRolls = mitigRolls.length > 0 ? mitigRolls : [finalReduction];
+      actionCostCE = 0;
       
       total = finalDamage;
       isDamageTaken = true;
       rollTitle = "Dano Final Recebido";
 
-      detail = `${incomingDamage} - ${reductionAmount} (Mitigado)`;
+      detail = `Dano ${incomingDamage} - Mitigação (${mitigDiceCount}d10=[${mitigRolls.join(', ')}] + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${finalReduction}`;
     }
 
     // 2. Add Buffs to Total (If Attack)
@@ -517,7 +527,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       return getWeaponCELimit(weapon);
   };
   const weaponLimit = getCurrentWeaponLimit();
-  const currentCostCE = Math.ceil(invested / 2);
+  const currentCostCE = activeTab === 'defense' ? 0 : Math.ceil(invested / 2);
   const willBreak = weaponLimit !== null && currentCostCE > weaponLimit;
 
   const getWeaponCriticalThreshold = (weapon: Item): number => {
@@ -673,8 +683,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             {activeTab === 'defense' && "Calculadora de Dano"}
           </span>
           <div className="text-right">
-            <span className={currentStats.ce < currentCostCE && !isHR ? "text-red-500" : "text-curse-400"}>
-              {isHR && activeTab === 'physical' ? 'Custo: 0 (Passivo)' : `Custo Ação: ${currentCostCE} CE`}
+            <span className={activeTab === 'defense' ? "text-curse-400" : (currentStats.ce < currentCostCE && !isHR ? "text-red-500" : "text-curse-400")}>
+              {activeTab === 'defense' ? 'Custo Ação: 0 CE' : (isHR && activeTab === 'physical' ? 'Custo: 0 (Passivo)' : `Custo Ação: ${currentCostCE} CE`)}
             </span>
           </div>
         </div>
@@ -694,6 +704,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                       className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-xl font-black text-white focus:outline-none focus:border-red-500"
                       placeholder="0"
                    />
+                </div>
+                <div className="mt-3 text-[11px] text-slate-400">
+                  <div className="font-bold uppercase tracking-widest mb-1">Mitigação (LL)</div>
+                  <div className="font-mono text-slate-300">
+                    {`${Math.floor((stats.LL || 0) / 5)}d10 + ${(stats.LL || 0) % 5}`} {totalBuffBonus ? `(+ Buffs ${totalBuffBonus})` : ''}
+                  </div>
                 </div>
              </div>
           )}
@@ -780,27 +796,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             </div>
           )}
 
-          {!isHR && activeTab === 'defense' && (
-            <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  {`Pontos de Redução (Max LL: ${stats.LL})`}
-                </label>
-                <div className="flex items-center gap-3">
-                <input 
-                    type="range" 
-                    min="0" 
-                    max={maxInvest} 
-                    step="1"
-                    value={invested}
-                    onChange={(e) => setInvested(parseInt(e.target.value))}
-                  className={`flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-blue-500`}
-                />
-                <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
-                    {invested}
-                </span>
-                </div>
-            </div>
-          )}
+          {/* Slider de defesa removido: mitigação agora baseada somente em LL */}
 
         {isHR && activeTab === 'physical' && (
             <div className="bg-slate-800/50 p-2 rounded border border-slate-700">
