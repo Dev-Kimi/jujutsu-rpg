@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Droplet, Zap, Activity, Skull, Flame, LogOut } from 'lucide-react';
 import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes, Condition, BindingVow } from './types';
 import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger } from './utils/calculations';
+import { computeVoteBonus, combineBonuses, isActiveBonus, loadManualBonus, saveManualBonus, clearManualBonus, applyBonusToStats, notifyBonusesUpdated, BonusPercent } from './utils/bonus';
 import { StatBar } from './components/StatBar';
 import { CombatTabs } from './components/CombatTabs';
 import { SkillList } from './components/SkillList';
@@ -321,6 +322,11 @@ const App: React.FC = () => {
 
   // Current Dynamic Stats
   const [currentStats, setCurrentStats] = useState<CurrentStats>({ pv: 0, ce: 0, pe: 0 });
+  const [manualBonusActive, setManualBonusActive] = useState<boolean>(false);
+  const [manualBonus, setManualBonus] = useState<BonusPercent>({ pvPct: 0, cePct: 0, pePct: 0 });
+  const autoBonus = useMemo(() => computeVoteBonus(character.bindingVows), [character.bindingVows]);
+  const effectiveBonus = useMemo(() => combineBonuses(autoBonus, manualBonus, manualBonusActive), [autoBonus, manualBonus, manualBonusActive]);
+  const effectiveMax = useMemo(() => applyBonusToStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE }, effectiveBonus), [stats.MaxPV, stats.MaxCE, stats.MaxPE, effectiveBonus]);
 
   const [activeCombatCampaignIds, setActiveCombatCampaignIds] = useState<string[]>([]);
   const lastSavedCombatMirrorRef = useRef<string>('');
@@ -365,22 +371,37 @@ const App: React.FC = () => {
     if (viewMode === 'sheet') {
        // If stats are zero (likely fresh load) and Max is > 0, initialize to Max.
        // Since we don't save "Current HP", loading a char always resets to full.
-       if (currentStats.pv === 0 && currentStats.ce === 0 && currentStats.pe === 0 && stats.MaxPV > 0) {
+       if (currentStats.pv === 0 && currentStats.ce === 0 && currentStats.pe === 0 && effectiveMax.pv > 0) {
            setCurrentStats({
-             pv: stats.MaxPV,
-             ce: stats.MaxCE,
-             pe: stats.MaxPE
+             pv: effectiveMax.pv,
+             ce: effectiveMax.ce,
+             pe: effectiveMax.pe
            });
        } else {
            // Otherwise, just clamp if Max decreased (e.g. level down)
            setCurrentStats(prev => ({
-             pv: Math.min(prev.pv, stats.MaxPV),
-             ce: Math.min(prev.ce, stats.MaxCE),
-             pe: Math.min(prev.pe, stats.MaxPE)
+             pv: Math.min(prev.pv, effectiveMax.pv),
+             ce: Math.min(prev.ce, effectiveMax.ce),
+             pe: Math.min(prev.pe, effectiveMax.pe)
            }));
        }
     }
-  }, [stats.MaxPV, stats.MaxCE, stats.MaxPE, viewMode]);
+  }, [effectiveMax.pv, effectiveMax.ce, effectiveMax.pe, viewMode]);
+
+  useEffect(() => {
+    const loaded = loadManualBonus(character.id);
+    if (loaded) {
+      setManualBonusActive(loaded.active);
+      setManualBonus(loaded.values);
+    } else {
+      setManualBonusActive(false);
+      setManualBonus({ pvPct: 0, cePct: 0, pePct: 0 });
+    }
+  }, [character.id]);
+
+  useEffect(() => {
+    notifyBonusesUpdated(effectiveBonus);
+  }, [effectiveBonus.pvPct, effectiveBonus.cePct, effectiveBonus.pePct]);
 
   // --- Persistence & Navigation Handlers ---
 
@@ -1102,45 +1123,176 @@ const App: React.FC = () => {
                onUpdateAttribute={handleAttributeUpdate}
             />
 
-            {/* Status Bars */}
-            <div className="space-y-1">
-              <StatBar 
-                label="Vida (PV)" 
-                icon={<Droplet size={14} className="text-blood-500" />}
-                current={currentStats.pv} 
-                max={stats.MaxPV} 
-                colorClass="bg-blood-500"
-                onChange={(v) => updateStat('pv', v)}
-              />
-              <StatBar 
-                label="Energia (CE)" 
-                icon={<Zap size={14} className="text-curse-400" />}
-                current={currentStats.ce} 
-                max={stats.MaxCE} 
-                colorClass="bg-curse-500"
-                onChange={(v) => updateStat('ce', v)}
-              />
-              <StatBar 
-                label="Esforço (PE)" 
-                icon={<Activity size={14} className="text-orange-400" />}
-                current={currentStats.pe} 
-                max={stats.MaxPE} 
-                colorClass="bg-orange-500"
-                onChange={(v) => updateStat('pe', v)}
-              />
-              <div className="flex gap-2">
-                <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono group relative">
-                  <span className="text-slate-500 uppercase font-bold">Lim. (LL)</span>
-                  <span className="text-curse-400 font-black text-lg">{stats.LL}</span>
-                  <div className="hidden group-hover:flex absolute bottom-full left-0 mb-2 bg-slate-900 text-slate-100 text-xs px-3 py-2 border border-slate-700 shadow-xl max-w-[200px] whitespace-normal z-20">
-                    <strong>Liberação (LL):</strong> Volume máximo de CE controlado. Concede bônus passivos em perícias físicas (+LL) e limita reforços corporais.
+            {/* Status Bars + Bonus Box */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+              <div className="md:col-span-3 space-y-1">
+                <StatBar 
+                  label="Vida (PV)" 
+                  icon={<Droplet size={14} className="text-blood-500" />}
+                  current={currentStats.pv} 
+                  max={effectiveMax.pv} 
+                  colorClass="bg-blood-500"
+                  onChange={(v) => updateStat('pv', v)}
+                />
+                <StatBar 
+                  label="Energia (CE)" 
+                  icon={<Zap size={14} className="text-curse-400" />}
+                  current={currentStats.ce} 
+                  max={effectiveMax.ce} 
+                  colorClass="bg-curse-500"
+                  onChange={(v) => updateStat('ce', v)}
+                />
+                <StatBar 
+                  label="Esforço (PE)" 
+                  icon={<Activity size={14} className="text-orange-400" />}
+                  current={currentStats.pe} 
+                  max={effectiveMax.pe} 
+                  colorClass="bg-orange-500"
+                  onChange={(v) => updateStat('pe', v)}
+                />
+                <div className="flex gap-2">
+                  <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono group relative">
+                    <span className="text-slate-500 uppercase font-bold">Lim. (LL)</span>
+                    <span className="text-curse-400 font-black text-lg">{stats.LL}</span>
+                    <div className="hidden group-hover:flex absolute bottom-full left-0 mb-2 bg-slate-900 text-slate-100 text-xs px-3 py-2 border border-slate-700 shadow-xl max-w-[200px] whitespace-normal z-20">
+                      <strong>Liberação (LL):</strong> Volume máximo de CE controlado. Concede bônus passivos em perícias físicas (+LL) e limita reforços corporais.
+                    </div>
+                  </div>
+                  <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono">
+                    <span className="text-slate-500 uppercase font-bold">Mov.</span>
+                    <span className="text-emerald-400 font-black text-lg">{stats.Movement}m</span>
                   </div>
                 </div>
-                <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono">
-                  <span className="text-slate-500 uppercase font-bold">Mov.</span>
-                  <span className="text-emerald-400 font-black text-lg">{stats.Movement}m</span>
-                </div>
               </div>
+              
+              {(isActiveBonus(effectiveBonus) || manualBonusActive) && (
+                <div 
+                  className="md:col-span-2 bg-slate-900/70 rounded-xl border border-slate-800 p-3 flex flex-col gap-2"
+                  role="status" 
+                  aria-live="polite"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-curse-300">Bônus</span>
+                    <label className="flex items-center gap-2 text-[10px] text-slate-400">
+                      <input 
+                        type="checkbox" 
+                        checked={manualBonusActive} 
+                        onChange={(e) => {
+                          const active = e.target.checked;
+                          setManualBonusActive(active);
+                          saveManualBonus(character.id, active, manualBonus);
+                        }} 
+                      />
+                      Ajuste Manual
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-300">PV</span>
+                      <span className={`text-xs font-mono ${effectiveBonus.pvPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.pvPct}%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-300">CE</span>
+                      <span className={`text-xs font-mono ${effectiveBonus.cePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.cePct}%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-300">PE</span>
+                      <span className={`text-xs font-mono ${effectiveBonus.pePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.pePct}%</span>
+                    </div>
+                  </div>
+
+                  {manualBonusActive && (
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-400 w-10">PV</span>
+                        <input 
+                          type="range" min={-50} max={50} step={1}
+                          value={manualBonus.pvPct}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            setManualBonus(prev => ({ ...prev, pvPct: v }));
+                            saveManualBonus(character.id, true, { ...manualBonus, pvPct: v });
+                          }}
+                          className="flex-1"
+                          aria-label="Ajuste manual de bônus de PV"
+                        />
+                        <input 
+                          type="number" min={-50} max={50}
+                          value={manualBonus.pvPct}
+                          onChange={(e) => {
+                            const v = Math.max(-50, Math.min(50, Number(e.target.value)));
+                            setManualBonus(prev => ({ ...prev, pvPct: v }));
+                            saveManualBonus(character.id, true, { ...manualBonus, pvPct: v });
+                          }}
+                          className="w-16 bg-slate-950 border border-slate-800 rounded p-1 text-xs text-white"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-400 w-10">CE</span>
+                        <input 
+                          type="range" min={-50} max={50} step={1}
+                          value={manualBonus.cePct}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            setManualBonus(prev => ({ ...prev, cePct: v }));
+                            saveManualBonus(character.id, true, { ...manualBonus, cePct: v });
+                          }}
+                          className="flex-1"
+                          aria-label="Ajuste manual de bônus de CE"
+                        />
+                        <input 
+                          type="number" min={-50} max={50}
+                          value={manualBonus.cePct}
+                          onChange={(e) => {
+                            const v = Math.max(-50, Math.min(50, Number(e.target.value)));
+                            setManualBonus(prev => ({ ...prev, cePct: v }));
+                            saveManualBonus(character.id, true, { ...manualBonus, cePct: v });
+                          }}
+                          className="w-16 bg-slate-950 border border-slate-800 rounded p-1 text-xs text-white"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-slate-400 w-10">PE</span>
+                        <input 
+                          type="range" min={-50} max={50} step={1}
+                          value={manualBonus.pePct}
+                          onChange={(e) => {
+                            const v = Number(e.target.value);
+                            setManualBonus(prev => ({ ...prev, pePct: v }));
+                            saveManualBonus(character.id, true, { ...manualBonus, pePct: v });
+                          }}
+                          className="flex-1"
+                          aria-label="Ajuste manual de bônus de PE"
+                        />
+                        <input 
+                          type="number" min={-50} max={50}
+                          value={manualBonus.pePct}
+                          onChange={(e) => {
+                            const v = Math.max(-50, Math.min(50, Number(e.target.value)));
+                            setManualBonus(prev => ({ ...prev, pePct: v }));
+                            saveManualBonus(character.id, true, { ...manualBonus, pePct: v });
+                          }}
+                          className="w-16 bg-slate-950 border border-slate-800 rounded p-1 text-xs text-white"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => {
+                            setManualBonus({ pvPct: 0, cePct: 0, pePct: 0 });
+                            setManualBonusActive(false);
+                            clearManualBonus(character.id);
+                          }}
+                          className="px-2 py-1 text-[10px] uppercase font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded"
+                          title="Resetar para cálculo automático"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
       {/* Domain Expansion Control (Side Panel) */}
@@ -1268,6 +1420,7 @@ const App: React.FC = () => {
                         onAdvanceDomain={advanceDomainRound}
                         onCloseDomain={closeDomain}
                      />
+)
                   </>
                )}
                {activeTab === 'abilities' && (
