@@ -52,25 +52,21 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
   };
 
   const handleSave = () => {
-    if (!formData.name || !formData.description) {
-      alert("Nome e descrição são obrigatórios.");
-      return;
-    }
-
     const currentVows = char.bindingVows || [];
     let updatedVows: BindingVow[];
 
     if (editingVow) {
       // Update existing
       updatedVows = currentVows.map(v => 
-        v.id === editingVow.id ? { ...v, ...formData } as BindingVow : v
+        v.id === editingVow.id ? { ...v, ...formData, name: (formData.name && formData.name.trim()) ? formData.name : (v.name || 'Voto') } as BindingVow : v
       );
     } else {
       // Create new
       const newVow: BindingVow = {
         id: Math.random().toString(36).substring(2, 9),
         createdAt: Date.now(),
-        ...formData
+        ...formData,
+        name: (formData.name && formData.name.trim()) ? formData.name : 'Voto'
       } as BindingVow;
       updatedVows = [...currentVows, newVow];
     }
@@ -195,26 +191,6 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
                 </div>
 
                 <div className="space-y-3">
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Nome do Voto</label>
-                        <input 
-                            type="text" 
-                            value={formData.name}
-                            onChange={e => setFormData({...formData, name: e.target.value})}
-                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white focus:border-purple-500 outline-none"
-                            placeholder="Ex: Revelar a Mão"
-                        />
-                    </div>
-                    
-                    <div>
-                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Descrição</label>
-                        <textarea 
-                            value={formData.description}
-                            onChange={e => setFormData({...formData, description: e.target.value})}
-                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white focus:border-purple-500 outline-none min-h-[80px]"
-                            placeholder="Descrição narrativa do voto..."
-                        />
-                    </div>
                     
                     <div>
                         <label className="block text-xs font-bold text-curse-400 uppercase mb-1">Tipo de Vantagem</label>
@@ -229,26 +205,7 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
                         </select>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-emerald-400 uppercase mb-1">Benefício</label>
-                            <textarea 
-                                value={formData.benefit}
-                                onChange={e => setFormData({...formData, benefit: e.target.value})}
-                                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white focus:border-emerald-500 outline-none min-h-[60px]"
-                                placeholder="O que você ganha..."
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-red-400 uppercase mb-1">Restrição</label>
-                            <textarea 
-                                value={formData.restriction}
-                                onChange={e => setFormData({...formData, restriction: e.target.value})}
-                                className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-white focus:border-red-500 outline-none min-h-[60px]"
-                                placeholder="O que você perde/limita..."
-                            />
-                        </div>
-                    </div>
+                    <div className="hidden"></div>
 
                     <div className="bg-slate-950/50 p-3 rounded border border-slate-800">
                         <label className="block text-xs font-bold text-purple-400 uppercase mb-2">Bônus Específicos</label>
@@ -460,36 +417,11 @@ export const BindingVowsManager: React.FC<BindingVowsManagerProps> = ({ char, on
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <button
-                                      type="button"
-                                      aria-expanded={expandedMap[vow.id] ? 'true' : 'false'}
-                                      aria-controls={`desc-${vow.id}`}
-                                      onClick={() => setExpandedMap(prev => ({ ...prev, [vow.id]: !prev[vow.id] }))}
-                                      className="p-1 rounded hover:bg-slate-800 text-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
-                                      title={expandedMap[vow.id] ? 'Recolher descrição' : 'Expandir descrição'}
-                                    >
-                                      <ChevronDown size={16} className={`${expandedMap[vow.id] ? 'rotate-180' : 'rotate-0'} transition-transform`} />
-                                    </button>
                                     <h4 className={`font-bold text-lg ${vow.isActive ? 'text-white' : 'text-slate-400'}`}>{vow.name}</h4>
                                     {!vow.isActive && <span className="text-[10px] uppercase font-bold bg-slate-800 text-slate-500 px-2 py-0.5 rounded">Inativo</span>}
                                 </div>
-                                <div
-                                  id={`desc-${vow.id}`}
-                                  className={`overflow-hidden transition-all duration-200 ${expandedMap[vow.id] ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'} mb-3`}
-                                >
-                                  <p className="text-sm text-slate-300">{vow.description}</p>
-                                </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                                    <div className="bg-emerald-950/20 border border-emerald-500/20 rounded p-2">
-                                        <span className="text-xs font-bold text-emerald-400 block mb-1">BENEFÍCIO</span>
-                                        <span className="text-xs text-emerald-100">{vow.benefit || '-'}</span>
-                                    </div>
-                                    <div className="bg-red-950/20 border border-red-500/20 rounded p-2">
-                                        <span className="text-xs font-bold text-red-400 block mb-1">RESTRIÇÃO</span>
-                                        <span className="text-xs text-red-100">{vow.restriction || '-'}</span>
-                                    </div>
-                                </div>
+                                <div className="hidden"></div>
 
                                 {vow.bonuses && vow.bonuses.length > 0 && (
                                     <div className="flex flex-wrap gap-2 mt-2">
