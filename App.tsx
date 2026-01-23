@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Droplet, Zap, Activity, Skull, Flame, LogOut, RotateCcw } from 'lucide-react';
+import { Droplet, Zap, Activity, Skull, Flame, LogOut, RotateCcw, TrendingUp } from 'lucide-react';
 import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes, Condition, BindingVow } from './types';
 import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger } from './utils/calculations';
 import { computeVoteBonus, combineBonuses, isActiveBonus, loadManualBonus, saveManualBonus, clearManualBonus, applyBonusToStats, notifyBonusesUpdated, BonusPercent } from './utils/bonus';
@@ -1124,176 +1124,192 @@ const App: React.FC = () => {
             />
 
             {/* Status Bars + Bonus Box */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 w-full">
-              <div className={`${(isActiveBonus(effectiveBonus) || manualBonusActive) ? 'md:col-span-3' : 'md:col-span-5'} space-y-2 min-w-0 transition-all duration-300`}>
-                <StatBar 
-                  label="Vida (PV)" 
-                  icon={<Droplet size={14} className="text-blood-500" />}
-                  current={currentStats.pv} 
-                  max={effectiveMax.pv} 
-                  colorClass="bg-blood-500"
-                  onChange={(v) => updateStat('pv', v)}
-                />
-                <StatBar 
-                  label="Energia (CE)" 
-                  icon={<Zap size={14} className="text-curse-400" />}
-                  current={currentStats.ce} 
-                  max={effectiveMax.ce} 
-                  colorClass="bg-curse-500"
-                  onChange={(v) => updateStat('ce', v)}
-                />
-                <StatBar 
-                  label="Esforço (PE)" 
-                  icon={<Activity size={14} className="text-orange-400" />}
-                  current={currentStats.pe} 
-                  max={effectiveMax.pe} 
-                  colorClass="bg-orange-500"
-                  onChange={(v) => updateStat('pe', v)}
-                />
-                <div className="flex gap-2 min-w-0">
-                  <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono group relative min-w-0">
-                    <span className="text-slate-500 uppercase font-bold">Lim. (LL)</span>
-                    <span className="text-curse-400 font-black text-lg">{stats.LL}</span>
-                    <div className="hidden group-hover:flex absolute bottom-full left-0 mb-2 bg-slate-900 text-slate-100 text-xs px-3 py-2 border border-slate-700 shadow-xl max-w-[200px] whitespace-normal z-20">
+            <div className="flex flex-col xl:flex-row gap-4 w-full items-start">
+              
+              {/* Left Side: Stats */}
+              <div className="flex-1 w-full flex flex-col gap-4 min-w-0">
+                {/* Primary Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <StatBar 
+                    label="Vida (PV)" 
+                    icon={<Droplet size={14} className="text-blood-500" />}
+                    current={currentStats.pv} 
+                    max={effectiveMax.pv} 
+                    colorClass="bg-blood-500"
+                    onChange={(v) => updateStat('pv', v)}
+                  />
+                  <StatBar 
+                    label="Energia (CE)" 
+                    icon={<Zap size={14} className="text-curse-400" />}
+                    current={currentStats.ce} 
+                    max={effectiveMax.ce} 
+                    colorClass="bg-curse-500"
+                    onChange={(v) => updateStat('ce', v)}
+                  />
+                  <StatBar 
+                    label="Esforço (PE)" 
+                    icon={<Activity size={14} className="text-orange-400" />}
+                    current={currentStats.pe} 
+                    max={effectiveMax.pe} 
+                    colorClass="bg-orange-500"
+                    onChange={(v) => updateStat('pe', v)}
+                  />
+                </div>
+
+                {/* Secondary Stats Row */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center relative group overflow-hidden">
+                    <div className="flex flex-col z-10">
+                      <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Lim. de Liberação</span>
+                      <span className="text-curse-400 font-black text-2xl leading-none mt-1">
+                        {stats.LL} <span className="text-xs text-slate-600 font-normal align-top">LL</span>
+                      </span>
+                    </div>
+                    <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-curse-900/10 to-transparent pointer-events-none" />
+                    <div className="hidden group-hover:flex absolute bottom-full left-0 mb-2 bg-slate-900 text-slate-100 text-xs px-3 py-2 border border-slate-700 shadow-xl max-w-[250px] whitespace-normal z-20 rounded-lg">
                       <strong>Liberação (LL):</strong> Volume máximo de CE controlado. Concede bônus passivos em perícias físicas (+LL) e limita reforços corporais.
                     </div>
                   </div>
-                  <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono min-w-0">
-                    <span className="text-slate-500 uppercase font-bold">Mov.</span>
-                    <span className="text-emerald-400 font-black text-lg">{stats.Movement}m</span>
+
+                  <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center relative overflow-hidden">
+                    <div className="flex flex-col z-10">
+                      <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Movimento</span>
+                      <span className="text-emerald-400 font-black text-2xl leading-none mt-1">
+                        {stats.Movement} <span className="text-xs text-slate-600 font-normal align-top">m</span>
+                      </span>
+                    </div>
+                    <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-emerald-900/10 to-transparent pointer-events-none" />
                   </div>
                 </div>
               </div>
               
+              {/* Right Side: Bonus Panel */}
               {(isActiveBonus(effectiveBonus) || manualBonusActive) && (
                 <div 
-                  className="md:col-span-2 bg-slate-900/70 rounded-xl border border-slate-800 p-3 flex flex-col gap-2 min-w-0 animate-in fade-in slide-in-from-right-4 duration-300"
+                  className="w-full xl:w-80 flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-300"
                   role="status" 
                   aria-live="polite"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold uppercase tracking-wider text-curse-300">Bônus</span>
-                    <label className="flex items-center gap-2 text-[10px] text-slate-400 cursor-pointer hover:text-slate-300 transition-colors">
-                      <input 
-                        type="checkbox" 
-                        checked={manualBonusActive} 
-                        onChange={(e) => {
-                          const active = e.target.checked;
-                          setManualBonusActive(active);
-                          saveManualBonus(character.id, active, manualBonus);
-                        }}
-                        className="rounded border-slate-700 bg-slate-950 text-curse-500 focus:ring-curse-500/20"
-                      />
-                      Ajuste Manual
-                    </label>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="flex items-center justify-between p-1.5 bg-slate-950/30 rounded border border-slate-800/50">
-                      <span className="text-[11px] text-slate-300">PV</span>
-                      <span className={`text-xs font-mono ${effectiveBonus.pvPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.pvPct > 0 ? '+' : ''}{effectiveBonus.pvPct}%</span>
+                  <div className="bg-slate-900/80 rounded-xl border border-slate-800 p-4 flex flex-col gap-4 shadow-sm">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-800/50">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp size={16} className="text-curse-400" />
+                        <span className="text-sm font-bold uppercase tracking-wider text-slate-200">Bônus Ativos</span>
+                      </div>
+                      <label className="flex items-center gap-2 text-[10px] text-slate-400 cursor-pointer hover:text-slate-300 transition-colors select-none bg-slate-950 px-2 py-1 rounded border border-slate-800 hover:border-slate-700">
+                        <input 
+                          type="checkbox" 
+                          checked={manualBonusActive} 
+                          onChange={(e) => {
+                            const active = e.target.checked;
+                            setManualBonusActive(active);
+                            saveManualBonus(character.id, active, manualBonus);
+                          }}
+                          className="rounded border-slate-700 bg-slate-900 text-curse-500 focus:ring-0 focus:ring-offset-0 w-3 h-3"
+                        />
+                        Ajuste Manual
+                      </label>
                     </div>
-                    <div className="flex items-center justify-between p-1.5 bg-slate-950/30 rounded border border-slate-800/50">
-                      <span className="text-[11px] text-slate-300">CE</span>
-                      <span className={`text-xs font-mono ${effectiveBonus.cePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.cePct > 0 ? '+' : ''}{effectiveBonus.cePct}%</span>
+                    
+                    {/* Active Bonuses Grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="flex flex-col items-center p-2 bg-slate-950/50 rounded-lg border border-slate-800/50">
+                        <span className="text-[10px] text-slate-500 font-bold mb-1">PV</span>
+                        <span className={`text-sm font-black font-mono ${effectiveBonus.pvPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {effectiveBonus.pvPct > 0 ? '+' : ''}{effectiveBonus.pvPct}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center p-2 bg-slate-950/50 rounded-lg border border-slate-800/50">
+                        <span className="text-[10px] text-slate-500 font-bold mb-1">CE</span>
+                        <span className={`text-sm font-black font-mono ${effectiveBonus.cePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {effectiveBonus.cePct > 0 ? '+' : ''}{effectiveBonus.cePct}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center p-2 bg-slate-950/50 rounded-lg border border-slate-800/50">
+                        <span className="text-[10px] text-slate-500 font-bold mb-1">PE</span>
+                        <span className={`text-sm font-black font-mono ${effectiveBonus.pePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                          {effectiveBonus.pePct > 0 ? '+' : ''}{effectiveBonus.pePct}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between p-1.5 bg-slate-950/30 rounded border border-slate-800/50">
-                      <span className="text-[11px] text-slate-300">PE</span>
-                      <span className={`text-xs font-mono ${effectiveBonus.pePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.pePct > 0 ? '+' : ''}{effectiveBonus.pePct}%</span>
-                    </div>
-                  </div>
 
-                  {manualBonusActive && (
-                    <div className="mt-2 space-y-2 pt-2 border-t border-slate-800/50">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-400 w-6">PV</span>
-                        <input 
-                          type="range" min={-50} max={50} step={1}
-                          value={manualBonus.pvPct}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            setManualBonus(prev => ({ ...prev, pvPct: v }));
-                            saveManualBonus(character.id, true, { ...manualBonus, pvPct: v });
-                          }}
-                          className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
-                          aria-label="Ajuste manual de bônus de PV"
-                        />
-                        <input 
-                          type="number" min={-50} max={50}
-                          value={manualBonus.pvPct}
-                          onChange={(e) => {
-                            const v = Math.max(-50, Math.min(50, Number(e.target.value)));
-                            setManualBonus(prev => ({ ...prev, pvPct: v }));
-                            saveManualBonus(character.id, true, { ...manualBonus, pvPct: v });
-                          }}
-                          className="w-12 bg-slate-950 border border-slate-800 rounded p-1 text-[10px] text-right text-white focus:border-curse-500 focus:outline-none"
-                        />
+                    {/* Manual Controls */}
+                    {manualBonusActive && (
+                      <div className="space-y-3 pt-2 animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Configuração Manual</div>
+                        
+                        {/* PV Slider */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-400">
+                            <span>PV</span>
+                            <span className="font-mono text-white">{manualBonus.pvPct > 0 ? '+' : ''}{manualBonus.pvPct}%</span>
+                          </div>
+                          <input 
+                            type="range" min={-50} max={50} step={1}
+                            value={manualBonus.pvPct}
+                            onChange={(e) => {
+                              const v = Number(e.target.value);
+                              setManualBonus(prev => ({ ...prev, pvPct: v }));
+                              saveManualBonus(character.id, true, { ...manualBonus, pvPct: v });
+                            }}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500 hover:accent-curse-400"
+                          />
+                        </div>
+
+                        {/* CE Slider */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-400">
+                            <span>CE</span>
+                            <span className="font-mono text-white">{manualBonus.cePct > 0 ? '+' : ''}{manualBonus.cePct}%</span>
+                          </div>
+                          <input 
+                            type="range" min={-50} max={50} step={1}
+                            value={manualBonus.cePct}
+                            onChange={(e) => {
+                              const v = Number(e.target.value);
+                              setManualBonus(prev => ({ ...prev, cePct: v }));
+                              saveManualBonus(character.id, true, { ...manualBonus, cePct: v });
+                            }}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500 hover:accent-curse-400"
+                          />
+                        </div>
+
+                        {/* PE Slider */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[10px] text-slate-400">
+                            <span>PE</span>
+                            <span className="font-mono text-white">{manualBonus.pePct > 0 ? '+' : ''}{manualBonus.pePct}%</span>
+                          </div>
+                          <input 
+                            type="range" min={-50} max={50} step={1}
+                            value={manualBonus.pePct}
+                            onChange={(e) => {
+                              const v = Number(e.target.value);
+                              setManualBonus(prev => ({ ...prev, pePct: v }));
+                              saveManualBonus(character.id, true, { ...manualBonus, pePct: v });
+                            }}
+                            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500 hover:accent-curse-400"
+                          />
+                        </div>
+                        
+                        <div className="pt-2 flex justify-end">
+                          <button
+                            onClick={() => {
+                              setManualBonus({ pvPct: 0, cePct: 0, pePct: 0 });
+                              setManualBonusActive(false);
+                              clearManualBonus(character.id);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase font-bold bg-slate-800 hover:bg-red-950/30 border border-slate-700 hover:border-red-900/50 text-slate-400 hover:text-red-400 rounded transition-all w-full justify-center"
+                            title="Resetar todos os bônus manuais"
+                          >
+                            <RotateCcw size={12} />
+                            <span>Resetar Ajustes</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-400 w-6">CE</span>
-                        <input 
-                          type="range" min={-50} max={50} step={1}
-                          value={manualBonus.cePct}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            setManualBonus(prev => ({ ...prev, cePct: v }));
-                            saveManualBonus(character.id, true, { ...manualBonus, cePct: v });
-                          }}
-                          className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
-                          aria-label="Ajuste manual de bônus de CE"
-                        />
-                        <input 
-                          type="number" min={-50} max={50}
-                          value={manualBonus.cePct}
-                          onChange={(e) => {
-                            const v = Math.max(-50, Math.min(50, Number(e.target.value)));
-                            setManualBonus(prev => ({ ...prev, cePct: v }));
-                            saveManualBonus(character.id, true, { ...manualBonus, cePct: v });
-                          }}
-                          className="w-12 bg-slate-950 border border-slate-800 rounded p-1 text-[10px] text-right text-white focus:border-curse-500 focus:outline-none"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-400 w-6">PE</span>
-                        <input 
-                          type="range" min={-50} max={50} step={1}
-                          value={manualBonus.pePct}
-                          onChange={(e) => {
-                            const v = Number(e.target.value);
-                            setManualBonus(prev => ({ ...prev, pePct: v }));
-                            saveManualBonus(character.id, true, { ...manualBonus, pePct: v });
-                          }}
-                          className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
-                          aria-label="Ajuste manual de bônus de PE"
-                        />
-                        <input 
-                          type="number" min={-50} max={50}
-                          value={manualBonus.pePct}
-                          onChange={(e) => {
-                            const v = Math.max(-50, Math.min(50, Number(e.target.value)));
-                            setManualBonus(prev => ({ ...prev, pePct: v }));
-                            saveManualBonus(character.id, true, { ...manualBonus, pePct: v });
-                          }}
-                          className="w-12 bg-slate-950 border border-slate-800 rounded p-1 text-[10px] text-right text-white focus:border-curse-500 focus:outline-none"
-                        />
-                      </div>
-                      
-                      <div className="flex justify-end pt-1">
-                        <button
-                          onClick={() => {
-                            setManualBonus({ pvPct: 0, cePct: 0, pePct: 0 });
-                            setManualBonusActive(false);
-                            clearManualBonus(character.id);
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase font-bold bg-slate-800 hover:bg-red-950/30 border border-slate-700 hover:border-red-900/50 text-slate-400 hover:text-red-400 rounded transition-all"
-                          title="Resetar todos os bônus manuais"
-                        >
-                          <RotateCcw size={12} />
-                          <span>Reset</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               )}
             </div>
