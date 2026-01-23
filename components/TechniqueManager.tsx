@@ -1392,6 +1392,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     Array<{ id: string; message: string; type: 'success' | 'error' }>
   >([]);
   const [expandedSubIds, setExpandedSubIds] = useState<Record<string, boolean>>({});
+  const [ceSpent, setCeSpent] = useState<number>(0);
 
   const toggleExpandSub = (id: string) => {
     setExpandedSubIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1432,8 +1433,12 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     
     const match = diceFace.match(/(\d+)?d(\d+)([+-]\d+)?/);
     if (match) {
-      // Use LL value for dice count if available, otherwise fallback to parsed count or 1
-      const count = llValue > 0 ? llValue : parseInt(match[1] || '1');
+      const selected = Math.max(0, ceSpent);
+      if (selected <= 0) {
+        showNotification(`Selecione quanto CE gastar (até ${llValue}).`, 'error');
+        return;
+      }
+      const count = Math.min(llValue, selected);
       const faces = parseInt(match[2]);
       const modifier = parseInt(match[3] || '0');
       
@@ -1535,6 +1540,26 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
           </button>
         </div>
       </div>
+      
+      <div className="px-3 py-2 border-b border-slate-800 bg-slate-900/40">
+        <label className="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">
+          {`CE gasto (Max LL: ${llValue})`}
+        </label>
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min={0}
+            max={llValue}
+            step={1}
+            value={ceSpent}
+            onChange={(e) => setCeSpent(parseInt(e.target.value))}
+            className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
+          />
+          <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
+            {ceSpent}
+          </span>
+        </div>
+      </div>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {techniques.length === 0 && (
@@ -1592,7 +1617,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                 <div className="space-y-2 pl-2 border-l-2 border-slate-800">
                   {(tech.subTechniques || []).map(sub => {
                     const expanded = !!expandedSubIds[sub.id];
-                    const diceLabel = sub.diceFace ? `${llValue || 1}${sub.diceFace}` : null;
+                    const diceLabel = sub.diceFace ? `${Math.max(1, ceSpent || 0)}${sub.diceFace}` : null;
                     const tierColor = sub.tierLabel?.toLowerCase().includes('sangue')
                       ? 'bg-red-600'
                       : 'bg-purple-600';
