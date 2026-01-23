@@ -1102,8 +1102,8 @@ const App: React.FC = () => {
                     {tab === 'techniques' && 'Técnicas'}
                     {tab === 'inventory' && 'Invent.'}
                     {tab === 'progression' && 'Progressão'}
-                    {tab === 'campaigns' && 'Campanhas'}
                     {tab === 'binding-vows' && 'Votos'}
+                    {tab === 'campaigns' && 'Campanhas'}
                     </button>
                 ))}
             </div>
