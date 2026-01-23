@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Droplet, Zap, Activity, Skull, Flame, LogOut } from 'lucide-react';
+import { Droplet, Zap, Activity, Skull, Flame, LogOut, RotateCcw } from 'lucide-react';
 import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes, Condition, BindingVow } from './types';
 import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger } from './utils/calculations';
 import { computeVoteBonus, combineBonuses, isActiveBonus, loadManualBonus, saveManualBonus, clearManualBonus, applyBonusToStats, notifyBonusesUpdated, BonusPercent } from './utils/bonus';
@@ -1124,8 +1124,8 @@ const App: React.FC = () => {
             />
 
             {/* Status Bars + Bonus Box */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-              <div className="md:col-span-3 space-y-1">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 w-full">
+              <div className={`${(isActiveBonus(effectiveBonus) || manualBonusActive) ? 'md:col-span-3' : 'md:col-span-5'} space-y-2 min-w-0 transition-all duration-300`}>
                 <StatBar 
                   label="Vida (PV)" 
                   icon={<Droplet size={14} className="text-blood-500" />}
@@ -1150,15 +1150,15 @@ const App: React.FC = () => {
                   colorClass="bg-orange-500"
                   onChange={(v) => updateStat('pe', v)}
                 />
-                <div className="flex gap-2">
-                  <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono group relative">
+                <div className="flex gap-2 min-w-0">
+                  <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono group relative min-w-0">
                     <span className="text-slate-500 uppercase font-bold">Lim. (LL)</span>
                     <span className="text-curse-400 font-black text-lg">{stats.LL}</span>
                     <div className="hidden group-hover:flex absolute bottom-full left-0 mb-2 bg-slate-900 text-slate-100 text-xs px-3 py-2 border border-slate-700 shadow-xl max-w-[200px] whitespace-normal z-20">
                       <strong>Liberação (LL):</strong> Volume máximo de CE controlado. Concede bônus passivos em perícias físicas (+LL) e limita reforços corporais.
                     </div>
                   </div>
-                  <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono">
+                  <div className="flex-1 mt-2 p-2 bg-slate-950 rounded border border-slate-800 flex justify-between items-center text-xs font-mono min-w-0">
                     <span className="text-slate-500 uppercase font-bold">Mov.</span>
                     <span className="text-emerald-400 font-black text-lg">{stats.Movement}m</span>
                   </div>
@@ -1167,13 +1167,13 @@ const App: React.FC = () => {
               
               {(isActiveBonus(effectiveBonus) || manualBonusActive) && (
                 <div 
-                  className="md:col-span-2 bg-slate-900/70 rounded-xl border border-slate-800 p-3 flex flex-col gap-2"
+                  className="md:col-span-2 bg-slate-900/70 rounded-xl border border-slate-800 p-3 flex flex-col gap-2 min-w-0 animate-in fade-in slide-in-from-right-4 duration-300"
                   role="status" 
                   aria-live="polite"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-curse-300">Bônus</span>
-                    <label className="flex items-center gap-2 text-[10px] text-slate-400">
+                    <label className="flex items-center gap-2 text-[10px] text-slate-400 cursor-pointer hover:text-slate-300 transition-colors">
                       <input 
                         type="checkbox" 
                         checked={manualBonusActive} 
@@ -1181,31 +1181,32 @@ const App: React.FC = () => {
                           const active = e.target.checked;
                           setManualBonusActive(active);
                           saveManualBonus(character.id, active, manualBonus);
-                        }} 
+                        }}
+                        className="rounded border-slate-700 bg-slate-950 text-curse-500 focus:ring-curse-500/20"
                       />
                       Ajuste Manual
                     </label>
                   </div>
                   
                   <div className="grid grid-cols-1 gap-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between p-1.5 bg-slate-950/30 rounded border border-slate-800/50">
                       <span className="text-[11px] text-slate-300">PV</span>
-                      <span className={`text-xs font-mono ${effectiveBonus.pvPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.pvPct}%</span>
+                      <span className={`text-xs font-mono ${effectiveBonus.pvPct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.pvPct > 0 ? '+' : ''}{effectiveBonus.pvPct}%</span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between p-1.5 bg-slate-950/30 rounded border border-slate-800/50">
                       <span className="text-[11px] text-slate-300">CE</span>
-                      <span className={`text-xs font-mono ${effectiveBonus.cePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.cePct}%</span>
+                      <span className={`text-xs font-mono ${effectiveBonus.cePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.cePct > 0 ? '+' : ''}{effectiveBonus.cePct}%</span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between p-1.5 bg-slate-950/30 rounded border border-slate-800/50">
                       <span className="text-[11px] text-slate-300">PE</span>
-                      <span className={`text-xs font-mono ${effectiveBonus.pePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.pePct}%</span>
+                      <span className={`text-xs font-mono ${effectiveBonus.pePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{effectiveBonus.pePct > 0 ? '+' : ''}{effectiveBonus.pePct}%</span>
                     </div>
                   </div>
 
                   {manualBonusActive && (
-                    <div className="mt-2 space-y-2">
+                    <div className="mt-2 space-y-2 pt-2 border-t border-slate-800/50">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-400 w-10">PV</span>
+                        <span className="text-[10px] text-slate-400 w-6">PV</span>
                         <input 
                           type="range" min={-50} max={50} step={1}
                           value={manualBonus.pvPct}
@@ -1214,7 +1215,7 @@ const App: React.FC = () => {
                             setManualBonus(prev => ({ ...prev, pvPct: v }));
                             saveManualBonus(character.id, true, { ...manualBonus, pvPct: v });
                           }}
-                          className="flex-1"
+                          className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
                           aria-label="Ajuste manual de bônus de PV"
                         />
                         <input 
@@ -1225,11 +1226,11 @@ const App: React.FC = () => {
                             setManualBonus(prev => ({ ...prev, pvPct: v }));
                             saveManualBonus(character.id, true, { ...manualBonus, pvPct: v });
                           }}
-                          className="w-16 bg-slate-950 border border-slate-800 rounded p-1 text-xs text-white"
+                          className="w-12 bg-slate-950 border border-slate-800 rounded p-1 text-[10px] text-right text-white focus:border-curse-500 focus:outline-none"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-400 w-10">CE</span>
+                        <span className="text-[10px] text-slate-400 w-6">CE</span>
                         <input 
                           type="range" min={-50} max={50} step={1}
                           value={manualBonus.cePct}
@@ -1238,7 +1239,7 @@ const App: React.FC = () => {
                             setManualBonus(prev => ({ ...prev, cePct: v }));
                             saveManualBonus(character.id, true, { ...manualBonus, cePct: v });
                           }}
-                          className="flex-1"
+                          className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
                           aria-label="Ajuste manual de bônus de CE"
                         />
                         <input 
@@ -1249,11 +1250,11 @@ const App: React.FC = () => {
                             setManualBonus(prev => ({ ...prev, cePct: v }));
                             saveManualBonus(character.id, true, { ...manualBonus, cePct: v });
                           }}
-                          className="w-16 bg-slate-950 border border-slate-800 rounded p-1 text-xs text-white"
+                          className="w-12 bg-slate-950 border border-slate-800 rounded p-1 text-[10px] text-right text-white focus:border-curse-500 focus:outline-none"
                         />
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-slate-400 w-10">PE</span>
+                        <span className="text-[10px] text-slate-400 w-6">PE</span>
                         <input 
                           type="range" min={-50} max={50} step={1}
                           value={manualBonus.pePct}
@@ -1262,7 +1263,7 @@ const App: React.FC = () => {
                             setManualBonus(prev => ({ ...prev, pePct: v }));
                             saveManualBonus(character.id, true, { ...manualBonus, pePct: v });
                           }}
-                          className="flex-1"
+                          className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
                           aria-label="Ajuste manual de bônus de PE"
                         />
                         <input 
@@ -1273,20 +1274,22 @@ const App: React.FC = () => {
                             setManualBonus(prev => ({ ...prev, pePct: v }));
                             saveManualBonus(character.id, true, { ...manualBonus, pePct: v });
                           }}
-                          className="w-16 bg-slate-950 border border-slate-800 rounded p-1 text-xs text-white"
+                          className="w-12 bg-slate-950 border border-slate-800 rounded p-1 text-[10px] text-right text-white focus:border-curse-500 focus:outline-none"
                         />
                       </div>
-                      <div className="flex justify-end">
+                      
+                      <div className="flex justify-end pt-1">
                         <button
                           onClick={() => {
                             setManualBonus({ pvPct: 0, cePct: 0, pePct: 0 });
                             setManualBonusActive(false);
                             clearManualBonus(character.id);
                           }}
-                          className="px-2 py-1 text-[10px] uppercase font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded"
-                          title="Resetar para cálculo automático"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] uppercase font-bold bg-slate-800 hover:bg-red-950/30 border border-slate-700 hover:border-red-900/50 text-slate-400 hover:text-red-400 rounded transition-all"
+                          title="Resetar todos os bônus manuais"
                         >
-                          Reset
+                          <RotateCcw size={12} />
+                          <span>Reset</span>
                         </button>
                       </div>
                     </div>
