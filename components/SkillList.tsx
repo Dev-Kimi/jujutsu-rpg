@@ -63,7 +63,19 @@ export const SkillList: React.FC<SkillListProps> = ({
     }
     const isPhysicalRoll = attributeName && ['FOR', 'AGI', 'VIG', 'PRE'].includes(attributeName as any);
     const hasAdvPhysical = (char.bindingVows || []).some(v => v.isActive && v.advantageType === 'physicalSkills');
-    if (isPhysicalRoll && hasAdvPhysical) {
+    const hasAdvMental = (char.bindingVows || []).some(v => v.isActive && v.advantageType === 'mentalSkills');
+    const hasAdvResistance = (char.bindingVows || []).some(v => v.isActive && v.advantageType === 'resistance');
+
+    const normalizedSkillName = normalize(skillName);
+    const isResistanceRoll = ['reflexos', 'fortitude', 'vontade'].includes(normalizedSkillName);
+    const isMentalRoll = attributeName && attributeName === 'INT';
+
+    const hasAdvantage =
+      (isPhysicalRoll && hasAdvPhysical) ||
+      (isMentalRoll && hasAdvMental) ||
+      (isResistanceRoll && hasAdvResistance);
+
+    if (hasAdvantage) {
         diceCount += 1;
     }
     // Safety: Always roll at least 1 die
@@ -99,7 +111,7 @@ export const SkillList: React.FC<SkillListProps> = ({
     let breakdown = `[${rolls.join(', ')}]`;
     
     if (diceCount > 1) {
-        breakdown += ` ➜ ${d20}${isPhysicalRoll && hasAdvPhysical ? ' + Vantagem' : ''}`;
+        breakdown += ` ➜ ${d20}${hasAdvantage ? ' + Vantagem' : ''}`;
     }
     
     breakdown += `${sign}${totalBonuses}${voteBonus ? ` (+${voteBonus} Votos)` : ''}`;
