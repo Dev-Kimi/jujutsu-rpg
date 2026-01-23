@@ -61,6 +61,11 @@ export const SkillList: React.FC<SkillListProps> = ({
     if (attributeName && char.attributes[attributeName as keyof Attributes]) {
         diceCount = char.attributes[attributeName as keyof Attributes];
     }
+    const isPhysicalRoll = attributeName && ['FOR', 'AGI', 'VIG', 'PRE'].includes(attributeName as any);
+    const hasAdvPhysical = (char.bindingVows || []).some(v => v.isActive && v.advantageType === 'physicalSkills');
+    if (isPhysicalRoll && hasAdvPhysical) {
+        diceCount += 1;
+    }
     // Safety: Always roll at least 1 die
     diceCount = Math.max(1, diceCount);
 
@@ -94,7 +99,7 @@ export const SkillList: React.FC<SkillListProps> = ({
     let breakdown = `[${rolls.join(', ')}]`;
     
     if (diceCount > 1) {
-        breakdown += ` ➜ ${d20}`;
+        breakdown += ` ➜ ${d20}${isPhysicalRoll && hasAdvPhysical ? ' + Vantagem' : ''}`;
     }
     
     breakdown += `${sign}${totalBonuses}${voteBonus ? ` (+${voteBonus} Votos)` : ''}`;
