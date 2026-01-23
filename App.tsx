@@ -1124,12 +1124,12 @@ const App: React.FC = () => {
             />
 
             {/* Status Bars + Bonus Box */}
-            <div className="flex flex-col xl:flex-row gap-4 w-full items-start">
+            <div className="flex flex-col gap-4 w-full items-start">
               
               {/* Left Side: Stats */}
               <div className="flex-1 w-full flex flex-col gap-4 min-w-0">
                 {/* Primary Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-3">
                   <StatBar 
                     label="Vida (PV)" 
                     icon={<Droplet size={14} className="text-blood-500" />}
@@ -1157,7 +1157,7 @@ const App: React.FC = () => {
                 </div>
 
                 {/* Secondary Stats Row */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 flex justify-between items-center relative group overflow-hidden">
                     <div className="flex flex-col z-10">
                       <span className="text-slate-500 text-[10px] uppercase font-bold tracking-wider">Lim. de Liberação</span>
@@ -1186,7 +1186,7 @@ const App: React.FC = () => {
               {/* Right Side: Bonus Panel */}
               {(isActiveBonus(effectiveBonus) || manualBonusActive) && (
                 <div 
-                  className="w-full xl:w-80 flex-shrink-0 animate-in fade-in slide-in-from-right-4 duration-300"
+                  className="w-full flex-shrink-0 animate-in fade-in slide-in-from-top-4 duration-300"
                   role="status" 
                   aria-live="polite"
                 >
