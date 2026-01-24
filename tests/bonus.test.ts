@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeVoteBonus, combineBonuses, applyBonusToStats } from '../utils/bonus';
+import { parseAbilitySkillTrigger } from '../utils/calculations';
 
 const mkVow = (bonuses: string[], isActive = true) => ({
   id: 'x',
@@ -67,5 +68,17 @@ describe('applyBonusToStats', () => {
     expect(res.pv).toBe(110);
     expect(res.ce).toBe(190);
     expect(res.pe).toBe(50);
+  });
+});
+
+describe('parseAbilitySkillTrigger', () => {
+  it('captura a perícia rolada em "teste de X vs Y"', () => {
+    const text = '[Livre] ... faça um teste de Atletismo vs Fortitude dele. Se vencer...';
+    expect(parseAbilitySkillTrigger(text)).toBe('Atletismo');
+  });
+
+  it('captura a perícia rolada em "X vs Y"', () => {
+    const text = '[Padrão] Luta vs Luta. Sucesso desarma e joga item a 3m.';
+    expect(parseAbilitySkillTrigger(text)).toBe('Luta');
   });
 });
