@@ -620,12 +620,13 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
 
   // --- HABILIDADES AMALDIÇOADAS: ENERGIA REVERSA (RCT) ---
   // Tier 3
+
   {
-    name: "Energia Reversa (Autocura)",
+    name: "Energia Reversa (Cura)",
     category: "Habilidades Amaldiçoadas",
     subCategory: "Energia Reversa",
-    cost: "2 PE + X CE",
-    description: "[Padrão] Tier 3 - Requisitos: Nível 10. Você recupera uma quantidade de PV igual a: (CE investido) d6"
+    cost: "X CE",
+    description: "[Padrão] Tier 3 - Requisitos: Nível 10. Cura automática: PV recuperados = (Aptidão em Energia Reversa × Nível × 0,5) + (CE gasto ÷ 2). O CE gasto não pode exceder sua Liberação (LL)."
   },
   {
     name: "Estabilização de Energia Reversa",
