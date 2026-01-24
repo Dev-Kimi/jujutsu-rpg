@@ -1491,6 +1491,7 @@ const App: React.FC = () => {
                      onAdd={(cat) => handleArrayAdd('abilities', cat)}
                      onUpdate={(id, field, val) => handleArrayUpdate('abilities', id, field, val)}
                      onRemove={(id) => handleArrayRemove('abilities', id)}
+                     readOnly={true}
                      placeholderName="Nova Habilidade"
                      onUse={(cost, name) => handleUseAbility(cost, name)}
                      onUseWithId={(cost, name, id) => handleUseAbility(cost, name, id)}
