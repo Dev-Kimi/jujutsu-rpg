@@ -23,7 +23,7 @@ import { InventoryLibrary } from './components/InventoryLibrary';
 // Firebase auth imports
 import { auth, db } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, doc, getDoc, onSnapshot, query, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, query, runTransaction, setDoc, where } from 'firebase/firestore';
 import Auth from './components/Auth';
 import UserMenu from './components/UserMenu';
 import UserProfile from './components/UserProfile';
@@ -95,6 +95,14 @@ const App: React.FC = () => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 2600);
   }, []);
+
+  const [campaignAddPending, setCampaignAddPending] = useState<null | {
+    campaignId: string;
+    eligibleCharacterIds: string[];
+    selectedCharacterId: string;
+  }>(null);
+  const [campaignAddIsLinking, setCampaignAddIsLinking] = useState(false);
+  const [campaignFocusId, setCampaignFocusId] = useState<string | null>(null);
 
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
@@ -459,6 +467,101 @@ const App: React.FC = () => {
     setViewMode('sheet');
     setActiveRollResult(null);
   };
+
+  const handleRequestAddCharacterToCampaign = useCallback((payload: {
+    campaignId: string;
+    eligibleCharacterIds: string[];
+    selectedCharacterId: string;
+  }) => {
+    setCampaignAddPending(payload);
+    setCampaignFocusId(payload.campaignId);
+    setViewMode('menu');
+  }, []);
+
+  useEffect(() => {
+    if (!campaignAddPending) return;
+    if (viewMode !== 'menu') return;
+    if (campaignAddIsLinking) return;
+    if (!currentUser) return;
+
+    const run = async () => {
+      setCampaignAddIsLinking(true);
+      const payload = campaignAddPending;
+      try {
+        const selectedChar = savedCharacters.find(c => c.id === payload.selectedCharacterId);
+        if (!selectedChar) {
+          throw new Error('Personagem não encontrado.');
+        }
+
+        const uid = currentUser.uid;
+        const newParticipant = {
+          userId: uid,
+          characterId: selectedChar.id,
+          characterName: selectedChar.name,
+          characterClass: selectedChar.characterClass,
+          level: selectedChar.level,
+          imageUrl: selectedChar.imageUrl
+        };
+
+        const campRef = doc(db, 'campaigns', payload.campaignId);
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(campRef);
+          if (!snap.exists()) {
+            throw new Error('Campanha não encontrada.');
+          }
+
+          const data = snap.data() as any;
+          const participants = (data.participants as any[]) || [];
+          const alreadyIn = participants.some((p) => p?.userId === uid && p?.characterId === selectedChar.id);
+          if (alreadyIn) {
+            throw new Error('Este personagem já está nesta campanha.');
+          }
+
+          const participantIds = Array.isArray(data.participantIds) ? (data.participantIds as string[]) : [];
+          const nextParticipantIds = participantIds.includes(uid) ? participantIds : [...participantIds, uid];
+
+          tx.update(campRef, {
+            participants: [...participants, newParticipant],
+            participantIds: nextParticipantIds
+          });
+        });
+
+        try {
+          const stats = calculateDerivedStats(selectedChar);
+          const key = `${uid}_${selectedChar.id}`;
+          const stateRef = doc(db, 'campaigns', payload.campaignId, 'characterStates', key);
+          await setDoc(stateRef, {
+            userId: uid,
+            characterId: selectedChar.id,
+            characterName: selectedChar.name,
+            level: selectedChar.level,
+            imageUrl: selectedChar.imageUrl,
+            characterClass: selectedChar.characterClass,
+            origin: selectedChar.origin,
+            pre: selectedChar.attributes.PRE,
+            currentStats: { pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE },
+            maxStats: { pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE },
+            actionState: { standard: true, movement: 2, reactionPenalty: 0 },
+            updatedAt: Date.now()
+          }, { merge: true });
+        } catch (error) {
+          console.error('Erro ao criar estado do personagem na campanha', error);
+        }
+
+        pushToast(`"${selectedChar.name}" adicionado à campanha.`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        pushToast(message || 'Erro ao adicionar personagem à campanha.');
+      } finally {
+        setCampaignAddIsLinking(false);
+        setCampaignAddPending(null);
+        setViewMode('sheet');
+        setActiveTab('campaigns');
+      }
+    };
+
+    void run();
+  }, [campaignAddPending, viewMode, campaignAddIsLinking, currentUser, savedCharacters, pushToast]);
 
   const handleStartCreation = () => {
      setViewMode('creator');
@@ -1029,13 +1132,24 @@ const App: React.FC = () => {
   }
 
   if (viewMode === 'menu') {
+     const filteredCharacters = campaignAddPending?.eligibleCharacterIds?.length
+       ? savedCharacters.filter(c => campaignAddPending.eligibleCharacterIds.includes(c.id))
+       : savedCharacters;
      return (
         <>
           <div className="fixed top-3 right-3 z-50">
             <UserMenu user={currentUser} onProfileClick={() => setViewMode('profile')} />
           </div>
+          {campaignAddIsLinking && (
+            <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 w-full max-w-md">
+                <div className="text-white font-bold text-lg">Vinculando personagem...</div>
+                <div className="text-slate-400 text-sm mt-2">Atualizando campanha automaticamente.</div>
+              </div>
+            </div>
+          )}
         <CharacterSelection 
-           savedCharacters={savedCharacters}
+           savedCharacters={filteredCharacters}
            onSelect={handleSelectCharacter}
            onCreate={handleStartCreation}
            onDelete={handleDeleteCharacter}
@@ -1161,7 +1275,13 @@ const App: React.FC = () => {
                     </button>
                 ))}
             </div>
-            <CampaignManager currentUserChar={character} onUpdateCurrentUserChar={setCharacter} />
+            <CampaignManager
+              currentUserChar={character}
+              savedCharacters={savedCharacters}
+              initialSelectedCampaignId={campaignFocusId}
+              onRequestAddCharacterToCampaign={handleRequestAddCharacterToCampaign}
+              onUpdateCurrentUserChar={setCharacter}
+            />
           </div>
       ) : (
       <main className="max-w-[1600px] mx-auto p-4 pb-24">
