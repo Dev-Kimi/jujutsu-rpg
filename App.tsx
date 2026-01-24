@@ -1428,6 +1428,7 @@ const App: React.FC = () => {
                         currentStats={currentStats}
                         consumeCE={consumeCE}
                         consumePE={consumePE}
+                        consumePV={(amount) => updateStat('pv', Math.max(0, currentStats.pv - amount))}
                         activeBuffs={activeBuffs}
                         onConsumeBuffs={handleConsumeBuffs}
                         activeRollResult={activeRollResult}
