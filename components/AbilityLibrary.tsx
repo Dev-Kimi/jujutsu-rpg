@@ -20,6 +20,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
   const [editForm, setEditForm] = useState<{ name: string; cost: string; description: string }>({ name: '', cost: '', description: '' });
   const [overrides, setOverrides] = useState<Record<string, Partial<Ability>>>({});
   const isAdmin = auth.currentUser?.uid === 'qSsTOdiZE2N2LjDuf4R3CC49cAq2';
+  const [quickKey, setQuickKey] = useState<string | null>(null);
 
   const categories = ['Combatente', 'Feiticeiro', 'Especialista', 'Restrição Celestial', 'Habilidades Amaldiçoadas'];
   const cursedSubCategories = ['Manipulação', 'Barreiras', 'Energia Reversa'];
@@ -59,10 +60,13 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
     if (activeTab === 'Habilidades Amaldiçoadas' && matchesTab) {
        // If item has a subCategory defined, match it. If not, treat as "Manipulação" (default) or handle accordingly
        // Our presets for cursed abilities now have subCategory.
-       return matchesSearch && (item.subCategory === activeSubTab || (!item.subCategory && activeSubTab === 'Manipulação'));
+       const subMatch = (item.subCategory === activeSubTab || (!item.subCategory && activeSubTab === 'Manipulação'));
+       const quickMatch = quickKey ? (item.name === 'Energia Reversa (Cura)') : true;
+       return matchesSearch && subMatch && quickMatch;
     }
 
-    return matchesTab && matchesSearch;
+    const quickMatch = quickKey ? (item.name === 'Energia Reversa (Cura)') : true;
+    return matchesTab && matchesSearch && quickMatch;
   });
 
   const toggleExpand = (name: string) => {
@@ -198,6 +202,26 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
              ))}
           </div>
         )}
+
+        {/* Quick Tab */}
+        <div className="shrink-0 bg-slate-900 border-b border-slate-800 px-3 py-2 flex gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+          <button
+            onClick={() => setQuickKey(null)}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-colors border
+              ${quickKey === null ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
+            `}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setQuickKey('rct-cura')}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-colors border
+              ${quickKey === 'rct-cura' ? 'bg-curse-900/40 text-curse-200 border-curse-600/40' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
+            `}
+          >
+            Energia Reversa (Cura)
+          </button>
+        </div>
 
         {/* Search */}
         <div className="p-3 border-b border-slate-800 bg-slate-900 shrink-0">
