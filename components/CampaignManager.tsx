@@ -624,7 +624,23 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({
         setActiveBuffs(prev => prev.filter(b => b.id !== ability.id));
         return false;
       }
-      setActiveBuffs(prev => [...prev, ability]);
+
+      if (viewingStats.pe < cost.pe) {
+        alert(`PE Insuficiente para usar ${abilityName}! Necessário: ${cost.pe}, Atual: ${viewingStats.pe}`);
+        return false;
+      }
+      if (viewingStats.ce < cost.ce) {
+        alert(`CE Insuficiente para usar ${abilityName}! Necessário: ${cost.ce}, Atual: ${viewingStats.ce}`);
+        return false;
+      }
+
+      setViewingStats(prev => ({
+        ...prev,
+        pe: Math.max(0, prev.pe - cost.pe),
+        ce: Math.max(0, prev.ce - cost.ce)
+      }));
+
+      setActiveBuffs(prev => [...prev, { ...ability, paid: true }]);
       return true;
     }
 
