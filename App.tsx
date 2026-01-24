@@ -811,10 +811,28 @@ const App: React.FC = () => {
       if (isAlreadyActive) {
         setActiveBuffs(prev => prev.filter(b => b.id !== ability.id));
         return false;
-      } else {
-        setActiveBuffs(prev => [...prev, ability]);
-        return true;
       }
+
+      if (currentStats.pe < cost.pe) {
+        alert(`PE Insuficiente para usar ${abilityName}! Necessário: ${cost.pe}, Atual: ${currentStats.pe}`);
+        return false;
+      }
+      if (currentStats.ce < cost.ce) {
+        alert(`CE Insuficiente para usar ${abilityName}! Necessário: ${cost.ce}, Atual: ${currentStats.ce}`);
+        return false;
+      }
+
+      consumePE(cost.pe);
+      consumeCE(cost.ce);
+      if ((cost.pe || 0) > 0 || (cost.ce || 0) > 0) {
+        const parts: string[] = [];
+        if ((cost.pe || 0) > 0) parts.push(`-${cost.pe} PE`);
+        if ((cost.ce || 0) > 0) parts.push(`-${cost.ce} CE`);
+        pushToast(`${abilityName}: ${parts.join(', ')}`);
+      }
+
+      setActiveBuffs(prev => [...prev, { ...ability, paid: true }]);
+      return true;
     }
 
     if (currentStats.pe < cost.pe) {
