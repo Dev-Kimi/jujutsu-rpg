@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { parseAbilityCost } from '../utils/calculations';
 
+let audioCtx: AudioContext | null = null;
+
 interface AccordionListProps {
   title: string;
   items: Ability[];
@@ -63,6 +65,32 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   const [usingId, setUsingId] = useState<string | null>(null);
   const [rctView, setRctView] = useState<'padrao' | 'rct'>('padrao');
 
+  const triggerFeedback = (intensity: 'light' | 'medium' = 'light') => {
+    try {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        const pattern = intensity === 'medium' ? [15, 10, 15] : 12;
+        (navigator as any).vibrate?.(pattern);
+      }
+      const AnyAudioContext =
+        (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AnyAudioContext) return;
+      audioCtx = audioCtx || new AnyAudioContext();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume?.();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = intensity === 'medium' ? 180 : 220;
+      gain.gain.value = intensity === 'medium' ? 0.03 : 0.02;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } catch {}
+  };
+
   useEffect(() => {
     if (externalRctView) {
       setRctView(externalRctView);
@@ -75,6 +103,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
 
   const handleUseClick = (e: React.MouseEvent, item: Ability) => {
     e.stopPropagation();
+    triggerFeedback('medium');
 
     // Prefer the ID version if available
     const useFunc = onUseWithId
@@ -102,6 +131,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   };
 
   const confirmVariableUse = (item: Ability) => {
+    triggerFeedback('medium');
     const useFunc = onUseWithId
       ? (cost: { pe: number; ce: number }, name: string) =>
           onUseWithId(cost, name, item.id)
