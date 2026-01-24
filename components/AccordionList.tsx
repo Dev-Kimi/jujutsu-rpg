@@ -138,12 +138,6 @@ export const AccordionList: React.FC<AccordionListProps> = ({
           <Zap size={16} className="text-curse-400" /> {title}
         </h3>
         <button
-          onClick={() => setRctView('rct')}
-          className="flex items-center gap-1 text-xs bg-curse-700 hover:bg-curse-600 text-white px-3 py-1.5 rounded transition-colors font-bold border border-curse-600/40 shadow hover:shadow-curse-900/40 active:scale-95"
-        >
-          Energia Reversa
-        </button>
-        <button
           onClick={() => onAdd(categories ? activeCategory : undefined)}
           className="flex items-center gap-1 text-xs bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded transition-colors font-bold"
         >
@@ -170,24 +164,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
           ))}
         </div>
       )}
-      <div className="flex gap-2 px-2 py-2 border-b border-slate-800 bg-slate-950/30">
-        <button
-          onClick={() => setRctView('padrao')}
-          className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border
-            ${rctView === 'padrao' ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
-          `}
-        >
-          Padrão
-        </button>
-        <button
-          onClick={() => setRctView('rct')}
-          className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border
-            ${rctView === 'rct' ? 'bg-curse-900/40 text-curse-200 border-curse-600/40' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
-          `}
-        >
-          Energia Reversa
-        </button>
-      </div>
+      <div className="border-b border-slate-800 bg-slate-950/30" />
 
       {/* Search Bar */}
       <div className="p-2 border-b border-slate-800 bg-slate-900">
