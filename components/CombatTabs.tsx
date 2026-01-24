@@ -11,6 +11,7 @@ interface CombatTabsProps {
   currentStats: CurrentStats;
   consumeCE: (amount: number) => void;
   consumePE: (amount: number) => void;
+  consumePV: (amount: number) => void;
   activeBuffs?: Ability[];
   onConsumeBuffs?: (buffs: Ability[]) => void;
   activeRollResult: 'skill' | 'combat' | null;
@@ -60,6 +61,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   currentStats,
   consumeCE,
   consumePE,
+  consumePV,
   activeBuffs = [],
   onConsumeBuffs,
   activeRollResult,
@@ -718,6 +720,60 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                   <div className="font-mono text-slate-300">
                     {`${Math.floor((stats.LL || 0) / 5)}d6 + ${Math.floor(((stats.LL || 0) % 5) / 2)}`} {totalBuffBonus ? `(+ Buffs ${totalBuffBonus})` : ''}
                   </div>
+                </div>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      if (incomingDamage <= 0) {
+                        showNotification("Informe o dano recebido para aplicar.", 'error');
+                        return;
+                      }
+                      const ll = stats.LL || 0;
+                      const mitigDiceCount = Math.floor(ll / 5);
+                      const mitigFixed = Math.floor((ll % 5) / 2);
+                      let mitigSum = 0;
+                      for (let i = 0; i < mitigDiceCount; i++) {
+                        mitigSum += rollDice(6, 1);
+                      }
+                      const reductionAmount = mitigSum + mitigFixed + totalBuffBonus;
+                      const finalDamage = Math.max(0, incomingDamage - reductionAmount);
+                      consumePV(finalDamage);
+                      setLastResult({
+                        total: finalDamage,
+                        detail: `Dano ${incomingDamage} - Mitigação (${mitigDiceCount}d6 + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${reductionAmount}`,
+                        isDamageTaken: true,
+                        title: "Dano Aplicado",
+                        damageTotal: finalDamage
+                      });
+                      setActiveRollResult('combat');
+                      showNotification(`Vida reduzida em ${finalDamage}`, 'success');
+                    }}
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg font-bold text-sm transition-colors"
+                  >
+                    Mitigar e Subtrair Vida
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (incomingDamage <= 0) {
+                        showNotification("Informe o dano recebido para aplicar.", 'error');
+                        return;
+                      }
+                      const finalDamage = Math.max(0, incomingDamage);
+                      consumePV(finalDamage);
+                      setLastResult({
+                        total: finalDamage,
+                        detail: `Dano direto aplicado: ${finalDamage}`,
+                        isDamageTaken: true,
+                        title: "Dano Aplicado",
+                        damageTotal: finalDamage
+                      });
+                      setActiveRollResult('combat');
+                      showNotification(`Vida reduzida em ${finalDamage} (sem mitigação)`, 'success');
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg font-bold text-sm transition-colors"
+                  >
+                    Subtrair Vida (sem mitigação)
+                  </button>
                 </div>
              </div>
           )}
