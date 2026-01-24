@@ -11,6 +11,20 @@ const LL_GAIN_TABLE = [
   9, 9, 9, 9,
   10, 10, 10
 ];
+
+let rollAudio: HTMLAudioElement | null = null;
+let lastRollAudioAt = 0;
+const playRollSound = () => {
+  if (typeof window === 'undefined') return;
+  const now = Date.now();
+  if (now - lastRollAudioAt < 120) return;
+  lastRollAudioAt = now;
+  try {
+    rollAudio = rollAudio || new Audio('/sounds/rollsound.mp3');
+    rollAudio.currentTime = 0;
+    rollAudio.play().catch(() => {});
+  } catch {}
+};
 const getLLForLevel = (level: number): number => {
   if (level <= 0) return 0;
   const capped = Math.min(level, LL_GAIN_TABLE.length);
@@ -48,6 +62,7 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
 };
 
 export const rollDice = (sides: number, count: number): number => {
+  playRollSound();
   let sum = 0;
   for (let i = 0; i < count; i++) {
     sum += Math.floor(Math.random() * sides) + 1;
