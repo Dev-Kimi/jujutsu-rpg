@@ -12,34 +12,56 @@ const LL_GAIN_TABLE = [
   10, 10, 10
 ];
 
-let rollAudio: HTMLAudioElement | null = null;
+let rollAudioPool: HTMLAudioElement[] = [];
+let rollAudioPoolIndex = 0;
+let rollAudioPrimed = false;
 let lastRollAudioAt = 0;
 const getRollSoundUrl = () => `${import.meta.env.BASE_URL}sounds/rollsound.mp3`;
 
 export const primeRollSound = () => {
   if (typeof window === 'undefined') return;
   try {
-    rollAudio = rollAudio || new Audio(getRollSoundUrl());
-    rollAudio.preload = 'auto';
-    rollAudio.volume = 0.9;
-    rollAudio.load?.();
+    if (rollAudioPool.length === 0) {
+      const url = getRollSoundUrl();
+      rollAudioPool = Array.from({ length: 3 }, () => {
+        const a = new Audio(url);
+        a.preload = 'auto';
+        a.volume = 0.9;
+        return a;
+      });
+    }
 
-    const prevVolume = rollAudio.volume;
-    rollAudio.volume = 0;
-    rollAudio.currentTime = 0;
-    const p = rollAudio.play();
+    for (const a of rollAudioPool) a.load?.();
+    if (rollAudioPrimed) return;
+    rollAudioPrimed = true;
+
+    const a = rollAudioPool[0];
+    const prevMuted = a.muted;
+    const prevVolume = a.volume;
+    try {
+      a.muted = true;
+      a.volume = 0;
+      a.currentTime = 0;
+    } catch {}
+    const p = a.play();
     if (p && typeof (p as any).then === 'function') {
       (p as Promise<void>)
         .then(() => {
-          rollAudio?.pause();
-          if (rollAudio) rollAudio.currentTime = 0;
-          if (rollAudio) rollAudio.volume = prevVolume;
+          a.pause();
+          try {
+            a.currentTime = 0;
+            a.muted = prevMuted;
+            a.volume = prevVolume;
+          } catch {}
         })
         .catch(() => {});
     } else {
-      rollAudio.pause();
-      rollAudio.currentTime = 0;
-      rollAudio.volume = prevVolume;
+      a.pause();
+      try {
+        a.currentTime = 0;
+        a.muted = prevMuted;
+        a.volume = prevVolume;
+      } catch {}
     }
   } catch {}
 };
@@ -51,10 +73,14 @@ const playRollSound = () => {
   lastRollAudioAt = now;
   try {
     primeRollSound();
-    if (!rollAudio) return;
-    const a = rollAudio.cloneNode(true) as HTMLAudioElement;
-    a.volume = rollAudio.volume;
-    a.currentTime = 0;
+    if (rollAudioPool.length === 0) return;
+    const a = rollAudioPool[rollAudioPoolIndex % rollAudioPool.length];
+    rollAudioPoolIndex += 1;
+    a.muted = false;
+    a.volume = 0.9;
+    try {
+      a.currentTime = 0;
+    } catch {}
     a.play().catch(() => {});
   } catch {}
 };
