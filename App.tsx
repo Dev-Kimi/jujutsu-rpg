@@ -1482,7 +1482,7 @@ const App: React.FC = () => {
                    activeBuffs={activeBuffs}
                    llLimit={stats.LL}
                    extraTabs={[
-                     { key: 'rct-cura', label: 'Energia Reversa (Cura)', filter: (item) => item.name.toLowerCase() === 'energia reversa (cura)'.toLowerCase() }
+                     { key: 'rct', label: 'Energia Reversa', filter: (item) => (item as any).subCategory === 'Energia Reversa' }
                    ]}
                  />
                )}
