@@ -884,6 +884,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                      onAdd={(cat) => handleArrayAdd('abilities', cat)}
                      onUpdate={(id, field, val) => handleArrayUpdate('abilities', id, field, val)}
                      onRemove={(id) => handleArrayRemove('abilities', id)}
+                     readOnly={true}
                      enableTabs={false}
                   />
                   <InventoryList 
