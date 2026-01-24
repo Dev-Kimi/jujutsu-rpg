@@ -18,12 +18,25 @@ import { DiceRollLog } from './DiceRollLog';
 
 interface CampaignManagerProps {
   currentUserChar: Character;
+  savedCharacters: Character[];
+  initialSelectedCampaignId?: string | null;
+  onRequestAddCharacterToCampaign?: (payload: {
+    campaignId: string;
+    eligibleCharacterIds: string[];
+    selectedCharacterId: string;
+  }) => void;
   onUpdateCurrentUserChar?: (nextChar: Character) => void;
 }
 
 type SheetTab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' | 'binding-vows';
 
-export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserChar, onUpdateCurrentUserChar }) => {
+export const CampaignManager: React.FC<CampaignManagerProps> = ({
+  currentUserChar,
+  savedCharacters,
+  initialSelectedCampaignId,
+  onRequestAddCharacterToCampaign,
+  onUpdateCurrentUserChar
+}) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [view, setView] = useState<'list' | 'detail' | 'sheet' | 'combat'>('list');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
@@ -47,6 +60,9 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   const [activeCombatParticipants, setActiveCombatParticipants] = useState<CampaignParticipant[]>([]);
   const [isPreparingCombat, setIsPreparingCombat] = useState(false);
   const [isProcessingRound, setIsProcessingRound] = useState(false);
+
+  const [showAddCharacterPrompt, setShowAddCharacterPrompt] = useState(false);
+  const [addCharacterId, setAddCharacterId] = useState<string>('');
 
   const lastSavedCharRef = useRef<string>('');
   const lastSavedStatsRef = useRef<string>('');
@@ -76,6 +92,19 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     if (!updated) return;
     setSelectedCampaign(updated);
   }, [campaigns, selectedCampaign]);
+
+  useEffect(() => {
+    if (!initialSelectedCampaignId) return;
+    if (view !== 'list') return;
+    if (selectedCampaign?.id === initialSelectedCampaignId) {
+      setView('detail');
+      return;
+    }
+    const target = campaigns.find(c => c.id === initialSelectedCampaignId);
+    if (!target) return;
+    setSelectedCampaign(target);
+    setView('detail');
+  }, [initialSelectedCampaignId, campaigns, view, selectedCampaign?.id]);
 
   useEffect(() => {
     if (!selectedCampaign) return;
@@ -139,8 +168,8 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
     if (!auth.currentUser) return alert("Faça login.");
     
     // Check if already in
-    const alreadyIn = campaign.participants.some(p => p.userId === auth.currentUser?.uid);
-    if (alreadyIn) return alert("Você já está nesta campanha.");
+    const alreadyIn = campaign.participants.some(p => p.userId === auth.currentUser?.uid && p.characterId === currentUserChar.id);
+    if (alreadyIn) return alert("Este personagem já está nesta campanha.");
 
     const newParticipant: CampaignParticipant = {
       userId: auth.currentUser.uid,
@@ -1081,6 +1110,10 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   if (view === 'detail' && selectedCampaign) {
     const isParticipant = selectedCampaign.participants.some(p => p.userId === auth.currentUser?.uid);
     const isGM = selectedCampaign.gmId === auth.currentUser?.uid;
+    const uid = auth.currentUser?.uid || '';
+    const eligibleCharacters = uid
+      ? savedCharacters.filter(c => !selectedCampaign.participants.some(p => p.userId === uid && p.characterId === c.id))
+      : [];
 
     const toggleCombatPick = (p: CampaignParticipant) => {
       const key = `${p.userId}_${p.characterId}`;
@@ -1261,9 +1294,32 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
          </div>
 
          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-               <Users size={16} /> Participantes ({selectedCampaign.participants.length})
-            </h3>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                 <Users size={16} /> Participantes ({selectedCampaign.participants.length})
+              </h3>
+              <button
+                onClick={() => {
+                  setAddCharacterId(prev => prev || eligibleCharacters[0]?.id || '');
+                  setShowAddCharacterPrompt(true);
+                }}
+                disabled={!auth.currentUser || eligibleCharacters.length === 0}
+                title={
+                  !auth.currentUser
+                    ? 'Faça login para adicionar personagens.'
+                    : eligibleCharacters.length === 0
+                      ? 'Nenhum personagem elegível para adicionar.'
+                      : 'Adicionar personagem à campanha.'
+                }
+                className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${
+                  (!auth.currentUser || eligibleCharacters.length === 0)
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                    : 'bg-curse-600 hover:bg-curse-500 text-white shadow-lg shadow-curse-900/20'
+                }`}
+              >
+                <Plus size={18} /> Adicionar Personagem
+              </button>
+            </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                {selectedCampaign.participants.map((p, idx) => {
@@ -1335,6 +1391,93 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                })}
             </div>
          </div>
+
+         {showAddCharacterPrompt && (
+           <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+             <div className="bg-slate-900 w-full max-w-xl rounded-2xl border border-slate-800 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+               <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 rounded-t-2xl">
+                 <h3 className="text-lg font-bold text-white">Escolher Personagem</h3>
+                 <button
+                   onClick={() => setShowAddCharacterPrompt(false)}
+                   className="text-slate-400 hover:text-white transition-colors duration-100"
+                 >
+                   <X size={20} />
+                 </button>
+               </div>
+
+               <div className="p-4 space-y-3 max-h-[70vh] overflow-y-auto">
+                 {!auth.currentUser ? (
+                   <div className="text-slate-500 italic text-sm">Faça login para adicionar um personagem.</div>
+                 ) : eligibleCharacters.length === 0 ? (
+                   <div className="text-slate-500 italic text-sm">Nenhum personagem elegível para adicionar nesta campanha.</div>
+                 ) : (
+                   eligibleCharacters.map((c) => {
+                     const checked = addCharacterId === c.id;
+                     return (
+                       <label
+                         key={c.id}
+                         className={`flex items-center gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${
+                           checked ? 'bg-curse-950/30 border-curse-500/30' : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+                         }`}
+                       >
+                         <input
+                           type="radio"
+                           name="add-character-to-campaign"
+                           checked={checked}
+                           onChange={() => setAddCharacterId(c.id)}
+                           className="accent-curse-500"
+                         />
+                         <div className="w-10 h-10 bg-slate-900 rounded-full overflow-hidden border border-slate-700 shrink-0">
+                           {c.imageUrl ? (
+                             <img src={c.imageUrl} alt={c.name} className="w-full h-full object-cover" />
+                           ) : (
+                             <div className="w-full h-full flex items-center justify-center text-slate-600 font-bold">
+                               {c.name.charAt(0)}
+                             </div>
+                           )}
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <div className="font-bold text-white truncate">{c.name}</div>
+                           <div className="text-xs text-slate-500">Lv.{c.level} {c.characterClass}</div>
+                         </div>
+                       </label>
+                     );
+                   })
+                 )}
+               </div>
+
+               <div className="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900 rounded-b-2xl">
+                 <button
+                   onClick={() => setShowAddCharacterPrompt(false)}
+                   className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold"
+                 >
+                   Cancelar
+                 </button>
+                 <button
+                   onClick={() => {
+                     if (!selectedCampaign) return;
+                     if (!auth.currentUser) return;
+                     if (!addCharacterId) return;
+                     onRequestAddCharacterToCampaign?.({
+                       campaignId: selectedCampaign.id,
+                       eligibleCharacterIds: eligibleCharacters.map(c => c.id),
+                       selectedCharacterId: addCharacterId
+                     });
+                     setShowAddCharacterPrompt(false);
+                   }}
+                   disabled={!auth.currentUser || eligibleCharacters.length === 0 || !addCharacterId}
+                   className={`px-4 py-2 rounded-lg font-bold ${
+                     (!auth.currentUser || eligibleCharacters.length === 0 || !addCharacterId)
+                       ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                       : 'bg-curse-600 hover:bg-curse-500 text-white'
+                   }`}
+                 >
+                   Continuar
+                 </button>
+               </div>
+             </div>
+           </div>
+         )}
 
          {/* Dice Roll Log */}
          {selectedCampaign && (
