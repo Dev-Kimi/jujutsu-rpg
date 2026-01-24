@@ -116,16 +116,10 @@ export const AccordionList: React.FC<AccordionListProps> = ({
       matchesCategory = (item.category || categories[0]) === activeCategory;
     }
     let matchesExtra = true;
-    const isRCT = ((item as any).subCategory === 'Energia Reversa') || /energia reversa/i.test(item.name);
-    if (extraTabs.length > 0) {
-      if (selectedExtraKey) {
-        const tab = extraTabs.find(t => t.key === selectedExtraKey);
-        if (tab) {
-          matchesExtra = tab.filter(item);
-        }
-      } else {
-        // Excluir RCT da lista geral; só aparece na aba rápida
-        matchesExtra = !isRCT;
+    if (selectedExtraKey) {
+      const tab = extraTabs.find(t => t.key === selectedExtraKey);
+      if (tab) {
+        matchesExtra = tab.filter(item);
       }
     }
     return matchesSearch && matchesCategory && matchesExtra;
