@@ -1476,11 +1476,11 @@ const App: React.FC = () => {
                  <>
                    <div className="flex justify-end mb-2">
                      <button
-                       onClick={() => setAbilitiesRctView('rct')}
+                       onClick={() => setAbilitiesRctView((prev) => (prev === 'rct' ? 'padrao' : 'rct'))}
                        className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-lg bg-curse-600 hover:bg-curse-500 text-white shadow-lg hover:shadow-curse-900/50 active:scale-95 border border-curse-500/50 transition-colors"
-                       title="Ir para habilidades de Energia Reversa"
+                       title={abilitiesRctView === 'rct' ? 'Voltar para habilidades padrão' : 'Ir para habilidades de Energia Reversa'}
                      >
-                       Energia Reversa
+                       {abilitiesRctView === 'rct' ? 'Voltar' : 'Energia Reversa'}
                      </button>
                    </div>
                    <AccordionList 
