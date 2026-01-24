@@ -1,4 +1,4 @@
-import { Attributes, Character, DerivedStats, Origin, Item } from '../types';
+import { Attributes, Character, DEFAULT_SKILLS, DerivedStats, Origin, Item } from '../types';
 import { MUNDANE_WEAPONS } from './equipmentData';
 const LL_GAIN_TABLE = [
   2, 2, 2,
@@ -233,12 +233,32 @@ export const parseAbilityEffect = (description: string): { attack: number, defen
 };
 
 export const parseAbilitySkillTrigger = (description: string): string | null => {
-  // Look for patterns like "vs Nome da Perícia" or "em Nome da Perícia"
-  const vsMatch = description.match(/vs\s+([A-Za-záàâãéèêíìîóòôõúùûçÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ\s]+?)(?:\.|,|$)/i);
+  if (!description) return null;
 
+  const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normalized = normalize(description);
+  const skillNames = DEFAULT_SKILLS.map(s => s.name);
+  const normalizedSkillNames = skillNames.map(normalize);
 
-  if (vsMatch && vsMatch[1]) {
-    return vsMatch[1];
+  const findSkillInText = (text: string): string | null => {
+    const nText = normalize(text);
+    for (let i = 0; i < normalizedSkillNames.length; i++) {
+      const nSkill = normalizedSkillNames[i];
+      if (nText.includes(nSkill)) return skillNames[i];
+    }
+    return null;
+  };
+
+  const matchTesteDe = normalized.match(/\bteste\s+de\s+(.+?)(?:\s+(?:vs|contra)\b|[.,;]|$)/i);
+  if (matchTesteDe?.[1]) {
+    const found = findSkillInText(matchTesteDe[1]);
+    if (found) return found;
+  }
+
+  const matchBeforeVs = normalized.match(/\b([a-záàâãéèêíìîóòôõúùûç\s]+?)\s+vs\b/i);
+  if (matchBeforeVs?.[1]) {
+    const found = findSkillInText(matchBeforeVs[1]);
+    if (found) return found;
   }
 
   return null;
