@@ -349,9 +349,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         return;
       }
       const ll = stats.LL || 0;
-      const ceMitigation = Math.max(0, Math.min(defenseCEMitigation, ll));
-      const mitigDiceCount = Math.floor(ceMitigation / 5);
-      const mitigFixed = Math.floor((ceMitigation % 5) / 2);
+      const ceSelected = Math.max(0, Math.min(defenseCEMitigation, ll));
+      const ceUsed = Math.floor(ceSelected / 2);
+      const mitigDiceCount = Math.floor(ceUsed / 5);
+      const mitigFixed = Math.floor((ceUsed % 5) / 2);
       const mitigRolls: number[] = [];
       let mitigSum = 0;
       for (let i = 0; i < mitigDiceCount; i++) {
@@ -363,13 +364,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       const finalReduction = reductionAmount + totalBuffBonus;
       const finalDamage = Math.max(0, incomingDamage - finalReduction);
       loggedRolls = mitigRolls.length > 0 ? mitigRolls : [finalReduction];
-      actionCostCE = ceMitigation;
+      actionCostCE = ceUsed;
       
       total = finalDamage;
       isDamageTaken = true;
       rollTitle = "Dano Final Recebido";
 
-      detail = `Dano ${incomingDamage} - Mitigação (CE ${ceMitigation}; ${mitigDiceCount}d6=[${mitigRolls.join(', ')}] + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${finalReduction}`;
+      detail = `Dano ${incomingDamage} - Mitigação (CE ${ceSelected}➜${ceUsed}; ${mitigDiceCount}d6=[${mitigRolls.join(', ')}] + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${finalReduction}`;
     }
 
     // 2. Add Buffs to Total (If Attack)
@@ -536,7 +537,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       return getWeaponCELimit(weapon);
   };
   const weaponLimit = getCurrentWeaponLimit();
-  const currentCostCE = activeTab === 'defense' ? defenseCEMitigation : Math.ceil(invested / 2);
+  const currentCostCE = activeTab === 'defense' ? Math.floor(defenseCEMitigation / 2) : Math.ceil(invested / 2);
   const willBreak = weaponLimit !== null && currentCostCE > weaponLimit;
 
   const getWeaponCriticalThreshold = (weapon: Item): number => {
@@ -693,11 +694,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           </span>
           <div className="text-right">
             <span className={activeTab === 'defense'
-              ? (currentStats.ce < (defenseCEMitigation + totalBuffCost.ce) ? "text-red-500" : "text-blue-300")
+              ? (currentStats.ce < (Math.floor(defenseCEMitigation / 2) + totalBuffCost.ce) ? "text-red-500" : "text-blue-300")
               : (currentStats.ce < currentCostCE && !isHR ? "text-red-500" : "text-curse-400")
             }>
               {activeTab === 'defense'
-                ? `Custo Ação: ${defenseCEMitigation} CE`
+                ? `Custo Ação: ${Math.floor(defenseCEMitigation / 2)} CE`
                 : (isHR && activeTab === 'physical' ? 'Custo: 0 (Passivo)' : `Custo Ação: ${currentCostCE} CE`)
               }
             </span>
@@ -728,6 +729,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                     <div className="text-[11px] font-mono text-slate-300">
                       <span className="text-blue-300 font-bold">{defenseCEMitigation}</span>
                       <span className="text-slate-500"> / {stats.LL || 0} (LL)</span>
+                      <span className="text-slate-500"> • custo {Math.floor(defenseCEMitigation / 2)} CE</span>
                     </div>
                   </div>
 
@@ -754,9 +756,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                       <div className="font-mono text-slate-200">
                         {(() => {
                           const ll = stats.LL || 0;
-                          const ceMitigation = Math.max(0, Math.min(defenseCEMitigation, ll));
-                          const mitigDiceCount = Math.floor(ceMitigation / 5);
-                          const mitigFixed = Math.floor((ceMitigation % 5) / 2);
+                          const ceSelected = Math.max(0, Math.min(defenseCEMitigation, ll));
+                          const ceUsed = Math.floor(ceSelected / 2);
+                          const mitigDiceCount = Math.floor(ceUsed / 5);
+                          const mitigFixed = Math.floor((ceUsed % 5) / 2);
                           const minMitigation = mitigDiceCount * 1 + mitigFixed + totalBuffBonus;
                           const maxMitigation = mitigDiceCount * 6 + mitigFixed + totalBuffBonus;
                           return `${mitigDiceCount}d6 + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''} (${minMitigation}–${maxMitigation})`;
@@ -768,9 +771,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                       <div className="font-mono text-slate-200">
                         {(() => {
                           const ll = stats.LL || 0;
-                          const ceMitigation = Math.max(0, Math.min(defenseCEMitigation, ll));
-                          const mitigDiceCount = Math.floor(ceMitigation / 5);
-                          const mitigFixed = Math.floor((ceMitigation % 5) / 2);
+                          const ceSelected = Math.max(0, Math.min(defenseCEMitigation, ll));
+                          const ceUsed = Math.floor(ceSelected / 2);
+                          const mitigDiceCount = Math.floor(ceUsed / 5);
+                          const mitigFixed = Math.floor((ceUsed % 5) / 2);
                           const minMitigation = mitigDiceCount * 1 + mitigFixed + totalBuffBonus;
                           const maxMitigation = mitigDiceCount * 6 + mitigFixed + totalBuffBonus;
                           const worst = Math.max(0, incomingDamage - minMitigation);
@@ -781,9 +785,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                     </div>
                   </div>
 
-                  {currentStats.ce < (defenseCEMitigation + totalBuffCost.ce) && (
+                  {currentStats.ce < (Math.floor(defenseCEMitigation / 2) + totalBuffCost.ce) && (
                     <div className="mt-2 text-[11px] text-red-400 font-semibold">
-                      CE insuficiente para esta mitigação (necessário: {defenseCEMitigation + totalBuffCost.ce}, atual: {currentStats.ce}).
+                      CE insuficiente para esta mitigação (necessário: {Math.floor(defenseCEMitigation / 2) + totalBuffCost.ce}, atual: {currentStats.ce}).
                     </div>
                   )}
                 </div>
@@ -795,8 +799,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                         return;
                       }
                       const ll = stats.LL || 0;
-                      const ceMitigation = Math.max(0, Math.min(defenseCEMitigation, ll));
-                      const finalCostCE = ceMitigation + totalBuffCost.ce;
+                      const ceSelected = Math.max(0, Math.min(defenseCEMitigation, ll));
+                      const ceUsed = Math.floor(ceSelected / 2);
+                      const finalCostCE = ceUsed + totalBuffCost.ce;
                       const finalCostPE = totalBuffCost.pe;
 
                       if (currentStats.pe < finalCostPE) {
@@ -815,8 +820,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                         return;
                       }
 
-                      const mitigDiceCount = Math.floor(ceMitigation / 5);
-                      const mitigFixed = Math.floor((ceMitigation % 5) / 2);
+                      const mitigDiceCount = Math.floor(ceUsed / 5);
+                      const mitigFixed = Math.floor((ceUsed % 5) / 2);
                       const mitigRolls: number[] = [];
                       let mitigSum = 0;
                       for (let i = 0; i < mitigDiceCount; i++) {
@@ -835,7 +840,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                       consumePV(finalDamage);
                       setLastResult({
                         total: finalDamage,
-                        detail: `Dano ${incomingDamage} - Mitigação (CE ${ceMitigation}; ${mitigDiceCount}d6=[${mitigRolls.join(', ')}] + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${reductionAmount}`,
+                        detail: `Dano ${incomingDamage} - Mitigação (CE ${ceSelected}➜${ceUsed}; ${mitigDiceCount}d6=[${mitigRolls.join(', ')}] + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${reductionAmount}`,
                         isDamageTaken: true,
                         title: "Dano Aplicado",
                         damageTotal: finalDamage
