@@ -1480,6 +1480,10 @@ const App: React.FC = () => {
                    // New prop to pass down ID to find the object
                    onUseWithId={(cost, name, id) => handleUseAbility(cost, name, id)}
                    activeBuffs={activeBuffs}
+                   llLimit={stats.LL}
+                   extraTabs={[
+                     { key: 'rct-cura', label: 'Energia Reversa (Cura)', filter: (item) => item.name.toLowerCase() === 'energia reversa (cura)'.toLowerCase() }
+                   ]}
                  />
                )}
                {activeTab === 'techniques' && (
