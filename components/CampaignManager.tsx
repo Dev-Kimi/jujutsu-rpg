@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Campaign, CampaignParticipant, Character, CurrentStats, DiceRollLog as DiceRollLogType } from '../types';
+import { AptitudeLevels, Campaign, CampaignParticipant, Character, CurrentStats, DiceRollLog as DiceRollLogType, Ability, Technique } from '../types';
 import { Users, Plus, Play, Eye, ArrowLeft, Crown, Shield, X, MapPin, Trash2, UserMinus, Edit2, Save, Dices, RefreshCw, Square } from 'lucide-react';
 import { db, auth } from '../firebase'; // Ensure you have this configured
 import { collection, addDoc, updateDoc, arrayUnion, arrayRemove, query, onSnapshot, doc, getDoc, deleteDoc, orderBy, setDoc, where, limit, writeBatch } from 'firebase/firestore';
@@ -10,14 +10,18 @@ import { AccordionList } from './AccordionList';
 import { InventoryList } from './InventoryList';
 import { BindingVowsManager } from './BindingVowsManager';
 import { CombatTabs } from './CombatTabs';
+import { TechniqueManager } from './TechniqueManager';
+import { LevelUpSummary } from './LevelUpSummary';
 import { MasterCombatTracker } from './MasterCombatTracker';
-import { calculateDerivedStats } from '../utils/calculations';
+import { calculateDerivedStats, parseAbilityEffect, parseAbilitySkillTrigger } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
 
 interface CampaignManagerProps {
   currentUserChar: Character;
   onUpdateCurrentUserChar?: (nextChar: Character) => void;
 }
+
+type SheetTab = 'combat' | 'abilities' | 'techniques' | 'inventory' | 'progression' | 'binding-vows';
 
 export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserChar, onUpdateCurrentUserChar }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -32,6 +36,9 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
   const [viewingParticipant, setViewingParticipant] = useState<CampaignParticipant | null>(null);
   const [showDiceLog, setShowDiceLog] = useState(false);
   const [activeRollResult, setActiveRollResult] = useState<'skill' | 'combat' | null>(null);
+  const [sheetTab, setSheetTab] = useState<SheetTab>('combat');
+  const [abilitiesRctView, setAbilitiesRctView] = useState<'padrao' | 'rct'>('padrao');
+  const [activeBuffs, setActiveBuffs] = useState<Ability[]>([]);
 
   const [combatRolls, setCombatRolls] = useState<DiceRollLogType[]>([]);
 
@@ -43,6 +50,12 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
 
   const lastSavedCharRef = useRef<string>('');
   const lastSavedStatsRef = useRef<string>('');
+
+  useEffect(() => {
+    if (sheetTab !== 'abilities') {
+      setAbilitiesRctView('padrao');
+    }
+  }, [sheetTab]);
 
   // 1. Fetch Campaigns
   useEffect(() => {
@@ -252,6 +265,9 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
             setViewingStats(nextStats);
             setViewingParticipant(participant);
             lastSavedCharRef.current = JSON.stringify(currentUserChar);
+            setSheetTab('combat');
+            setAbilitiesRctView('padrao');
+            setActiveBuffs([]);
             setView('sheet');
             return;
         } else {
@@ -285,6 +301,9 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                 setViewingStats({ pv: stats.MaxPV, ce: stats.MaxCE, pe: stats.MaxPE });
                 setViewingParticipant(participant);
                 lastSavedCharRef.current = JSON.stringify(target);
+                setSheetTab('combat');
+                setAbilitiesRctView('padrao');
+                setActiveBuffs([]);
                 setView('sheet');
             } else {
                 alert(`Personagem com ID "${participant.characterId}" não encontrado no banco de dados do jogador.`);
@@ -524,6 +543,82 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
         : [...equippedWeapons, weaponId];
       return { ...prev, equippedWeapons: newEquippedWeapons };
     });
+  };
+
+  const handleAptitudeUpdate = (category: keyof AptitudeLevels, level: number) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      aptitudes: {
+        ...(prev.aptitudes || {}),
+        [category]: level
+      }
+    }));
+  };
+
+  const handleAddTechnique = (technique: Technique) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      techniques: [...(prev.techniques || []), technique]
+    }));
+  };
+
+  const handleTechniqueUpdate = (id: string, field: keyof Technique, value: any) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      techniques: (prev.techniques || []).map(t => (t.id === id ? { ...t, [field]: value } : t))
+    }));
+  };
+
+  const handleTechniqueRemove = (id: string) => {
+    updateViewingChar(prev => ({
+      ...prev,
+      techniques: (prev.techniques || []).filter(t => t.id !== id)
+    }));
+  };
+
+  const handleUseAbility = (cost: { pe: number; ce: number }, abilityName: string, abilityId?: string) => {
+    if (!viewingChar) return false;
+    const ability = abilityId
+      ? viewingChar.abilities.find(a => a.id === abilityId)
+      : viewingChar.abilities.find(a => a.name === abilityName);
+
+    if (!ability) return false;
+
+    const effects = parseAbilityEffect(ability.description || '');
+    const hasCombatBuff = effects.attack > 0 || effects.defense > 0;
+    const skillTrigger = parseAbilitySkillTrigger(ability.description || '');
+    const shouldQueue = hasCombatBuff || skillTrigger;
+
+    if (shouldQueue) {
+      const isAlreadyActive = activeBuffs.some(b => b.id === ability.id);
+      if (isAlreadyActive) {
+        setActiveBuffs(prev => prev.filter(b => b.id !== ability.id));
+        return false;
+      }
+      setActiveBuffs(prev => [...prev, ability]);
+      return true;
+    }
+
+    if (viewingStats.pe < cost.pe) {
+      alert(`PE Insuficiente para usar ${abilityName}! Necessário: ${cost.pe}, Atual: ${viewingStats.pe}`);
+      return false;
+    }
+    if (viewingStats.ce < cost.ce) {
+      alert(`CE Insuficiente para usar ${abilityName}! Necessário: ${cost.ce}, Atual: ${viewingStats.ce}`);
+      return false;
+    }
+
+    setViewingStats(prev => ({
+      ...prev,
+      pe: Math.max(0, prev.pe - cost.pe),
+      ce: Math.max(0, prev.ce - cost.ce)
+    }));
+
+    return true;
+  };
+
+  const handleConsumeBuffs = (buffsToConsume: Ability[]) => {
+    setActiveBuffs(prev => prev.filter(a => !buffsToConsume.some(b => b.id === a.id)));
   };
 
   const handleAdvanceRound = async () => {
@@ -783,6 +878,9 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
      const consumePE = (amount: number) => {
        setViewingStats(prev => ({ ...prev, pe: Math.max(0, prev.pe - amount) }));
      };
+     const consumePV = (amount: number) => {
+       setViewingStats(prev => ({ ...prev, pv: Math.max(0, prev.pv - amount) }));
+     };
      
      return (
         <div className="animate-in slide-in-from-bottom-5 duration-300 pb-20">
@@ -857,48 +955,123 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({ currentUserCha
                     onAddSkill={handleAddSkill}
                     onRemoveSkill={handleRemoveSkill}
                     campaignId={selectedCampaign?.id}
+                    activeBuffs={activeBuffs}
+                    onConsumeBuff={handleConsumeBuffs}
+                    currentStats={viewingStats}
+                    consumePE={consumePE}
+                    consumeCE={consumeCE}
                     activeRollResult={activeRollResult}
                     setActiveRollResult={setActiveRollResult}
                   />
                </section>
 
-               {/* Inventory / Abilities */}
-               <section className="md:col-span-2 xl:col-span-4 space-y-4">
-                  <CombatTabs
-                    char={viewingChar}
-                    stats={stats}
-                    currentStats={viewingStats}
-                    consumeCE={consumeCE}
-                    consumePE={consumePE}
-                    activeBuffs={[]}
-                    onConsumeBuffs={() => {}}
-                    activeRollResult={activeRollResult}
-                    setActiveRollResult={setActiveRollResult}
-                    onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
-                    onUpdateCharacter={handleCharUpdate}
-                    campaignId={selectedCampaign?.id}
-                  />
-                  <AccordionList 
-                     title="Habilidades"
-                     items={viewingChar.abilities}
-                     onAdd={(cat) => handleArrayAdd('abilities', cat)}
-                     onUpdate={(id, field, val) => handleArrayUpdate('abilities', id, field, val)}
-                     onRemove={(id) => handleArrayRemove('abilities', id)}
-                     readOnly={true}
-                     enableTabs={false}
-                  />
-                  <InventoryList 
-                     items={viewingChar.inventory} 
-                     onAdd={(template) => handleArrayAdd('inventory', undefined, template)}
-                     onUpdate={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
-                     onRemove={(id) => handleArrayRemove('inventory', id)}
-                     equippedWeapons={viewingChar.equippedWeapons}
-                     onToggleEquip={handleToggleEquipWeapon}
-                  />
-                  <BindingVowsManager 
-                     char={viewingChar} 
-                     onUpdateCharacter={handleCharUpdate} 
-                  />
+               {/* Tabs */}
+               <section className="md:col-span-2 xl:col-span-4 flex flex-col gap-4">
+                  <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent pb-2">
+                    {(['combat', 'abilities', 'techniques', 'inventory', 'progression', 'binding-vows'] as SheetTab[]).map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setSheetTab(tab)}
+                        className={`flex-1 py-2 px-2 text-[10px] uppercase font-bold tracking-wider rounded-lg transition-all duration-100 whitespace-nowrap flex justify-center items-center gap-1
+                          ${sheetTab === tab 
+                            ? 'bg-curse-600 text-white shadow-lg shadow-curse-900/50' 
+                            : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}
+                        `}
+                      >
+                        {tab === 'combat' && 'Combate'}
+                        {tab === 'abilities' && 'Habilid.'}
+                        {tab === 'techniques' && 'Técnicas'}
+                        {tab === 'inventory' && 'Invent.'}
+                        {tab === 'progression' && 'Progressão'}
+                        {tab === 'binding-vows' && 'Votos'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="animate-in fade-in slide-in-from-bottom-2 duration-100">
+                    {sheetTab === 'combat' && (
+                      <CombatTabs
+                        char={viewingChar}
+                        stats={stats}
+                        currentStats={viewingStats}
+                        consumeCE={consumeCE}
+                        consumePE={consumePE}
+                        consumePV={consumePV}
+                        activeBuffs={activeBuffs}
+                        onConsumeBuffs={handleConsumeBuffs}
+                        activeRollResult={activeRollResult}
+                        setActiveRollResult={setActiveRollResult}
+                        onUpdateInventory={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                        onUpdateCharacter={handleCharUpdate}
+                        campaignId={selectedCampaign?.id}
+                      />
+                    )}
+
+                    {sheetTab === 'abilities' && (
+                      <>
+                        <div className="flex justify-end mb-2">
+                          <button
+                            onClick={() => setAbilitiesRctView((prev) => (prev === 'rct' ? 'padrao' : 'rct'))}
+                            className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-lg bg-curse-600 hover:bg-curse-500 text-white shadow-lg hover:shadow-curse-900/50 active:scale-95 border border-curse-500/50 transition-colors"
+                            title={abilitiesRctView === 'rct' ? 'Voltar para habilidades padrão' : 'Ir para habilidades de Energia Reversa'}
+                          >
+                            {abilitiesRctView === 'rct' ? 'Voltar' : 'Energia Reversa'}
+                          </button>
+                        </div>
+                        <AccordionList 
+                          title="Habilidades"
+                          items={viewingChar.abilities}
+                          categories={['Combatente', 'Feiticeiro', 'Especialista', 'Restrição Celestial', 'Habilidades Amaldiçoadas']}
+                          enableTabs={false}
+                          onAdd={(cat) => handleArrayAdd('abilities', cat)}
+                          onUpdate={(id, field, val) => handleArrayUpdate('abilities', id, field, val)}
+                          onRemove={(id) => handleArrayRemove('abilities', id)}
+                          readOnly={true}
+                          placeholderName="Nova Habilidade"
+                          onUse={(cost, name) => handleUseAbility(cost, name)}
+                          onUseWithId={(cost, name, id) => handleUseAbility(cost, name, id)}
+                          activeBuffs={activeBuffs}
+                          llLimit={stats.LL}
+                          externalRctView={abilitiesRctView}
+                        />
+                      </>
+                    )}
+
+                    {sheetTab === 'techniques' && (
+                      <TechniqueManager 
+                        techniques={viewingChar.techniques || []}
+                        onAdd={handleAddTechnique}
+                        onUpdate={handleTechniqueUpdate}
+                        onRemove={handleTechniqueRemove}
+                        onOpenLibrary={() => alert('Biblioteca de técnicas não disponível nesta visualização.')}
+                        llValue={stats.LL}
+                        currentCE={viewingStats.ce}
+                        onConsumeCE={consumeCE}
+                      />
+                    )}
+
+                    {sheetTab === 'inventory' && (
+                      <InventoryList 
+                        items={viewingChar.inventory} 
+                        onAdd={(template) => handleArrayAdd('inventory', undefined, template)}
+                        onUpdate={(id, field, val) => handleArrayUpdate('inventory', id, field, val)}
+                        onRemove={(id) => handleArrayRemove('inventory', id)}
+                        equippedWeapons={viewingChar.equippedWeapons}
+                        onToggleEquip={handleToggleEquipWeapon}
+                      />
+                    )}
+
+                    {sheetTab === 'progression' && (
+                      <LevelUpSummary char={viewingChar} onUpdateAptitude={handleAptitudeUpdate} />
+                    )}
+
+                    {sheetTab === 'binding-vows' && (
+                      <BindingVowsManager 
+                        char={viewingChar} 
+                        onUpdateCharacter={handleCharUpdate} 
+                      />
+                    )}
+                  </div>
                </section>
            </div>
         </div>
