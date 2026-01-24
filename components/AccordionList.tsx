@@ -31,7 +31,6 @@ interface AccordionListProps {
   ) => boolean;
   activeBuffs?: Ability[];
   llLimit?: number;
-  extraTabs?: Array<{ key: string; label: string; filter: (item: Ability) => boolean }>;
 }
 
 export const AccordionList: React.FC<AccordionListProps> = ({
@@ -48,7 +47,6 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   onUseWithId,
   activeBuffs = [],
   llLimit,
-  extraTabs = [],
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>(
@@ -59,7 +57,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
     Record<string, { pe: number; ce: number }>
   >({});
   const [usingId, setUsingId] = useState<string | null>(null);
-  const [selectedExtraKey, setSelectedExtraKey] = useState<string | null>(null);
+  const [rctView, setRctView] = useState<'padrao' | 'rct'>('padrao');
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -115,14 +113,13 @@ export const AccordionList: React.FC<AccordionListProps> = ({
     if (categories && enableTabs) {
       matchesCategory = (item.category || categories[0]) === activeCategory;
     }
-    let matchesExtra = true;
-    if (selectedExtraKey) {
-      const tab = extraTabs.find(t => t.key === selectedExtraKey);
-      if (tab) {
-        matchesExtra = tab.filter(item);
-      }
+    let matchesToggle = true;
+    if (rctView === 'rct') {
+      matchesToggle = item.subCategory === 'Energia Reversa';
+    } else {
+      matchesToggle = !item.subCategory || item.subCategory !== 'Energia Reversa';
     }
-    return matchesSearch && matchesCategory && matchesExtra;
+    return matchesSearch && matchesCategory && matchesToggle;
   });
 
   return (
@@ -159,29 +156,24 @@ export const AccordionList: React.FC<AccordionListProps> = ({
           ))}
         </div>
       )}
-      {extraTabs.length > 0 && (
-        <div className="flex gap-2 px-2 py-2 border-b border-slate-800 bg-slate-950/30">
-          <button
-            onClick={() => setSelectedExtraKey(null)}
-            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border
-              ${selectedExtraKey === null ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
-            `}
-          >
-            Todos
-          </button>
-          {extraTabs.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setSelectedExtraKey(tab.key)}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border
-                ${selectedExtraKey === tab.key ? 'bg-curse-900/40 text-curse-200 border-curse-600/40' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
-              `}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex gap-2 px-2 py-2 border-b border-slate-800 bg-slate-950/30">
+        <button
+          onClick={() => setRctView('padrao')}
+          className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border
+            ${rctView === 'padrao' ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
+          `}
+        >
+          Padrão
+        </button>
+        <button
+          onClick={() => setRctView('rct')}
+          className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border
+            ${rctView === 'rct' ? 'bg-curse-900/40 text-curse-200 border-curse-600/40' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
+          `}
+        >
+          Energia Reversa
+        </button>
+      </div>
 
       {/* Search Bar */}
       <div className="p-2 border-b border-slate-800 bg-slate-900">
@@ -321,27 +313,33 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                       <label className="block text-[10px] text-slate-500 uppercase font-bold">
                         Gastar PE
                       </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={variableInputs[item.id]?.pe || 0}
-                        onChange={(e) =>
-                          setVariableInputs((prev) => ({
-                            ...prev,
-                            [item.id]: {
-                              ...prev[item.id],
-                              pe: parseInt(e.target.value) || 0,
-                            },
-                          }))
-                        }
-                        className="w-20 bg-slate-950 border border-slate-700 rounded p-1 text-center font-mono text-white focus:border-emerald-500 outline-none"
-                      />
+                      {/x\s*pe/i.test(item.cost) ? (
+                        <input
+                          type="number"
+                          min="0"
+                          value={variableInputs[item.id]?.pe || 0}
+                          onChange={(e) =>
+                            setVariableInputs((prev) => ({
+                              ...prev,
+                              [item.id]: {
+                                ...prev[item.id],
+                                pe: parseInt(e.target.value) || 0,
+                              },
+                            }))
+                          }
+                          className="w-20 bg-slate-950 border border-slate-700 rounded p-1 text-center font-mono text-white focus:border-emerald-500 outline-none"
+                        />
+                      ) : (
+                        <span className="w-20 inline-block text-center font-mono text-slate-300 bg-slate-800 border border-slate-700 rounded px-2 py-1">
+                          {parseAbilityCost(item.cost).pe}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1">
                       <label className="block text-[10px] text-slate-500 uppercase font-bold">
                         Gastar CE
                       </label>
-                      {typeof llLimit === 'number' ? (
+                      {/x\s*ce/i.test(item.cost) && typeof llLimit === 'number' ? (
                         <div className="flex items-center gap-3">
                           <input
                             type="range"
@@ -365,21 +363,9 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                           </span>
                         </div>
                       ) : (
-                        <input
-                          type="number"
-                          min="0"
-                          value={variableInputs[item.id]?.ce || 0}
-                          onChange={(e) =>
-                            setVariableInputs((prev) => ({
-                              ...prev,
-                              [item.id]: {
-                                ...prev[item.id],
-                                ce: parseInt(e.target.value) || 0,
-                              },
-                            }))
-                          }
-                          className="w-20 bg-slate-950 border border-slate-700 rounded p-1 text-center font-mono text-white focus:border-emerald-500 outline-none"
-                        />
+                        <span className="w-20 inline-block text-center font-mono text-slate-300 bg-slate-800 border border-slate-700 rounded px-2 py-1">
+                          {parseAbilityCost(item.cost).ce}
+                        </span>
                       )}
                     </div>
                     <button
