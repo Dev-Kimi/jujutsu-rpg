@@ -13,46 +13,13 @@ const LL_GAIN_TABLE = [
 ];
 
 let rollAudio: HTMLAudioElement | null = null;
-let rollAudioDisabled = false;
-let rollBeepCtx: AudioContext | null = null;
 let lastRollAudioAt = 0;
-const getRollSoundUrl = () => {
-  const base = import.meta.env.BASE_URL || '/';
-  if (typeof window === 'undefined') return `${base}sounds/rollsound.mp3`;
-  const normalized = base.endsWith('/') ? base : `${base}/`;
-  return `${window.location.origin}${normalized}sounds/rollsound.mp3`;
-};
-
-const playRollBeep = () => {
-  try {
-    const AnyAudioContext =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AnyAudioContext) return;
-    rollBeepCtx = rollBeepCtx || new AnyAudioContext();
-    if (rollBeepCtx.state === 'suspended') rollBeepCtx.resume?.();
-    const osc = rollBeepCtx.createOscillator();
-    const gain = rollBeepCtx.createGain();
-    osc.type = 'square';
-    osc.frequency.value = 220;
-    gain.gain.value = 0.02;
-    osc.connect(gain);
-    gain.connect(rollBeepCtx.destination);
-    const now = rollBeepCtx.currentTime;
-    osc.start(now);
-    osc.stop(now + 0.05);
-  } catch {}
-};
+const getRollSoundUrl = () => `${import.meta.env.BASE_URL}sounds/rollsound.mp3`;
 
 export const primeRollSound = () => {
   if (typeof window === 'undefined') return;
-  if (rollAudioDisabled) return;
   try {
     rollAudio = rollAudio || new Audio(getRollSoundUrl());
-    if (!rollAudioDisabled) {
-      rollAudio.onerror = () => {
-        rollAudioDisabled = true;
-      };
-    }
     rollAudio.preload = 'auto';
     rollAudio.volume = 0.9;
     rollAudio.load?.();
@@ -68,10 +35,7 @@ export const primeRollSound = () => {
           if (rollAudio) rollAudio.currentTime = 0;
           if (rollAudio) rollAudio.volume = prevVolume;
         })
-        .catch(() => {
-          rollAudioDisabled = true;
-          if (rollAudio) rollAudio.volume = prevVolume;
-        });
+        .catch(() => {});
     } else {
       rollAudio.pause();
       rollAudio.currentTime = 0;
@@ -85,20 +49,13 @@ const playRollSound = () => {
   const now = Date.now();
   if (now - lastRollAudioAt < 120) return;
   lastRollAudioAt = now;
-  if (rollAudioDisabled) {
-    playRollBeep();
-    return;
-  }
   try {
     primeRollSound();
     if (!rollAudio) return;
     const a = rollAudio.cloneNode(true) as HTMLAudioElement;
     a.volume = rollAudio.volume;
     a.currentTime = 0;
-    a.play().catch(() => {
-      rollAudioDisabled = true;
-      playRollBeep();
-    });
+    a.play().catch(() => {});
   } catch {}
 };
 const getLLForLevel = (level: number): number => {
