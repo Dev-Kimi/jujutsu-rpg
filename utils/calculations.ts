@@ -14,15 +14,56 @@ const LL_GAIN_TABLE = [
 
 let rollAudio: HTMLAudioElement | null = null;
 let lastRollAudioAt = 0;
+const getRollSoundUrl = () => {
+  try {
+    const base = (import.meta as any)?.env?.BASE_URL;
+    if (typeof base === 'string') return `${base}sounds/rollsound.mp3`;
+  } catch {}
+  return '/sounds/rollsound.mp3';
+};
+
+export const primeRollSound = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    rollAudio = rollAudio || new Audio(getRollSoundUrl());
+    rollAudio.preload = 'auto';
+    rollAudio.volume = 0.9;
+    rollAudio.load?.();
+
+    const prevVolume = rollAudio.volume;
+    rollAudio.volume = 0;
+    rollAudio.currentTime = 0;
+    const p = rollAudio.play();
+    if (p && typeof (p as any).then === 'function') {
+      (p as Promise<void>)
+        .then(() => {
+          rollAudio?.pause();
+          if (rollAudio) rollAudio.currentTime = 0;
+          if (rollAudio) rollAudio.volume = prevVolume;
+        })
+        .catch(() => {
+          if (rollAudio) rollAudio.volume = prevVolume;
+        });
+    } else {
+      rollAudio.pause();
+      rollAudio.currentTime = 0;
+      rollAudio.volume = prevVolume;
+    }
+  } catch {}
+};
+
 const playRollSound = () => {
   if (typeof window === 'undefined') return;
   const now = Date.now();
   if (now - lastRollAudioAt < 120) return;
   lastRollAudioAt = now;
   try {
-    rollAudio = rollAudio || new Audio('/sounds/rollsound.mp3');
-    rollAudio.currentTime = 0;
-    rollAudio.play().catch(() => {});
+    primeRollSound();
+    if (!rollAudio) return;
+    const a = rollAudio.cloneNode(true) as HTMLAudioElement;
+    a.volume = rollAudio.volume;
+    a.currentTime = 0;
+    a.play().catch(() => {});
   } catch {}
 };
 const getLLForLevel = (level: number): number => {
