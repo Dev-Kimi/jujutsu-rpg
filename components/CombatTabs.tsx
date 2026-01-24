@@ -175,7 +175,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   };
 
   // --- Calculate Active Buffs ---
-  const relevantBuffs = activeBuffs.filter(buff => {
+  const relevantBuffs = (activeBuffs || []).filter(buff => {
     const effect = parseAbilityEffect(buff.description);
     if (activeTab === 'defense') return effect.defense > 0;
     return effect.attack > 0;
@@ -187,7 +187,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   }, 0);
 
   const totalBuffCost = relevantBuffs.reduce((acc, buff) => {
-    const cost = parseAbilityCost(buff.cost);
+    const cost = buff.paid ? { pe: 0, ce: 0 } : parseAbilityCost(buff.cost);
     return { pe: acc.pe + cost.pe, ce: acc.ce + cost.ce };
   }, { pe: 0, ce: 0 });
 
