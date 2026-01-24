@@ -348,11 +348,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       // --- Nova Fórmula de Mitigação ---
       const ll = stats.LL || 0;
       const mitigDiceCount = Math.floor(ll / 5);
-      const mitigFixed = ll % 5;
+      const mitigFixed = Math.floor((ll % 5) / 2);
       const mitigRolls: number[] = [];
       let mitigSum = 0;
       for (let i = 0; i < mitigDiceCount; i++) {
-        const r = rollDice(10, 1);
+        const r = rollDice(6, 1);
         mitigRolls.push(r);
         mitigSum += r;
       }
@@ -366,7 +366,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       isDamageTaken = true;
       rollTitle = "Dano Final Recebido";
 
-      detail = `Dano ${incomingDamage} - Mitigação (${mitigDiceCount}d10=[${mitigRolls.join(', ')}] + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${finalReduction}`;
+      detail = `Dano ${incomingDamage} - Mitigação (${mitigDiceCount}d6=[${mitigRolls.join(', ')}] + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${finalReduction}`;
     }
 
     // 2. Add Buffs to Total (If Attack)
@@ -716,7 +716,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                 <div className="mt-3 text-[11px] text-slate-400">
                   <div className="font-bold uppercase tracking-widest mb-1">Mitigação (LL)</div>
                   <div className="font-mono text-slate-300">
-                    {`${Math.floor((stats.LL || 0) / 5)}d10 + ${(stats.LL || 0) % 5}`} {totalBuffBonus ? `(+ Buffs ${totalBuffBonus})` : ''}
+                    {`${Math.floor((stats.LL || 0) / 5)}d6 + ${Math.floor(((stats.LL || 0) % 5) / 2)}`} {totalBuffBonus ? `(+ Buffs ${totalBuffBonus})` : ''}
                   </div>
                 </div>
              </div>
