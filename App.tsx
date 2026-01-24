@@ -72,6 +72,7 @@ const App: React.FC = () => {
   const [abilityLibraryCategory, setAbilityLibraryCategory] = useState<string>('Combatente');
   const [showTechniqueLibrary, setShowTechniqueLibrary] = useState(false);
   const [showInventoryLibrary, setShowInventoryLibrary] = useState(false);
+  const [abilitiesRctView, setAbilitiesRctView] = useState<'padrao' | 'rct'>('padrao');
 
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
@@ -1440,6 +1441,15 @@ const App: React.FC = () => {
                  </button>
                ))}
             </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => { setActiveTab('abilities'); setAbilitiesRctView('rct'); }}
+                className="mt-0.5 px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-lg bg-curse-600 hover:bg-curse-500 text-white shadow-lg hover:shadow-curse-900/50 active:scale-95 border border-curse-500/50 transition-colors"
+                title="Ir para habilidades de Energia Reversa"
+              >
+                Energia Reversa
+              </button>
+            </div>
 
             {/* Tab Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-100">
@@ -1481,6 +1491,7 @@ const App: React.FC = () => {
                    onUseWithId={(cost, name, id) => handleUseAbility(cost, name, id)}
                    activeBuffs={activeBuffs}
                    llLimit={stats.LL}
+                   externalRctView={abilitiesRctView}
                  />
                )}
                {activeTab === 'techniques' && (
