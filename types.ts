@@ -32,6 +32,7 @@ export interface Ability {
   subCategory?: string; // Added for categorization within tabs
   cost: string;
   description: string;
+  paid?: boolean;
 }
 
 // Nova estrutura para sub-técnicas individuais
