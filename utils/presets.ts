@@ -11,13 +11,13 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
   {
     name: "Investida de Ombro",
     category: "Combatente",
-    cost: "3 PE",
-      description: "[Livre] Ao se mover em linha reta por pelo menos 3 metros e terminar adjacente a um inimigo, você pode fazer um teste de Atletismo vs Fortitude dele. Se vencer, o alvo é empurrado 3 metros e fica Caído. Requisitos: Nível 2."
+    cost: "2 PE",
+    description: "[Livre] Ao se mover em linha reta por pelo menos 3 metros e terminar adjacente a um inimigo, você pode fazer um teste de Atletismo vs Fortitude dele. Se vencer, o alvo é empurrado 3 metros e fica Caído. Requisitos: Nível 2."
   },
   {
     name: "Redirecionamento",
     category: "Combatente",
-    cost: "5 PE",
+    cost: "2 PE",
     description: "[Reação] Quando um inimigo errar um ataque corpo a corpo contra você, faça um teste oposto de Luta vs. Reflexos para derrubá-lo. Requisitos: Nível 3."
   },
   {
@@ -29,86 +29,74 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
   {
     name: "Aceleração Repentina",
     category: "Combatente",
-    cost: "10 PE",
-    description: "[Livre] No início do seu turno, sua velocidade de movimento dobra e você ganha uma Ação de Movimento adicional. Requisitos: Nível 5."
+    cost: "3 PE",
+    description: "[Livre] No início do seu turno, sua velocidade de movimento aumenta. Você ganha uma Ação de Movimento adicional. Requisitos: Nível 5."
   },
   {
     name: "Resistência Inabalável",
     category: "Combatente",
-    cost: "8 PE",
+    cost: "4 PE",
     description: "[Livre] Quando você falha em um teste de Fortitude, você pode imediatamente rerrolar o teste. Você deve usar o novo resultado. Requisitos: Nível 6."
   },
   {
     name: "Intervenção",
     category: "Combatente",
-    cost: "5 PE",
+    cost: "3 PE",
     description: "[Reação] Quando um aliado a até 9 metros de você é alvo de um ataque, você pode interferir dependendo da distância que está do seu aliado. Se estiver longe, por exemplo, você pode jogar sua arma para proteger seu aliado. Requisitos: Nível 7."
   },
   {
     name: "Ataque Oportunista",
     category: "Combatente",
-    cost: "4 PE",
-    description: "[Padrão] Faça um ataque corpo a corpo contra um inimigo adjacente a um objeto ou parede. Se o ataque acertar, além do dano normal, você pode empurrar o inimigo 3 metros ou derrubá-lo (condição Caído). Requisitos: Nível 8."
+    cost: "2 PE",
+    description: "[Reação] Sempre que um ser sair voluntariamente de um espaço adjacente ao seu, você pode gastar uma reação e 2 PE para fazer um ataque corpo a corpo contra ele. Requisitos: Nível 8."
   },
   {
     name: "Golpes Consecutivos",
     category: "Combatente",
-    cost: "12 PE",
+    cost: "4 PE",
     description: "[Padrão] Você realiza dois ataques corpo a corpo rápidos contra o mesmo alvo ou alvos diferentes ao seu alcance. Ambos os ataques sofrem uma penalidade de -2 no teste de acerto. Requisitos: Nível 9."
-  },
-  {
-    name: "Impacto Ressonante",
-    category: "Combatente",
-    cost: "15 PE",
-    description: "[Padrão] Faça um ataque corpo a corpo. Se acertar, além do dano normal, envia uma onda de choque de energia amaldiçoada pelo corpo do alvo. O alvo deve fazer um teste de Fortitude, e se falhar, fica atordoado por um turno. Requisitos: Nível 10."
-  },
-  {
-    name: "Quebra-Barreiras",
-    category: "Combatente",
-    cost: "8 PE",
-    description: "[Livre] Seu próximo ataque ignora qualquer Redução de Dano (RD) do alvo proveniente de armaduras, pele rígida ou barreiras simples. Requisitos: Nível 11."
-  },
-  {
-    name: "Parry",
-    category: "Combatente",
-    cost: "15 PE",
-    description: "[Reação] Ao receber um ataque corpo-a-corpo, se escolher bloquear em vez de desviar, você pode desviar o ataque e contra-atacar instantaneamente. Requisitos: Nível 12."
-  },
-  {
-    name: "Pisão",
-    category: "Combatente",
-    cost: "20 PE",
-    description: "[Movimento] Você golpeia o chão com força total. Todas as criaturas num raio de 4 metros devem passar num teste de Reflexos ou sofrem a condição Caídos. O terreno se torna difícil. Requisitos: Nível 13."
-  },
-  {
-    name: "Vontade Assassina",
-    category: "Combatente",
-    cost: "10 PE",
-    description: "[Livre] Você projeta uma aura de pressão de batalha em todos que possam te ver. Alvos que estiverem sob esse efeito devem passar em um teste de Vontade (teste oposto 1d20 + seu bônus de Presença) ou sofrem a condição Prejudicado por 1 rodada. Requisitos: Nível 14."
   },
   {
     name: "Interromper Técnica",
     category: "Combatente",
-    cost: "25 PE",
-    description: "[Livre] Quando você acerta um inimigo que esteja se concentrando em uma técnica ele deve fazer um teste de Fortitude (CD baseada no seu teste de Luta). Se falhar, ele perde a concentração e a técnica é interrompida. Requisitos: Nível 15."
+    cost: "3 PE",
+    description: "[Livre] Quando você acerta um inimigo que esteja se concentrando em uma técnica, ele deve fazer um teste de Fortitude (CD baseada no seu teste de Luta). Se falhar, ele perde a concentração e a técnica é interrompida. Requisitos: Nível 10."
+  },
+  {
+    name: "Contra-Ataque Perfeito",
+    category: "Combatente",
+    cost: "5 PE",
+    description: "[Reação] Ao receber um ataque corpo-a-corpo, se escolher bloquear em vez de desviar, você pode desviar o ataque e contra-atacar instantaneamente sem penalidade no teste. Requisitos: Nível 12."
+  },
+  {
+    name: "Pisão",
+    category: "Combatente",
+    cost: "6 PE",
+    description: "[Movimento] Você golpeia o chão com força total. Todas as criaturas num raio de 4 metros devem passar num teste de Reflexos ou sofrem a condição Caídos. O terreno se torna difícil. (Uma vez por combate). Requisitos: Nível 13."
+  },
+  {
+    name: "Quebra-Barreiras",
+    category: "Combatente",
+    cost: "3 PE",
+    description: "[Livre] Seu próximo ataque ignora qualquer Redução de Dano (RD) do alvo proveniente de armaduras, pele rígida ou barreiras simples. Requisitos: Nível 15."
   },
   {
     name: "Reforço Corporal Concentrado",
     category: "Combatente",
-    cost: "30 PE",
-    description: "[Reação] Ao sofrer um acerto crítico, você pode, instintivamente, concentrar toda sua energia na região do impacto para transformar o crítico em um acerto normal. Faça um teste de Reflexos contra o acerto do inimigo para transformar o acerto crítico em um acerto normal. Após o uso dessa habilidade o usuário fica Atordoado. (Uma vez por combate). Requisitos: Nível 16."
+    cost: "10 PE",
+    description: "[Reação] Ao sofrer um acerto crítico, você pode, instintivamente, concentrar toda sua energia na região do impacto para transformar o crítico em um acerto normal. Faça um teste de Reflexos contra o acerto do inimigo para transformar o acerto crítico em um acerto normal. (Uma vez por combate). Requisitos: Nível 16."
   },
   {
     name: "Berserker",
     category: "Combatente",
-    cost: "20 PE",
+    cost: "15 PE",
     description: "[Livre] Ative ao reduzir um inimigo a 0 PV ou acertar um Crítico. Você ganha imediatamente uma Ação Padrão extra. (Uma vez por combate). Requisitos: Nível 17."
   },
   {
     name: "Finalizador Implacável",
     category: "Combatente",
     cost: "Passivo",
-    description: "Seus ataques corpo-a-corpo contra inimigos caídos, atordoados, imóveis ou paralisados causam dano extra. Este dano adicional é igual a seu bônus de treinamento na perícia de Luta. Requisitos: Nível 18."
+    description: "[Passivo] Seus ataques corpo-a-corpo contra inimigos caídos, atordoados, imóveis ou paralisados causam dano extra. Este dano adicional é igual a seu bônus de treinamento na perícia de Luta. Requisitos: Nível 18."
   },
   {
     name: "Último Recurso",
@@ -119,8 +107,8 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
   {
     name: "Reforço Corporal Avançado",
     category: "Combatente",
-    cost: "Passivo",
-    description: "Você atingiu o ápice do Reforço Corporal. Agora o multiplicador de dano do seu reforço corporal passivo vai de d4 para d5. Requisitos: Nível 20."
+    cost: "Nenhum",
+    description: "[Passivo] Você atingiu o ápice do Reforço Corporal. Agora o multiplicador de dano do seu reforço corporal passivo vai de d4 para d5. Requisitos: Nível 20."
   },
 
   // --- FEITICEIRO ---
@@ -128,7 +116,7 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
     name: "Economia de Fluxo",
     category: "Feiticeiro",
     cost: "Passivo",
-    description: "[Passivo] Requisitos: Nenhum. Sempre que você usar técnica ou habilidade, reduza seu custo de CE em um valor igual à sua Inteligência (arredondado para cima)."
+    description: "[Passivo] Requisitos: Nenhum. Sempre que você usar técnica ou habilidade, reduza seu custo de CE em um valor igual à sua Inteligência."
   },
   {
     name: "Técnica Precisa",
@@ -152,7 +140,7 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
     name: "Técnica Persistente",
     category: "Feiticeiro",
     cost: "5 PE por rodada",
-    description: "[Livre] Requisitos: Nível 5. Ao usar uma técnica com duração, você pode gastar 2 PE no início de seus turnos subsequentes para mantê-la ativa, sem precisar usar a ação ou pagar o custo de CE novamente; o inimigo ainda pode retirar a condição se tiver tempo. Só pode ser usado uma vez por rodada."
+    description: "[Livre] Requisitos: Nível 5. Ao usar uma técnica com duração, você pode gastar 5 PE no início de seus turnos subsequentes para mantê-la ativa, sem precisar usar a ação ou pagar o custo de CE novamente; o inimigo ainda pode retirar a condição se tiver tempo. Só pode ser usado uma vez por rodada."
   },
   {
     name: "Disparo Curvo",
@@ -195,12 +183,6 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
     category: "Feiticeiro",
     cost: "5 PE",
     description: "[Movimento] Requisitos: Nível 12. Você gasta um momento para alinhar seu fluxo de energia. Seu próximo uso de qualquer técnica neste turno recebe um bônus de +2 na rolagem de acerto."
-  },
-  {
-    name: "Liberação Máxima",
-    category: "Feiticeiro",
-    cost: "50 PE + 20 CE",
-    description: "[Completa] Requisitos: Nível 13. Você carrega sua técnica ao limite absoluto. O alcance dobra e o dano é maximizado (trate todos os dados de dano como se tivessem caído no valor máximo)."
   },
   {
     name: "Marca de Energia",
@@ -261,49 +243,49 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
   {
     name: "Formação Falange",
     category: "Especialista",
-    cost: "5 PE",
+    cost: "3 PE",
     description: "[Completa] Requisitos: Nível 4. Aliados que estejam adjacentes a você ou a outro aliado ganham +2 na Defesa (Reflexos/Fortitude). Você coordena o posicionamento para que um cubra o ponto cego do outro."
   },
   {
     name: "Comando Tático",
     category: "Especialista",
-    cost: "10 PE",
+    cost: "4 PE",
     description: "[Padrão] Requisitos: Nível 6. Escolha um aliado que possa te ouvir. O aliado pode usar a reação dele para imediatamente fazer uma Ação de Movimento ou um único ataque básico contra um inimigo que esteja adjacente a ele."
   },
   {
     name: "Rota de Fuga",
     category: "Especialista",
-    cost: "8 PE",
+    cost: "5 PE",
     description: "[Reação] Requisitos: Nível 7. Se um aliado terminar seu turno em uma posição perigosa (cercado ou em área de efeito), você pode gritar instruções. O aliado pode usar uma Reação dele para se mover imediatamente até metade do deslocamento dele, sem provocar ataques de oportunidade."
   },
   {
     name: "Explorar Abertura",
     category: "Especialista",
-    cost: "8 PE",
+    cost: "4 PE",
     description: "[Reação] Requisitos: Nível 8. Quando um inimigo a até 10m de você falha em um teste de ataque (rolando 10 ou menos no dado), você pode usar sua reação para apontar a falha dele. O inimigo sofre a condição -2 na defesa contra o próximo ataque que o atingir."
   },
   {
     name: "Sabotagem Localizada",
     category: "Especialista",
-    cost: "12 PE",
+    cost: "6 PE",
     description: "[Padrão] Requisitos: Nível 9. Você interage com o ambiente (derrubar uma estante, atirar num extintor, destruir o chão). Uma área de 3x3 metros se torna Terreno Difícil. Inimigos nessa área ficam Prejudicados (-2 em testes) enquanto permanecerem nela."
   },
   {
     name: "Intervenção Protetora",
     category: "Especialista",
-    cost: "15 PE",
+    cost: "7 PE",
     description: "[Reação] Requisitos: Nível 10. Quando um aliado a até 3m de você é alvo de um ataque, você pode usar sua reação para gritar um alerta ou empurrá-lo. O aliado recebe um bônus de +5 em sua defesa contra aquele único ataque."
   },
   {
     name: "Plano de Contingência",
     category: "Especialista",
-    cost: "20 PE",
+    cost: "8 PE",
     description: "[Reação] Requisitos: Nível 11. Um aliado falha em um teste de Resistência, você pode revelar que já esperava por isso. O aliado pode rolar o teste novamente. Ele deve aceitar o segundo resultado."
   },
   {
     name: "Ataque Sincronizado",
     category: "Especialista",
-    cost: "15 PE",
+    cost: "4 PE",
     description: "[Padrão] Requisitos: Nível 12. Você pode atrasar seu turno ou forçar um aliado seu a atacar junto com você no turno dele. Se você e seu aliado atacarem juntos, o alvo recebe desvantagem no teste de defesa."
   },
   {
@@ -315,25 +297,19 @@ export const PRESET_ABILITIES: Partial<Ability>[] = [
   {
     name: "Orquestrar Campo",
     category: "Especialista",
-    cost: "25 PE",
+    cost: "3 PE",
     description: "[Padrão] Requisitos: Nível 14. Escolha até dois aliados em sua linha de visão. Esses aliados podem usar imediatamente suas reações para se moverem até metade de seu deslocamento. Este movimento não provoca ataques de oportunidade."
-  },
-  {
-    name: "Cura Avançada",
-    category: "Especialista",
-    cost: "20 PE + 10 CE",
-    description: "[Completa] Requisitos: Nível 15, Primeiros Socorros. Ao usar uma ação de cura em um aliado, você também purifica o sistema nervoso dele. Além de restaurar PV, você remove imediatamente uma das seguintes condições físicas: Envenenado, Paralisado, Cego, Surdo ou Atordoado."
   },
   {
     name: "Plano Mestre",
     category: "Especialista",
-    cost: "50 PE",
+    cost: "10 PE",
     description: "[Completa] Requisitos: Nível 18. Uma vez por cena, ao enfrentar um inimigo que já viu antes, antes de começar a luta, você cria um plano com toda sua equipe. No início da luta, antes que qualquer personagem aja, você pode trocar a posição na ordem de iniciativa de quaisquer dois personagens. A nova ordem de iniciativa permanece pelo resto do combate."
   },
   {
     name: "Xeque-Mate",
     category: "Especialista",
-    cost: "40 PE",
+    cost: "15 PE",
     description: "[Livre] Requisitos: Nível 19. Se um inimigo estiver com uma condição negativa (como Caído, Impedido ou Vulnerável) e sofrer dano de um aliado seu, você pode gastar essa habilidade para maximizar o dano."
   },
   {
