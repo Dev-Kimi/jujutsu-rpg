@@ -61,13 +61,11 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
        // If item has a subCategory defined, match it. If not, treat as "Manipulação" (default) or handle accordingly
        // Our presets for cursed abilities now have subCategory.
        const subMatch = (item.subCategory === activeSubTab || (!item.subCategory && activeSubTab === 'Manipulação'));
-       const isRCT = item.subCategory === 'Energia Reversa';
-       const quickMatch = quickKey ? isRCT : !isRCT; // Só mostra RCT quando quickKey ativo
+       const quickMatch = quickKey ? (item.name === 'Energia Reversa (Cura)') : true;
        return matchesSearch && subMatch && quickMatch;
     }
 
-    const isRCT = item.subCategory === 'Energia Reversa' || /energia reversa/i.test(item.name || '');
-    const quickMatch = quickKey ? isRCT : !isRCT;
+    const quickMatch = quickKey ? (item.name === 'Energia Reversa (Cura)') : true;
     return matchesTab && matchesSearch && quickMatch;
   });
 
@@ -216,12 +214,12 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
             Todos
           </button>
           <button
-            onClick={() => setQuickKey('rct')}
+            onClick={() => setQuickKey('rct-cura')}
             className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-colors border
-              ${quickKey === 'rct' ? 'bg-curse-900/40 text-curse-200 border-curse-600/40' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
+              ${quickKey === 'rct-cura' ? 'bg-curse-900/40 text-curse-200 border-curse-600/40' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
             `}
           >
-            Energia Reversa
+            Energia Reversa (Cura)
           </button>
         </div>
 
