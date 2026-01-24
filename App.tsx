@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Droplet, Zap, Activity, Skull, Flame, LogOut, RotateCcw, TrendingUp } from 'lucide-react';
 import { Character, Origin, CurrentStats, DEFAULT_SKILLS, Skill, Ability, Item, Technique, ActionState, Attributes, Condition, BindingVow } from './types';
-import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger } from './utils/calculations';
+import { calculateDerivedStats, calculateDomainCost, parseAbilityEffect, parseAbilitySkillTrigger, primeRollSound } from './utils/calculations';
 import { computeVoteBonus, combineBonuses, isActiveBonus, loadManualBonus, saveManualBonus, clearManualBonus, applyBonusToStats, notifyBonusesUpdated, BonusPercent } from './utils/bonus';
 import { StatBar } from './components/StatBar';
 import { CombatTabs } from './components/CombatTabs';
@@ -79,6 +79,14 @@ const App: React.FC = () => {
       setAbilitiesRctView('padrao');
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const handler = () => {
+      primeRollSound();
+    };
+    window.addEventListener('pointerdown', handler, { once: true });
+    return () => window.removeEventListener('pointerdown', handler);
+  }, []);
 
   const pushToast = useCallback((message: string) => {
     const id = Math.random().toString(36).substring(2, 9);
