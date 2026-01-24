@@ -205,7 +205,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     const rolls = [];
     let total = 0;
     for(let i=0; i<count; i++) {
-        const r = Math.floor(Math.random() * faces) + 1;
+        const r = rollDice(faces, 1);
         rolls.push(r);
         total += r;
     }
