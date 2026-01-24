@@ -121,12 +121,11 @@ export const AccordionList: React.FC<AccordionListProps> = ({
     if (categories && enableTabs) {
       matchesCategory = (item.category || categories[0]) === activeCategory;
     }
-    let matchesToggle = true;
-    if (rctView === 'rct') {
-      matchesToggle = item.subCategory === 'Energia Reversa';
-    } else {
-      matchesToggle = !item.subCategory || item.subCategory !== 'Energia Reversa';
-    }
+    const isRCT =
+      (item.subCategory && item.subCategory.toLowerCase() === 'energia reversa') ||
+      /energia\s+reversa/i.test(item.name || '') ||
+      /energia\s+reversa/i.test(item.description || '');
+    const matchesToggle = rctView === 'rct' ? isRCT : !isRCT;
     return matchesSearch && matchesCategory && matchesToggle;
   });
 
