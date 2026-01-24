@@ -73,11 +73,20 @@ const App: React.FC = () => {
   const [showTechniqueLibrary, setShowTechniqueLibrary] = useState(false);
   const [showInventoryLibrary, setShowInventoryLibrary] = useState(false);
   const [abilitiesRctView, setAbilitiesRctView] = useState<'padrao' | 'rct'>('padrao');
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string }>>([]);
   useEffect(() => {
     if (activeTab !== 'abilities') {
       setAbilitiesRctView('padrao');
     }
   }, [activeTab]);
+
+  const pushToast = useCallback((message: string) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message }]);
+    window.setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 2600);
+  }, []);
 
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
@@ -667,8 +676,10 @@ const App: React.FC = () => {
       const ceHeal = Math.floor(ceSpent / 2);
       const totalHeal = baseHeal + ceHeal;
       const newPV = Math.min(effectiveMax.pv, currentStats.pv + totalHeal);
+      const actualHeal = Math.max(0, newPV - currentStats.pv);
       consumeCE(ceSpent);
       updateStat('pv', newPV);
+      pushToast(`Energia Reversa (Cura): -${ceSpent} CE, +${actualHeal} PV`);
       return true;
     }
     const ability = abilityId
@@ -706,6 +717,12 @@ const App: React.FC = () => {
 
     consumePE(cost.pe);
     consumeCE(cost.ce);
+    if ((cost.pe || 0) > 0 || (cost.ce || 0) > 0) {
+      const parts: string[] = [];
+      if ((cost.pe || 0) > 0) parts.push(`-${cost.pe} PE`);
+      if ((cost.ce || 0) > 0) parts.push(`-${cost.ce} CE`);
+      pushToast(`${abilityName}: ${parts.join(', ')}`);
+    }
     return true;
   };
 
@@ -1541,6 +1558,19 @@ const App: React.FC = () => {
       </main>
       )}
       
+      {toasts.length > 0 && (
+        <div className="fixed bottom-16 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+          {toasts.slice(-4).map(t => (
+            <div
+              key={t.id}
+              className="bg-slate-950/90 border border-slate-700 text-slate-100 px-4 py-2 rounded-xl shadow-xl text-xs font-semibold backdrop-blur-sm max-w-[320px]"
+            >
+              {t.message}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Version Footer */}
       <footer className="fixed bottom-2 right-2 pointer-events-none z-10">
         <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-700/50 rounded-lg px-3 py-1 shadow-lg">
