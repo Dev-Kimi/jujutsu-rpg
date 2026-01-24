@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ability } from '../types';
 import {
   Plus,
@@ -31,6 +31,7 @@ interface AccordionListProps {
   ) => boolean;
   activeBuffs?: Ability[];
   llLimit?: number;
+  externalRctView?: 'padrao' | 'rct';
 }
 
 export const AccordionList: React.FC<AccordionListProps> = ({
@@ -47,6 +48,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   onUseWithId,
   activeBuffs = [],
   llLimit,
+  externalRctView,
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>(
@@ -58,6 +60,12 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   >({});
   const [usingId, setUsingId] = useState<string | null>(null);
   const [rctView, setRctView] = useState<'padrao' | 'rct'>('padrao');
+
+  useEffect(() => {
+    if (externalRctView) {
+      setRctView(externalRctView);
+    }
+  }, [externalRctView]);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -129,6 +137,12 @@ export const AccordionList: React.FC<AccordionListProps> = ({
         <h3 className="font-bold text-slate-300 uppercase tracking-wider text-sm flex items-center gap-2">
           <Zap size={16} className="text-curse-400" /> {title}
         </h3>
+        <button
+          onClick={() => setRctView('rct')}
+          className="flex items-center gap-1 text-xs bg-curse-700 hover:bg-curse-600 text-white px-3 py-1.5 rounded transition-colors font-bold border border-curse-600/40 shadow hover:shadow-curse-900/40 active:scale-95"
+        >
+          Energia Reversa
+        </button>
         <button
           onClick={() => onAdd(categories ? activeCategory : undefined)}
           className="flex items-center gap-1 text-xs bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded transition-colors font-bold"
