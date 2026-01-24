@@ -5,6 +5,8 @@ import { Search, Plus, X, BookOpen, ChevronRight, Sword, Wand2, Brain, Hammer, G
 import { db, auth } from '../firebase';
 import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 
+let audioCtx: AudioContext | null = null;
+
 interface AbilityLibraryProps {
   onSelect: (ability: Partial<Ability>) => void;
   onClose: () => void;
@@ -150,6 +152,30 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
     }
   };
 
+  const triggerFeedback = () => {
+    try {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        (navigator as any).vibrate?.(12);
+      }
+      const AnyAudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AnyAudioContext) return;
+      audioCtx = audioCtx || new AnyAudioContext();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume?.();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 220;
+      gain.gain.value = 0.02;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } catch {}
+  };
+
   const startCustom = () => {
     setIsCreatingCustom(true);
     setCustomForm({ name: '', cost: '', description: '' });
@@ -162,6 +188,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
   };
 
   const addCustomToSheet = () => {
+    triggerFeedback();
     const payload: Partial<Ability> = {
       name: customForm.name?.trim() || 'Habilidade Customizada',
       cost: customForm.cost || '',
@@ -352,6 +379,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
+                      triggerFeedback();
                       onSelect(ability);
                     }}
                     className="bg-slate-800 hover:bg-curse-600 text-slate-300 hover:text-white p-2 rounded-lg transition-all active:scale-95 flex items-center gap-2"
