@@ -18,6 +18,8 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{ name: string; cost: string; description: string }>({ name: '', cost: '', description: '' });
+  const [isCreatingCustom, setIsCreatingCustom] = useState(false);
+  const [customForm, setCustomForm] = useState<{ name: string; cost: string; description: string }>({ name: '', cost: '', description: '' });
   const [overrides, setOverrides] = useState<Record<string, Partial<Ability>>>({});
   const isAdmin = auth.currentUser?.uid === 'qSsTOdiZE2N2LjDuf4R3CC49cAq2';
 
@@ -148,6 +150,29 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
     }
   };
 
+  const startCustom = () => {
+    setIsCreatingCustom(true);
+    setCustomForm({ name: '', cost: '', description: '' });
+    setEditingName(null);
+    setExpandedId(null);
+  };
+
+  const cancelCustom = () => {
+    setIsCreatingCustom(false);
+  };
+
+  const addCustomToSheet = () => {
+    const payload: Partial<Ability> = {
+      name: customForm.name?.trim() || 'Habilidade Customizada',
+      cost: customForm.cost || '',
+      description: customForm.description || '',
+      category: activeTab,
+      subCategory: activeTab === 'Habilidades Amaldiçoadas' ? activeSubTab : undefined,
+    };
+    onSelect(payload);
+    setIsCreatingCustom(false);
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-0 sm:p-4">
       <div className="bg-slate-900 w-full sm:max-w-3xl sm:rounded-2xl border-x-0 sm:border border-slate-800 shadow-2xl flex flex-col h-full sm:h-auto sm:max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
@@ -170,7 +195,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
             {categories.map(cat => (
               <button
                 key={cat}
-                onClick={() => { setActiveTab(cat); setActiveSubTab('Manipulação'); }}
+                onClick={() => { setActiveTab(cat); setActiveSubTab('Manipulação'); setIsCreatingCustom(false); }}
                 className={`flex-none py-3 px-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap mb-[-1px]
                   ${getTabColor(cat, activeTab === cat)}
                 `}
@@ -187,7 +212,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
              {cursedSubCategories.map(sub => (
                <button
                  key={sub}
-                 onClick={() => setActiveSubTab(sub)}
+                 onClick={() => { setActiveSubTab(sub); setIsCreatingCustom(false); }}
                  className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-colors border
                     ${activeSubTab === sub 
                        ? 'bg-purple-900/50 text-purple-200 border-purple-500/50' 
@@ -216,11 +241,72 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
 
         {/* List */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-900/50 custom-scrollbar">
-          {filteredAbilities.length === 0 && (
+          {filteredAbilities.length === 0 && !isCreatingCustom && (
              <div className="text-center py-12 text-slate-500 text-sm flex flex-col items-center">
                 <BookOpen size={32} className="mb-3 opacity-20" />
                 Nenhuma habilidade encontrada nesta categoria.
              </div>
+          )}
+
+          {isCreatingCustom && (
+            <div className="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between p-4 bg-slate-900/60 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  {getCategoryIcon(activeTab)}
+                  <div className="text-sm font-bold text-white">Criar Habilidade</div>
+                  {activeTab === 'Habilidades Amaldiçoadas' && (
+                    <span className="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700 uppercase">
+                      {activeSubTab}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={addCustomToSheet}
+                    className="bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded-lg transition-all active:scale-95 flex items-center gap-2 text-xs font-bold"
+                    title="Adicionar à ficha"
+                  >
+                    <Plus size={14} /> Adicionar
+                  </button>
+                  <button
+                    onClick={cancelCustom}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] text-slate-500 uppercase">Nome</label>
+                  <input
+                    value={customForm.name}
+                    onChange={(e) => setCustomForm(f => ({ ...f, name: e.target.value }))}
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                    placeholder="Ex: Corte Rápido"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] text-slate-500 uppercase">Custo</label>
+                  <input
+                    value={customForm.cost}
+                    onChange={(e) => setCustomForm(f => ({ ...f, cost: e.target.value }))}
+                    className="w-40 bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                    placeholder="Ex: 5 PE"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 uppercase mb-1">Descrição</label>
+                  <textarea
+                    value={customForm.description}
+                    onChange={(e) => setCustomForm(f => ({ ...f, description: e.target.value }))}
+                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                    rows={5}
+                    placeholder="Descreva os efeitos..."
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           {filteredAbilities.map((ability, idx) => (
@@ -371,7 +457,7 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
         {/* Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-950 sm:rounded-b-2xl flex justify-between items-center text-xs text-slate-500 shrink-0">
            <span>{filteredAbilities.length} itens</span>
-           <button onClick={() => onSelect({ name: "Nova Habilidade Customizada", category: activeTab, subCategory: activeSubTab, cost: "", description: "" })} className="hover:text-curse-400 underline">
+           <button onClick={startCustom} className="hover:text-curse-400 underline">
               Criar Customizada
            </button>
         </div>
