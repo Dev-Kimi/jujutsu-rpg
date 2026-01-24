@@ -282,7 +282,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          const baseAttackRoll = best;
          attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus + projectionBonus;
          const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
-         attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${lutaBonus} (Luta)${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
+         const lutaTotal = lutaBonus + llBonus;
+         attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${lutaTotal} (Luta)${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
          isCritSuccess = baseAttackRoll === 20;
          isCritFail = baseAttackRoll === 1;
          if (isCritSuccess) isCritical = true;
@@ -308,7 +309,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
              attackRoll = baseAttackRoll + attackBonus + totalBuffBonus + llBonus + projectionBonus;
              const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
-             attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${attackBonus} (${attackSkillName})${llBonus ? ` + ${llBonus} (LL)` : ''}${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
+             const skillTotal = attackBonus + llBonus;
+             attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${skillTotal} (${attackSkillName})${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
              isCritSuccess = baseAttackRoll === 20;
              isCritFail = baseAttackRoll === 1;
 
