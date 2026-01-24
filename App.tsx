@@ -642,6 +642,29 @@ const App: React.FC = () => {
   };
 
   const handleUseAbility = (cost: { pe: number, ce: number }, abilityName: string, abilityId?: string) => {
+    if (abilityName.toLowerCase() === 'energia reversa (cura)') {
+      const ceSpent = cost.ce || 0;
+      if (ceSpent <= 0) {
+        alert('Defina um valor de CE para usar Energia Reversa (Cura).');
+        return false;
+      }
+      if (ceSpent > stats.LL) {
+        alert(`CE Gasto não pode exceder sua LL (${stats.LL}).`);
+        return false;
+      }
+      if (currentStats.ce < ceSpent) {
+        alert(`CE Insuficiente! Necessário: ${ceSpent}, Atual: ${currentStats.ce}`);
+        return false;
+      }
+      const apt = character.aptitudes?.energiaReversa || 0;
+      const baseHeal = Math.floor(apt * character.level * 0.5);
+      const ceHeal = Math.floor(ceSpent / 2);
+      const totalHeal = baseHeal + ceHeal;
+      const newPV = Math.min(effectiveMax.pv, currentStats.pv + totalHeal);
+      consumeCE(ceSpent);
+      updateStat('pv', newPV);
+      return true;
+    }
     const ability = abilityId
       ? character.abilities.find(a => a.id === abilityId)
       : character.abilities.find(a => a.name === abilityName);
