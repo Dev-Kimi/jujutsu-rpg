@@ -73,6 +73,11 @@ const App: React.FC = () => {
   const [showTechniqueLibrary, setShowTechniqueLibrary] = useState(false);
   const [showInventoryLibrary, setShowInventoryLibrary] = useState(false);
   const [abilitiesRctView, setAbilitiesRctView] = useState<'padrao' | 'rct'>('padrao');
+  useEffect(() => {
+    if (activeTab !== 'abilities') {
+      setAbilitiesRctView('padrao');
+    }
+  }, [activeTab]);
 
   // Firebase current user state
   const [currentUser, setCurrentUser] = useState<User | null>(auth.currentUser);
@@ -1441,15 +1446,6 @@ const App: React.FC = () => {
                  </button>
                ))}
             </div>
-            <div className="flex justify-end">
-              <button
-                onClick={() => { setActiveTab('abilities'); setAbilitiesRctView('rct'); }}
-                className="mt-0.5 px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-lg bg-curse-600 hover:bg-curse-500 text-white shadow-lg hover:shadow-curse-900/50 active:scale-95 border border-curse-500/50 transition-colors"
-                title="Ir para habilidades de Energia Reversa"
-              >
-                Energia Reversa
-              </button>
-            </div>
 
             {/* Tab Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-100">
@@ -1477,22 +1473,32 @@ const App: React.FC = () => {
                   </>
                )}
                {activeTab === 'abilities' && (
-                 <AccordionList 
-                   title="Habilidades"
-                   items={character.abilities}
-                   categories={['Combatente', 'Feiticeiro', 'Especialista', 'Restrição Celestial', 'Habilidades Amaldiçoadas']}
-                   enableTabs={false}
-                   onAdd={(cat) => handleArrayAdd('abilities', cat)}
-                   onUpdate={(id, field, val) => handleArrayUpdate('abilities', id, field, val)}
-                   onRemove={(id) => handleArrayRemove('abilities', id)}
-                   placeholderName="Nova Habilidade"
-                   onUse={(cost, name) => handleUseAbility(cost, name)}
-                   // New prop to pass down ID to find the object
-                   onUseWithId={(cost, name, id) => handleUseAbility(cost, name, id)}
-                   activeBuffs={activeBuffs}
-                   llLimit={stats.LL}
-                   externalRctView={abilitiesRctView}
-                 />
+                 <>
+                   <div className="flex justify-end mb-2">
+                     <button
+                       onClick={() => setAbilitiesRctView('rct')}
+                       className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider rounded-lg bg-curse-600 hover:bg-curse-500 text-white shadow-lg hover:shadow-curse-900/50 active:scale-95 border border-curse-500/50 transition-colors"
+                       title="Ir para habilidades de Energia Reversa"
+                     >
+                       Energia Reversa
+                     </button>
+                   </div>
+                   <AccordionList 
+                     title="Habilidades"
+                     items={character.abilities}
+                     categories={['Combatente', 'Feiticeiro', 'Especialista', 'Restrição Celestial', 'Habilidades Amaldiçoadas']}
+                     enableTabs={false}
+                     onAdd={(cat) => handleArrayAdd('abilities', cat)}
+                     onUpdate={(id, field, val) => handleArrayUpdate('abilities', id, field, val)}
+                     onRemove={(id) => handleArrayRemove('abilities', id)}
+                     placeholderName="Nova Habilidade"
+                     onUse={(cost, name) => handleUseAbility(cost, name)}
+                     onUseWithId={(cost, name, id) => handleUseAbility(cost, name, id)}
+                     activeBuffs={activeBuffs}
+                     llLimit={stats.LL}
+                     externalRctView={abilitiesRctView}
+                   />
+                 </>
                )}
                {activeTab === 'techniques' && (
                  <TechniqueManager 
