@@ -14,13 +14,7 @@ const LL_GAIN_TABLE = [
 
 let rollAudio: HTMLAudioElement | null = null;
 let lastRollAudioAt = 0;
-const getRollSoundUrl = () => {
-  try {
-    const base = (import.meta as any)?.env?.BASE_URL;
-    if (typeof base === 'string') return `${base}sounds/rollsound.mp3`;
-  } catch {}
-  return '/sounds/rollsound.mp3';
-};
+const getRollSoundUrl = () => `${import.meta.env.BASE_URL}sounds/rollsound.mp3`;
 
 export const primeRollSound = () => {
   if (typeof window === 'undefined') return;
