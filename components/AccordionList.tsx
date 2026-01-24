@@ -30,6 +30,8 @@ interface AccordionListProps {
     id: string
   ) => boolean;
   activeBuffs?: Ability[];
+  llLimit?: number;
+  extraTabs?: Array<{ key: string; label: string; filter: (item: Ability) => boolean }>;
 }
 
 export const AccordionList: React.FC<AccordionListProps> = ({
@@ -45,6 +47,8 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   onUse,
   onUseWithId,
   activeBuffs = [],
+  llLimit,
+  extraTabs = [],
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>(
@@ -55,6 +59,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
     Record<string, { pe: number; ce: number }>
   >({});
   const [usingId, setUsingId] = useState<string | null>(null);
+  const [selectedExtraKey, setSelectedExtraKey] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -110,7 +115,14 @@ export const AccordionList: React.FC<AccordionListProps> = ({
     if (categories && enableTabs) {
       matchesCategory = (item.category || categories[0]) === activeCategory;
     }
-    return matchesSearch && matchesCategory;
+    let matchesExtra = true;
+    if (selectedExtraKey) {
+      const tab = extraTabs.find(t => t.key === selectedExtraKey);
+      if (tab) {
+        matchesExtra = tab.filter(item);
+      }
+    }
+    return matchesSearch && matchesCategory && matchesExtra;
   });
 
   return (
@@ -143,6 +155,29 @@ export const AccordionList: React.FC<AccordionListProps> = ({
               `}
             >
               {cat}
+            </button>
+          ))}
+        </div>
+      )}
+      {extraTabs.length > 0 && (
+        <div className="flex gap-2 px-2 py-2 border-b border-slate-800 bg-slate-950/30">
+          <button
+            onClick={() => setSelectedExtraKey(null)}
+            className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border
+              ${selectedExtraKey === null ? 'bg-slate-800 text-slate-200 border-slate-700' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
+            `}
+          >
+            Todos
+          </button>
+          {extraTabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setSelectedExtraKey(tab.key)}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide border
+                ${selectedExtraKey === tab.key ? 'bg-curse-900/40 text-curse-200 border-curse-600/40' : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
+              `}
+            >
+              {tab.label}
             </button>
           ))}
         </div>
@@ -302,25 +337,50 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                         className="w-20 bg-slate-950 border border-slate-700 rounded p-1 text-center font-mono text-white focus:border-emerald-500 outline-none"
                       />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <label className="block text-[10px] text-slate-500 uppercase font-bold">
                         Gastar CE
                       </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={variableInputs[item.id]?.ce || 0}
-                        onChange={(e) =>
-                          setVariableInputs((prev) => ({
-                            ...prev,
-                            [item.id]: {
-                              ...prev[item.id],
-                              ce: parseInt(e.target.value) || 0,
-                            },
-                          }))
-                        }
-                        className="w-20 bg-slate-950 border border-slate-700 rounded p-1 text-center font-mono text-white focus:border-emerald-500 outline-none"
-                      />
+                      {typeof llLimit === 'number' ? (
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="range"
+                            min={0}
+                            max={llLimit}
+                            step={1}
+                            value={variableInputs[item.id]?.ce ?? 0}
+                            onChange={(e) =>
+                              setVariableInputs((prev) => ({
+                                ...prev,
+                                [item.id]: {
+                                  ...prev[item.id],
+                                  ce: parseInt(e.target.value) || 0,
+                                },
+                              }))
+                            }
+                            className="flex-1 h-2 bg-slate-800 rounded-lg accent-curse-500"
+                          />
+                          <span className="w-16 text-center font-mono text-white bg-slate-800 border border-slate-700 rounded px-2 py-1">
+                            {variableInputs[item.id]?.ce ?? 0}
+                          </span>
+                        </div>
+                      ) : (
+                        <input
+                          type="number"
+                          min="0"
+                          value={variableInputs[item.id]?.ce || 0}
+                          onChange={(e) =>
+                            setVariableInputs((prev) => ({
+                              ...prev,
+                              [item.id]: {
+                                ...prev[item.id],
+                                ce: parseInt(e.target.value) || 0,
+                              },
+                            }))
+                          }
+                          className="w-20 bg-slate-950 border border-slate-700 rounded p-1 text-center font-mono text-white focus:border-emerald-500 outline-none"
+                        />
+                      )}
                     </div>
                     <button
                       onClick={() => confirmVariableUse(item)}
