@@ -121,13 +121,13 @@ export const SkillList: React.FC<SkillListProps> = ({
     let extraCostPE = 0;
     let extraCostCE = 0;
 
-    activeBuffs.forEach(buff => {
+    (activeBuffs || []).forEach(buff => {
         const triggerRaw = parseAbilitySkillTrigger(buff.description);
         if (triggerRaw) {
             const triggerSkill = normalize(triggerRaw);
             const rolledSkill = normalize(skillName);
             if (triggerSkill === rolledSkill) {
-                const cost = parseAbilityCost(buff.cost);
+                const cost = buff.paid ? { pe: 0, ce: 0 } : parseAbilityCost(buff.cost);
                 const projectedPE = (currentStats?.pe || 0) - extraCostPE - cost.pe;
                 const projectedCE = (currentStats?.ce || 0) - extraCostCE - cost.ce;
                 
