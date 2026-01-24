@@ -1481,9 +1481,6 @@ const App: React.FC = () => {
                    onUseWithId={(cost, name, id) => handleUseAbility(cost, name, id)}
                    activeBuffs={activeBuffs}
                    llLimit={stats.LL}
-                   extraTabs={[
-                     { key: 'rct-cura', label: 'Energia Reversa (Cura)', filter: (item) => item.name.toLowerCase() === 'energia reversa (cura)'.toLowerCase() }
-                   ]}
                  />
                )}
                {activeTab === 'techniques' && (
