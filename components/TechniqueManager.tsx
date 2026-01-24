@@ -11,7 +11,7 @@ import { InventoryList } from './InventoryList';
 import { BindingVowsManager } from './BindingVowsManager';
 import { CombatTabs } from './CombatTabs';
 import { MasterCombatTracker } from './MasterCombatTracker';
-import { calculateDerivedStats } from '../utils/calculations';
+import { calculateDerivedStats, rollDice } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
 
 interface CampaignManagerProps {
@@ -1454,9 +1454,9 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
       showNotification(`Técnica ativada! Consumido ${count} CE.`, 'success');
 
       let total = 0;
-      const rolls = [];
+      const rolls: number[] = [];
       for (let i = 0; i < count; i++) {
-        const roll = Math.floor(Math.random() * faces) + 1;
+        const roll = rollDice(faces, 1);
         rolls.push(roll);
         total += roll;
       }
