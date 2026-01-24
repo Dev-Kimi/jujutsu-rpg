@@ -19,6 +19,7 @@ interface AccordionListProps {
   onAdd: (category?: string) => void;
   onUpdate: (id: string, field: keyof Ability, value: any) => void;
   onRemove: (id: string) => void;
+  readOnly?: boolean;
   placeholderName?: string;
   placeholderCost?: string;
   categories?: string[];
@@ -40,6 +41,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   onAdd,
   onUpdate,
   onRemove,
+  readOnly = false,
   placeholderName = 'Nome da Habilidade',
   placeholderCost = 'Custo',
   categories,
@@ -227,7 +229,11 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                   <input
                     type="text"
                     value={item.name}
-                    onChange={(e) => onUpdate(item.id, 'name', e.target.value)}
+                    readOnly={readOnly}
+                    onChange={(e) => {
+                      if (readOnly) return;
+                      onUpdate(item.id, 'name', e.target.value);
+                    }}
                     placeholder={placeholderName}
                     className={`w-full bg-transparent border-none focus:ring-0 text-sm font-bold placeholder:text-slate-600 p-0 truncate ${
                       isActive ? 'text-curse-300' : 'text-slate-200'
@@ -244,7 +250,11 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                 <input
                   type="text"
                   value={item.cost}
-                  onChange={(e) => onUpdate(item.id, 'cost', e.target.value)}
+                  readOnly={readOnly}
+                  onChange={(e) => {
+                    if (readOnly) return;
+                    onUpdate(item.id, 'cost', e.target.value);
+                  }}
                   placeholder={placeholderCost}
                   className="w-20 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-right text-curse-300 placeholder:text-slate-700 focus:border-curse-500 focus:outline-none"
                 />
@@ -375,10 +385,16 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                     <div className="flex justify-end mb-2 pt-2">
                       <select
                         value={item.category || categories[0]}
-                        onChange={(e) =>
-                          onUpdate(item.id, 'category', e.target.value)
-                        }
-                        className="bg-slate-950 text-[10px] uppercase font-bold text-slate-500 border border-slate-800 rounded px-2 py-1 focus:outline-none focus:border-curse-500"
+                        disabled={readOnly}
+                        onChange={(e) => {
+                          if (readOnly) return;
+                          onUpdate(item.id, 'category', e.target.value);
+                        }}
+                        className={`bg-slate-950 text-[10px] uppercase font-bold border border-slate-800 rounded px-2 py-1 focus:outline-none focus:border-curse-500 ${
+                          readOnly
+                            ? 'text-slate-600 opacity-70 cursor-not-allowed'
+                            : 'text-slate-500'
+                        }`}
                       >
                         {categories.map((c) => (
                           <option key={c} value={c}>
@@ -391,11 +407,15 @@ export const AccordionList: React.FC<AccordionListProps> = ({
 
                   <textarea
                     value={item.description}
-                    onChange={(e) =>
-                      onUpdate(item.id, 'description', e.target.value)
-                    }
+                    readOnly={readOnly}
+                    onChange={(e) => {
+                      if (readOnly) return;
+                      onUpdate(item.id, 'description', e.target.value);
+                    }}
                     placeholder="Descrição..."
-                    className="w-full bg-transparent text-xs text-slate-400 focus:outline-none resize-none min-h-[80px] leading-relaxed placeholder:text-slate-700"
+                    className={`w-full bg-transparent text-xs focus:outline-none resize-none min-h-[80px] leading-relaxed placeholder:text-slate-700 ${
+                      readOnly ? 'text-slate-500' : 'text-slate-400'
+                    }`}
                   />
                 </div>
               )}
