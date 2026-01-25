@@ -277,10 +277,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const totalDice = 4 + ceDiceBonus;
 
              let impactRoll = 0;
-             const rolls = [];
+             const impactRolls: number[] = [];
              for(let i=0; i<totalDice; i++) {
                 const r = rollDice(dieSides, 1);
-                rolls.push(r);
+                impactRolls.push(r);
                 impactRoll += r;
              }
 
@@ -290,7 +290,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const remainderBonus = Math.floor(remainder / 5);
 
              baseDamageValue = impactRoll + strengthBonus + remainderBonus;
-             baseDamageText = `[${rolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/5)`;
+             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/5)`;
              rollTitle = "Ataque Desarmado";
 
              // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
