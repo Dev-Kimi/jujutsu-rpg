@@ -285,8 +285,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              }
 
              const strengthBonus = (char.attributes.FOR || 0) * 2;
-            // O bônus é o que sobra da divisão do investimento por 5 (Ex: 7 CE sobra 2)
-            const remainderBonus = investedCE % 5;
+             const ll = stats.LL || 0;
+             const remainder = Math.max(0, investedCE % 5);
+             const remainderBonus = Math.floor(remainder / 2);
 
              baseDamageValue = impactRoll + strengthBonus + remainderBonus;
              baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/2)`;
@@ -356,8 +357,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            
            const maxImpact = totalDice * dieSides;
            const strengthBonus = (char.attributes.FOR || 0) * 2;
-           const ll = stats.LL || 0;
-           const remainder = Math.max(0, ll - investedCE);
+           const remainder = Math.max(0, investedCE % 5);
            const remainderBonus = Math.floor(remainder / 2);
            
            baseDamageValue = maxImpact + strengthBonus + remainderBonus;
