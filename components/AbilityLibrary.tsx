@@ -3,7 +3,7 @@ import { Ability } from '../types';
 import { PRESET_ABILITIES } from '../utils/presets';
 import { Search, Plus, X, BookOpen, ChevronRight, Sword, Wand2, Brain, Hammer, Ghost, Edit2, Save, Trash2 } from 'lucide-react';
 import { db, auth } from '../firebase';
-import { doc, getDoc, setDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 
 let audioCtx: AudioContext | null = null;
 
@@ -36,24 +36,41 @@ export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClos
   }, [initialCategory]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const ref = doc(db, 'config', 'abilityOverrides');
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          const data = snap.data() as Record<string, Partial<Ability>>;
-          setOverrides(data || {});
-        }
-      } catch (err) {
-        console.error('Erro ao carregar overrides de habilidades', err);
+    const ref = doc(db, 'config', 'abilityOverrides');
+    const unsubscribe = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as Record<string, Partial<Ability>>;
+        setOverrides(data || {});
+      } else {
+        setOverrides({});
       }
-    })();
+    }, (err) => {
+      console.error('Erro ao carregar overrides de habilidades', err);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const allAbilities = PRESET_ABILITIES.map(p => {
-    const ov = overrides[p.name || ''];
-    return { ...p, ...(ov || {}), baseName: p.name };
-  });
+  const presetNames = new Set(
+    PRESET_ABILITIES.map(p => p.name).filter(Boolean) as string[]
+  );
+  const customAbilities = Object.entries(overrides)
+    .filter(([key]) => !presetNames.has(key))
+    .map(([key, ov]) => ({
+      name: ov.name || key,
+      cost: ov.cost || '',
+      description: ov.description || '',
+      category: ov.category || 'Combatente',
+      subCategory: ov.subCategory,
+      baseName: key
+    }));
+
+  const allAbilities = [
+    ...PRESET_ABILITIES.map(p => {
+      const ov = overrides[p.name || ''];
+      return { ...p, ...(ov || {}), baseName: p.name };
+    }),
+    ...customAbilities
+  ];
 
   const filteredAbilities = allAbilities.filter(item => {
     const matchesTab = item.category === activeTab;
