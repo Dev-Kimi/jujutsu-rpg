@@ -62,6 +62,7 @@ const App: React.FC = () => {
   const [savedCharacters, setSavedCharacters] = useState<Character[]>([]);
   const [userTechniques, setUserTechniques] = useState<Technique[]>([]); // Global technique library for user
   const [userInventoryItems, setUserInventoryItems] = useState<Item[]>([]); // Global inventory library for user
+  const [userAbilities, setUserAbilities] = useState<Ability[]>([]); // Global ability library for user
 
   const [character, setCharacter] = useState<Character>(getInitialChar());
   
@@ -1011,6 +1012,35 @@ const App: React.FC = () => {
     setShowAbilityLibrary(false);
   };
 
+  const handleAddAbilityToLibrary = async (ability: Ability) => {
+    const baseName = ability.name?.trim();
+    if (!baseName) {
+      pushToast('Nome da habilidade inválido.');
+      return;
+    }
+    const payload: Partial<Ability> = {
+      name: baseName,
+      cost: ability.cost || '',
+      description: ability.description || '',
+      category: ability.category || 'Combatente',
+      subCategory: ability.subCategory
+    };
+    const safePayload: Record<string, any> = { ...payload };
+    Object.keys(safePayload).forEach(k => {
+      if (safePayload[k] === undefined) {
+        delete safePayload[k];
+      }
+    });
+    try {
+      const ref = doc(db, 'config', 'abilityOverrides');
+      await setDoc(ref, { [baseName]: safePayload }, { merge: true });
+      pushToast(`"${baseName}" adicionada à biblioteca`);
+    } catch (err) {
+      console.error('Erro ao exportar habilidade', err);
+      pushToast('Erro ao exportar habilidade.');
+    }
+  };
+
   const handleArrayUpdate = useCallback((field: 'abilities' | 'inventory', id: string, itemField: string, value: any) => {
     try {
       console.log('Updating item:', field, id, itemField, value);
@@ -1654,6 +1684,7 @@ const App: React.FC = () => {
                      onAdd={(cat) => handleArrayAdd('abilities', cat)}
                      onUpdate={(id, field, val) => handleArrayUpdate('abilities', id, field, val)}
                      onRemove={(id) => handleArrayRemove('abilities', id)}
+                     onAddToLibrary={handleAddAbilityToLibrary}
                      readOnly={true}
                      placeholderName="Nova Habilidade"
                      onUse={(cost, name) => handleUseAbility(cost, name)}
