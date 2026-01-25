@@ -321,12 +321,12 @@ export const getWeaponCELimit = (item: Item): number => {
   return 2; 
 };
 
-export const computeCEInvestmentBonus = (ceInvested: number): { dados_adicionais: number; dano_fixo: number } => {
-  if (!Number.isInteger(ceInvested) || ceInvested < 0) {
+export const computeCEInvestmentBonus = (ceInvested: number, divisor: number = 5): { dados_adicionais: number; dano_fixo: number } => {
+  if (!Number.isInteger(ceInvested) || ceInvested < 0 || !Number.isInteger(divisor) || divisor <= 0) {
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
-  const dados_adicionais = Math.floor(ceInvested / 5);
-  const resto = ceInvested % 5;
+  const dados_adicionais = Math.floor(ceInvested / divisor);
+  const resto = ceInvested % divisor;
   const dano_fixo = Math.floor(resto / 2);
   return { dados_adicionais, dano_fixo };
 };
