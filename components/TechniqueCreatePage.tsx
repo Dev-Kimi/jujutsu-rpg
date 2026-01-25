@@ -34,24 +34,35 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
   }, [powerCategory]);
 
   const buildSummary = () => {
-    const rangeText = rangeType === 'Toque' ? 'Toque (Adjacente)' : `Distância (${rangeValue || '0m'})`;
-    const areaText = areaType === 'Único Alvo' ? 'Único Alvo' : `${areaType} (${areaValue || '0m'})`;
+    const rangeText =
+      rangeType === 'Toque'
+        ? 'Toque (Adjacente)'
+        : rangeValue
+        ? `Distância (${rangeValue})`
+        : '';
+    const areaText =
+      areaType === 'Único Alvo'
+        ? 'Único Alvo'
+        : areaValue
+        ? `${areaType} (${areaValue})`
+        : '';
     const modifiers = [
       guaranteedHit ? 'Acerto Garantido' : null,
       consumesCharges ? 'Consome Cargas' : null,
       causesExhaustion ? 'Causa Exaustão' : null
     ].filter(Boolean) as string[];
-    return [
+    const lines = [
       `Potência: ${powerCategory} (${baseDie})`,
       `Eficiência: 1 dado a cada 3 CE`,
-      `Custo PE: ${peCost}`,
-      `Alcance: ${rangeText}`,
-      `Área: ${areaText}`,
-      `Resistência: ${resistanceTest}`,
-      `Sucesso: ${successEffect || 'Nenhum'}`,
-      `Condição: ${conditionApplied}`,
-      `Modificadores: ${modifiers.length ? modifiers.join(', ') : 'Nenhum'}`
-    ].join('\n');
+      peCost > 0 ? `Custo PE: ${peCost}` : null,
+      rangeText ? `Alcance: ${rangeText}` : null,
+      areaText ? `Área: ${areaText}` : null,
+      resistanceTest !== 'Nenhum' ? `Resistência: ${resistanceTest}` : null,
+      successEffect.trim() ? `Sucesso: ${successEffect}` : null,
+      conditionApplied !== 'Nenhuma' ? `Condição: ${conditionApplied}` : null,
+      modifiers.length ? `Modificadores: ${modifiers.join(', ')}` : null
+    ].filter(Boolean) as string[];
+    return lines.join('\n');
   };
 
   const handleSubmit = () => {
