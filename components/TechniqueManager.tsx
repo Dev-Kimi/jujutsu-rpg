@@ -1410,6 +1410,38 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     }, 3000);
   };
 
+  const buildSubSummary = (sub: import('../types').SubTechnique) => {
+    const rangeText =
+      sub.rangeType === 'Toque'
+        ? 'Toque (Adjacente)'
+        : sub.rangeType === 'Distância' && sub.rangeValue
+        ? `Distância (${sub.rangeValue})`
+        : '';
+    const areaText =
+      sub.areaType === 'Único Alvo'
+        ? 'Único Alvo'
+        : sub.areaType && sub.areaValue
+        ? `${sub.areaType} (${sub.areaValue})`
+        : '';
+    const modifiers = [
+      sub.guaranteedHit ? 'Acerto Garantido' : null,
+      sub.consumesCharges ? 'Consome Cargas' : null,
+      sub.causesExhaustion ? 'Causa Exaustão' : null
+    ].filter(Boolean) as string[];
+    const lines = [
+      sub.powerCategory && sub.diceFace ? `Potência: ${sub.powerCategory} (${sub.diceFace})` : null,
+      sub.efficiency ? `Eficiência: ${sub.efficiency === '1:3' ? '1 dado a cada 3 CE' : sub.efficiency}` : null,
+      typeof sub.peCost === 'number' && sub.peCost > 0 ? `Custo PE: ${sub.peCost}` : null,
+      rangeText ? `Alcance: ${rangeText}` : null,
+      areaText ? `Área: ${areaText}` : null,
+      sub.resistanceTest && sub.resistanceTest !== 'Nenhum' ? `Resistência: ${sub.resistanceTest}` : null,
+      sub.successEffect?.trim() ? `Sucesso: ${sub.successEffect}` : null,
+      sub.conditionApplied && sub.conditionApplied !== 'Nenhuma' ? `Condição: ${sub.conditionApplied}` : null,
+      modifiers.length ? `Modificadores: ${modifiers.join(', ')}` : null
+    ].filter(Boolean) as string[];
+    return lines.join('\n');
+  };
+
   const handleUpdateSubTechnique = (techId: string, subId: string, field: keyof import('../types').SubTechnique, value: any, currentSubTechniques: import('../types').SubTechnique[]) => {
     const updated = currentSubTechniques.map(s => s.id === subId ? { ...s, [field]: value } : s);
     onUpdate(techId, 'subTechniques', updated);
@@ -1625,6 +1657,8 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                     const tierColor = sub.tierLabel?.toLowerCase().includes('sangue')
                       ? 'bg-red-600'
                       : 'bg-purple-600';
+                    const summaryText = buildSubSummary(sub);
+                    const descriptionText = summaryText || sub.description || 'Sem descrição.';
                     return (
                       <div key={sub.id} className="bg-slate-950 rounded-lg border border-slate-800/60 hover:border-slate-700 transition-colors overflow-hidden">
                         <button
@@ -1729,7 +1763,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                               />
                             ) : (
                               <p className="text-xs text-slate-300 whitespace-pre-wrap mt-2">
-                                {sub.description || 'Sem descrição.'}
+                                {descriptionText}
                               </p>
                             )}
 
