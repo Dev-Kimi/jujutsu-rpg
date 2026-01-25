@@ -10,6 +10,7 @@ import {
   Play,
   CheckCircle,
   Pause,
+  BookOpen,
 } from 'lucide-react';
 import { parseAbilityCost } from '../utils/calculations';
 
@@ -32,6 +33,7 @@ interface AccordionListProps {
     name: string,
     id: string
   ) => boolean;
+  onAddToLibrary?: (ability: Ability) => void;
   activeBuffs?: Ability[];
   llLimit?: number;
   externalRctView?: 'padrao' | 'rct';
@@ -51,6 +53,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   enableTabs = true,
   onUse,
   onUseWithId,
+  onAddToLibrary,
   activeBuffs = [],
   llLimit,
   externalRctView,
@@ -292,17 +295,19 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                 </div>
 
                 {/* Cost Display / Edit */}
-                <input
-                  type="text"
-                  value={item.cost}
-                  readOnly={readOnly}
-                  onChange={(e) => {
-                    if (readOnly) return;
-                    onUpdate(item.id, 'cost', e.target.value);
-                  }}
-                  placeholder={placeholderCost}
-                  className="w-20 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-right text-curse-300 placeholder:text-slate-700 focus:border-curse-500 focus:outline-none"
-                />
+                {(!readOnly || item.cost) && (
+                  <input
+                    type="text"
+                    value={item.cost}
+                    readOnly={readOnly}
+                    onChange={(e) => {
+                      if (readOnly) return;
+                      onUpdate(item.id, 'cost', e.target.value);
+                    }}
+                    placeholder={placeholderCost}
+                    className="w-20 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-right text-curse-300 placeholder:text-slate-700 focus:border-curse-500 focus:outline-none"
+                  />
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-1">
@@ -338,6 +343,15 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                         )}
                       </button>
                     )}
+                  {onAddToLibrary && (
+                    <button
+                      onClick={() => onAddToLibrary(item)}
+                      className="text-slate-500 hover:text-emerald-400 p-1"
+                      title="Adicionar à biblioteca"
+                    >
+                      <BookOpen size={14} />
+                    </button>
+                  )}
                   <button
                     onClick={() => onRemove(item.id)}
                     className="text-slate-600 hover:text-red-500 p-1"
@@ -450,18 +464,20 @@ export const AccordionList: React.FC<AccordionListProps> = ({
                     </div>
                   )}
 
-                  <textarea
-                    value={item.description}
-                    readOnly={readOnly}
-                    onChange={(e) => {
-                      if (readOnly) return;
-                      onUpdate(item.id, 'description', e.target.value);
-                    }}
-                    placeholder="Descrição..."
-                    className={`w-full bg-transparent text-xs focus:outline-none resize-none min-h-[80px] leading-relaxed placeholder:text-slate-700 ${
-                      readOnly ? 'text-slate-500' : 'text-slate-400'
-                    }`}
-                  />
+                  {(!readOnly || item.description) && (
+                    <textarea
+                      value={item.description}
+                      readOnly={readOnly}
+                      onChange={(e) => {
+                        if (readOnly) return;
+                        onUpdate(item.id, 'description', e.target.value);
+                      }}
+                      placeholder="Descrição..."
+                      className={`w-full bg-transparent text-xs focus:outline-none resize-none min-h-[80px] leading-relaxed placeholder:text-slate-700 ${
+                        readOnly ? 'text-slate-500' : 'text-slate-400'
+                      }`}
+                    />
+                  )}
                 </div>
               )}
             </div>
