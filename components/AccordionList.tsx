@@ -35,6 +35,7 @@ interface AccordionListProps {
   activeBuffs?: Ability[];
   llLimit?: number;
   externalRctView?: 'padrao' | 'rct';
+  glowOptions?: { color?: string; intensity?: number; duration?: number };
 }
 
 export const AccordionList: React.FC<AccordionListProps> = ({
@@ -53,6 +54,7 @@ export const AccordionList: React.FC<AccordionListProps> = ({
   activeBuffs = [],
   llLimit,
   externalRctView,
+  glowOptions,
 }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>(
@@ -233,22 +235,26 @@ export const AccordionList: React.FC<AccordionListProps> = ({
         {filteredItems.map((item) => {
           const isActive = activeBuffs.some((b) => b.id === item.id);
 
+          const glowVars: React.CSSProperties & Record<string, string> = {};
+          if (glowOptions?.color) glowVars['--ability-glow-color'] = glowOptions.color;
+          if (glowOptions?.intensity) glowVars['--ability-glow-intensity'] = `${glowOptions.intensity}px`;
+          if (glowOptions?.duration) glowVars['--ability-glow-duration'] = `${glowOptions.duration}s`;
           return (
             <div
               key={item.id}
               className={`border rounded-lg overflow-hidden transition-all duration-500 relative ${
                 isActive
-                  ? 'bg-curse-950/20 border-curse-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                  ? 'bg-curse-950/20 border-curse-500/50'
                   : 'bg-slate-950 border-slate-800'
               } ${
                 expandedId === item.id
-                  ? 'shadow-[0_0_30px_rgba(16,185,129,0.15)] border-emerald-500/40 ring-1 ring-emerald-500/20'
+                  ? 'ability-glow-active'
                   : ''
               }`}
+              style={glowVars}
             >
-              {/* Glow Effect Layer */}
               {expandedId === item.id && (
-                <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none animate-pulse" style={{ animationDuration: '3s' }} />
+                 <div className="ability-glow-overlay" />
               )}
               
               {/* Header / Summary */}
