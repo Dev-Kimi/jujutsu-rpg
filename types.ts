@@ -45,6 +45,20 @@ export interface SubTechnique {
   range?: string; // Alcance textual opcional
   tierLabel?: string; // Ex: "CONHECIMENTO 1", "SANGUE 1"
   grade?: string; // Exibição de grau, ex: "NORMAL"
+  tier?: number;
+  powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano';
+  efficiency?: string;
+  peCost?: number;
+  rangeType?: 'Toque' | 'Distância';
+  rangeValue?: string;
+  areaType?: 'Único Alvo' | 'Cone' | 'Linha' | 'Explosão/Esfera';
+  areaValue?: string;
+  resistanceTest?: 'Fortitude' | 'Reflexos' | 'Vontade' | 'Nenhum';
+  successEffect?: string;
+  conditionApplied?: 'Nenhuma' | 'Atordoado' | 'Paralisado' | 'Eletrizado' | 'Vulnerável';
+  guaranteedHit?: boolean;
+  consumesCharges?: boolean;
+  causesExhaustion?: boolean;
 }
 
 // Técnica agora é um conjunto com conceito principal e sub-habilidades
