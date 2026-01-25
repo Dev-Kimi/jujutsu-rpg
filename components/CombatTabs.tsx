@@ -383,8 +383,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       const ll = stats.LL || 0;
       const ceSelected = Math.max(0, Math.min(defenseCEMitigation, ll));
       const ceUsed = Math.floor(ceSelected / 2);
-      const mitigDiceCount = Math.floor(ceUsed / 5);
-      const mitigFixed = Math.floor((ceUsed % 5) / 2);
+      const mitigDiceCount = Math.floor(ceSelected / 5);
+      const mitigFixed = Math.floor((ceSelected % 5) / 2);
       const mitigRolls: number[] = [];
       let mitigSum = 0;
       for (let i = 0; i < mitigDiceCount; i++) {
@@ -791,8 +791,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                           const ll = stats.LL || 0;
                           const ceSelected = Math.max(0, Math.min(defenseCEMitigation, ll));
                           const ceUsed = Math.floor(ceSelected / 2);
-                          const mitigDiceCount = Math.floor(ceUsed / 5);
-                          const mitigFixed = Math.floor((ceUsed % 5) / 2);
+                          const mitigDiceCount = Math.floor(ceSelected / 5);
+                          const mitigFixed = Math.floor((ceSelected % 5) / 2);
                           const minMitigation = mitigDiceCount * 1 + mitigFixed + totalBuffBonus;
                           const maxMitigation = mitigDiceCount * 6 + mitigFixed + totalBuffBonus;
                           return `${mitigDiceCount}d6 + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''} (${minMitigation}–${maxMitigation})`;
@@ -806,8 +806,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                           const ll = stats.LL || 0;
                           const ceSelected = Math.max(0, Math.min(defenseCEMitigation, ll));
                           const ceUsed = Math.floor(ceSelected / 2);
-                          const mitigDiceCount = Math.floor(ceUsed / 5);
-                          const mitigFixed = Math.floor((ceUsed % 5) / 2);
+                          const mitigDiceCount = Math.floor(ceSelected / 5);
+                          const mitigFixed = Math.floor((ceSelected % 5) / 2);
                           const minMitigation = mitigDiceCount * 1 + mitigFixed + totalBuffBonus;
                           const maxMitigation = mitigDiceCount * 6 + mitigFixed + totalBuffBonus;
                           const worst = Math.max(0, incomingDamage - minMitigation);
@@ -853,8 +853,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                         return;
                       }
 
-                      const mitigDiceCount = Math.floor(ceUsed / 5);
-                      const mitigFixed = Math.floor((ceUsed % 5) / 2);
+                      const mitigDiceCount = Math.floor(ceSelected / 5);
+                      const mitigFixed = Math.floor((ceSelected % 5) / 2);
                       const mitigRolls: number[] = [];
                       let mitigSum = 0;
                       for (let i = 0; i < mitigDiceCount; i++) {
