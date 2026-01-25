@@ -1442,6 +1442,13 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     return lines.join('\n');
   };
 
+  const getRangeLabel = (sub: import('../types').SubTechnique) => {
+    if (sub.range?.trim()) return sub.range.trim();
+    if (sub.rangeType === 'Toque') return 'Toque (Adjacente)';
+    if (sub.rangeType === 'Distância' && sub.rangeValue) return `Distância (${sub.rangeValue})`;
+    return '';
+  };
+
   const handleUpdateSubTechnique = (techId: string, subId: string, field: keyof import('../types').SubTechnique, value: any, currentSubTechniques: import('../types').SubTechnique[]) => {
     const updated = currentSubTechniques.map(s => s.id === subId ? { ...s, [field]: value } : s);
     onUpdate(techId, 'subTechniques', updated);
@@ -1636,21 +1643,24 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                 </div>
 
             <div className="p-3 space-y-4">
-              <textarea
-                value={tech.description || ''}
-                onChange={(e) => onUpdate(tech.id, 'description', e.target.value)}
-                readOnly={editingTechId !== tech.id}
-                className={`w-full bg-slate-900/50 border rounded p-2 text-sm text-slate-300 focus:outline-none resize-none ${editingTechId === tech.id ? 'border-slate-700 focus:border-curse-500/50' : 'border-transparent'}`}
-                placeholder="Descrição geral da técnica..."
-                rows={2}
-              />
+              <div className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3 space-y-2">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Técnica Principal</div>
+                <textarea
+                  value={tech.description || ''}
+                  onChange={(e) => onUpdate(tech.id, 'description', e.target.value)}
+                  readOnly={editingTechId !== tech.id}
+                  className={`w-full bg-slate-900/50 border rounded p-2 text-sm text-slate-300 focus:outline-none resize-none ${editingTechId === tech.id ? 'border-slate-700 focus:border-curse-500/50' : 'border-transparent'}`}
+                  placeholder="Descrição geral da técnica..."
+                  rows={2}
+                />
+              </div>
 
-              <div className="space-y-2">
+              <div className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                   <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Habilidades / Extensões</h5>
+                  <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Extensões</h5>
                 </div>
 
-                <div className="space-y-2 pl-2 border-l-2 border-slate-800">
+                <div className="space-y-2">
                   {(tech.subTechniques || []).map(sub => {
                     const expanded = !!expandedSubIds[sub.id];
                     const diceLabel = sub.diceFace ? `${Math.max(1, ceSpent || 0)}${sub.diceFace}` : null;
@@ -1658,7 +1668,14 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                       ? 'bg-red-600'
                       : 'bg-purple-600';
                     const summaryText = buildSubSummary(sub);
-                    const descriptionText = summaryText || sub.description || 'Sem descrição.';
+                    const descriptionText = sub.description || 'Sem descrição.';
+                    const rangeLabel = getRangeLabel(sub);
+                    const resistanceLabel = sub.resistanceTest && sub.resistanceTest !== 'Nenhum' ? sub.resistanceTest : '';
+                    const topAttributes = [
+                      { label: 'Execução', value: sub.usage?.trim() || '' },
+                      { label: 'Alcance', value: rangeLabel },
+                      { label: 'Resistência', value: resistanceLabel }
+                    ].filter(item => item.value);
                     return (
                       <div key={sub.id} className="bg-slate-950 rounded-lg border border-slate-800/60 hover:border-slate-700 transition-colors overflow-hidden">
                         <button
@@ -1723,44 +1740,73 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                             )}
 
                             <div className="text-xs space-y-1">
-                              <div className="flex gap-2">
-                                <span className="text-slate-400">Execução:</span>
-                                {editingTechId === tech.id ? (
-                                  <input
-                                    type="text"
-                                    value={sub.usage || ''}
-                                    onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'usage', e.target.value, tech.subTechniques)}
-                                    className="bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] text-white focus:outline-none focus:border-curse-500/50"
-                                    placeholder="Ex: padrão, reação"
-                                  />
-                                ) : (
-                                  <span className="text-slate-300">{sub.usage || '—'}</span>
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <span className="text-slate-400">Alcance:</span>
-                                {editingTechId === tech.id ? (
-                                  <input
-                                    type="text"
-                                    value={sub.range || ''}
-                                    onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'range', e.target.value, tech.subTechniques)}
-                                    className="bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] text-white focus:outline-none focus:border-curse-500/50"
-                                    placeholder="Ex: pessoal, médio"
-                                  />
-                                ) : (
-                                  <span className="text-slate-300">{sub.range || '—'}</span>
-                                )}
-                              </div>
+                              {editingTechId === tech.id ? (
+                                <>
+                                  <div className="flex gap-2 items-center">
+                                    <span className="text-slate-400">Execução:</span>
+                                    <input
+                                      type="text"
+                                      value={sub.usage || ''}
+                                      onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'usage', e.target.value, tech.subTechniques)}
+                                      className="bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] text-white focus:outline-none focus:border-curse-500/50"
+                                      placeholder="Ex: padrão, reação"
+                                    />
+                                  </div>
+                                  <div className="flex gap-2 items-center">
+                                    <span className="text-slate-400">Alcance:</span>
+                                    <input
+                                      type="text"
+                                      value={sub.range || ''}
+                                      onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'range', e.target.value, tech.subTechniques)}
+                                      className="bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] text-white focus:outline-none focus:border-curse-500/50"
+                                      placeholder="Ex: pessoal, médio"
+                                    />
+                                  </div>
+                                  <div className="flex gap-2 items-center">
+                                    <span className="text-slate-400">Resistência:</span>
+                                    <select
+                                      value={sub.resistanceTest || 'Nenhum'}
+                                      onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'resistanceTest', e.target.value, tech.subTechniques)}
+                                      className="bg-slate-900 border border-slate-700 rounded px-1 py-0.5 text-[11px] text-white focus:outline-none focus:border-curse-500/50"
+                                    >
+                                      <option value="Nenhum">Nenhum</option>
+                                      <option value="Fortitude">Fortitude</option>
+                                      <option value="Reflexos">Reflexos</option>
+                                      <option value="Vontade">Vontade</option>
+                                    </select>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  {topAttributes.length > 0 && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-300">
+                                      {topAttributes.map((item) => (
+                                        <div key={item.label} className="flex gap-2">
+                                          <span className="text-slate-500">{item.label}:</span>
+                                          <span className="text-slate-300">{item.value}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              )}
                             </div>
 
                             {editingTechId === tech.id ? (
-                              <textarea
-                                value={sub.description || ''}
-                                onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'description', e.target.value, tech.subTechniques)}
-                                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white focus:outline-none focus:border-curse-500/50 mt-2"
-                                placeholder="Descrição da habilidade..."
-                                rows={3}
-                              />
+                              <div className="mt-2 space-y-2">
+                                {summaryText && (
+                                  <div className="text-[11px] text-slate-400 whitespace-pre-line bg-slate-900/40 border border-slate-800 rounded p-2">
+                                    {summaryText}
+                                  </div>
+                                )}
+                                <textarea
+                                  value={sub.description || ''}
+                                  onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'description', e.target.value, tech.subTechniques)}
+                                  className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white focus:outline-none focus:border-curse-500/50"
+                                  placeholder="Descrição da habilidade..."
+                                  rows={3}
+                                />
+                              </div>
                             ) : (
                               <p className="text-xs text-slate-300 whitespace-pre-wrap mt-2">
                                 {descriptionText}
