@@ -1,446 +1,515 @@
-import React, { useState } from 'react';
-import { Technique, SubTechnique } from '../types';
-import { PRESET_TECHNIQUES } from '../utils/templates';
-import { Search, Plus, X, BookOpen, ChevronDown, ChevronRight, Wand2, Sparkles, Trash2, Edit2, Lock } from 'lucide-react';
-import { TechniqueCreatePage } from './TechniqueCreatePage';
+import React, { useState, useEffect } from 'react';
+import { Ability } from '../types';
+import { PRESET_ABILITIES } from '../utils/presets';
+import { Search, Plus, X, BookOpen, ChevronRight, Sword, Wand2, Brain, Hammer, Ghost, Edit2, Save, Trash2 } from 'lucide-react';
+import { db, auth } from '../firebase';
+import { doc, onSnapshot, setDoc, updateDoc, deleteField } from 'firebase/firestore';
 
-interface TechniqueLibraryProps {
-  userTechniques: Technique[];
-  onAddToLibrary: (technique: Technique) => void;
-  onUpdateInLibrary: (id: string, field: keyof Technique, value: any) => void;
-  onRemoveFromLibrary: (id: string) => void;
-  onAddToCharacter: (technique: Technique) => void;
+let audioCtx: AudioContext | null = null;
+
+interface AbilityLibraryProps {
+  onSelect: (ability: Partial<Ability>) => void;
   onClose: () => void;
+  initialCategory?: string;
 }
 
-export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({ 
-  userTechniques, 
-  onAddToLibrary, 
-  onUpdateInLibrary, 
-  onRemoveFromLibrary, 
-  onAddToCharacter, 
-  onClose 
-}) => {
+export const AbilityLibrary: React.FC<AbilityLibraryProps> = ({ onSelect, onClose, initialCategory }) => {
+  const [activeTab, setActiveTab] = useState(initialCategory || 'Combatente');
+  const [activeSubTab, setActiveSubTab] = useState('Manipulação');
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedTechniqueId, setExpandedTechniqueId] = useState<string | null>(null);
-  const [expandedSubTechniqueId, setExpandedSubTechniqueId] = useState<string | null>(null);
-  const [editingTechniqueId, setEditingTechniqueId] = useState<string | null>(null);
-  const [showCreatePage, setShowCreatePage] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{ name: string; cost: string; description: string }>({ name: '', cost: '', description: '' });
+  const [isCreatingCustom, setIsCreatingCustom] = useState(false);
+  const [customForm, setCustomForm] = useState<{ name: string; cost: string; description: string }>({ name: '', cost: '', description: '' });
+  const [overrides, setOverrides] = useState<Record<string, Partial<Ability>>>({});
+  const isAdmin = auth.currentUser?.uid === 'qSsTOdiZE2N2LjDuf4R3CC49cAq2';
 
-  const toggleExpandTechnique = (id: string) => {
-    setExpandedTechniqueId(expandedTechniqueId === id ? null : id);
-    setExpandedSubTechniqueId(null);
+  const categories = ['Combatente', 'Feiticeiro', 'Especialista', 'Restrição Celestial', 'Habilidades Amaldiçoadas'];
+  const cursedSubCategories = ['Manipulação', 'Barreiras', 'Energia Reversa'];
+
+  // Handle case where initialCategory might be invalid or 'Todos' if passed from somewhere else
+  useEffect(() => {
+    if (initialCategory && categories.includes(initialCategory)) {
+      setActiveTab(initialCategory);
+    }
+  }, [initialCategory]);
+
+  useEffect(() => {
+    const ref = doc(db, 'config', 'abilityOverrides');
+    const unsubscribe = onSnapshot(ref, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data() as Record<string, Partial<Ability>>;
+        setOverrides(data || {});
+      } else {
+        setOverrides({});
+      }
+    }, (err) => {
+      console.error('Erro ao carregar overrides de habilidades', err);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const presetNames = new Set(
+    PRESET_ABILITIES.map(p => p.name).filter(Boolean) as string[]
+  );
+  const overrideEntries = Object.entries(overrides) as Array<[string, Partial<Ability>]>;
+  const customAbilities = overrideEntries
+    .filter(([key]) => !presetNames.has(key))
+    .map(([key, ov]) => {
+      const o = ov || {};
+      return {
+        name: o.name || key,
+        cost: o.cost || '',
+        description: o.description || '',
+        category: o.category || 'Combatente',
+        subCategory: o.subCategory,
+        baseName: key
+      };
+    });
+
+  const allAbilities = [
+    ...PRESET_ABILITIES.map(p => {
+      const ov = overrides[p.name || ''];
+      return { ...p, ...(ov || {}), baseName: p.name };
+    }),
+    ...customAbilities
+  ];
+
+  const filteredAbilities = allAbilities.filter(item => {
+    const matchesTab = item.category === activeTab;
+    const matchesSearch = item.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Sub-category filtering logic for Habilidades Amaldiçoadas
+    if (activeTab === 'Habilidades Amaldiçoadas' && matchesTab) {
+       // If item has a subCategory defined, match it. If not, treat as "Manipulação" (default) or handle accordingly
+       // Our presets for cursed abilities now have subCategory.
+       const subMatch = (item.subCategory === activeSubTab || (!item.subCategory && activeSubTab === 'Manipulação'));
+       return matchesSearch && subMatch;
+    }
+
+    return matchesTab && matchesSearch;
+  });
+
+  const toggleExpand = (name: string) => {
+    setExpandedId(expandedId === name ? null : name);
   };
 
-  const toggleExpandSubTechnique = (id: string) => {
-    setExpandedSubTechniqueId(expandedSubTechniqueId === id ? null : id);
-  };
-
-  const handleCreateNewTechnique = () => {
-    setShowCreatePage(true);
-  };
-
-  const handleAddSubTechnique = (techniqueId: string) => {
-    const technique = userTechniques.find(t => t.id === techniqueId);
-    if (!technique) return;
-
-    const newSubTechnique: SubTechnique = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: "Nova Habilidade",
-      description: "Descreva os efeitos desta habilidade.",
-      usage: "Ação Padrão"
-    };
-
-    const updatedSubTechniques = [...technique.subTechniques, newSubTechnique];
-    onUpdateInLibrary(techniqueId, 'subTechniques', updatedSubTechniques);
-    setExpandedSubTechniqueId(newSubTechnique.id);
-  };
-
-  const handleUpdateSubTechnique = (techniqueId: string, subTechniqueId: string, field: keyof SubTechnique, value: string) => {
-    const technique = userTechniques.find(t => t.id === techniqueId);
-    if (!technique) return;
-
-    const updatedSubTechniques = technique.subTechniques.map(st =>
-      st.id === subTechniqueId ? { ...st, [field]: value } : st
-    );
-    onUpdateInLibrary(techniqueId, 'subTechniques', updatedSubTechniques);
-  };
-
-  const handleRemoveSubTechnique = (techniqueId: string, subTechniqueId: string) => {
-    const technique = userTechniques.find(t => t.id === techniqueId);
-    if (!technique) return;
-
-    const updatedSubTechniques = technique.subTechniques.filter(st => st.id !== subTechniqueId);
-    onUpdateInLibrary(techniqueId, 'subTechniques', updatedSubTechniques);
-    if (expandedSubTechniqueId === subTechniqueId) {
-      setExpandedSubTechniqueId(null);
+  const getTabColor = (cat: string, isActive: boolean) => {
+    if (!isActive) return 'text-slate-500 border-transparent hover:text-slate-300';
+    
+    switch(cat) {
+      case 'Combatente': return 'text-red-400 border-red-500 bg-red-950/10';
+      case 'Feiticeiro': return 'text-curse-400 border-curse-500 bg-curse-950/10';
+      case 'Especialista': return 'text-blue-400 border-blue-500 bg-blue-950/10';
+      case 'Restrição Celestial': return 'text-slate-200 border-slate-400 bg-slate-800/30';
+      case 'Habilidades Amaldiçoadas': return 'text-purple-300 border-purple-500 bg-purple-950/20';
+      default: return 'text-white border-slate-500';
     }
   };
 
-  const getRangeLabel = (sub: SubTechnique) => {
-    if (sub.range?.trim()) return sub.range.trim();
-    if (sub.rangeType === 'Toque') return 'Toque (Adjacente)';
-    if (sub.rangeType === 'Distância' && sub.rangeValue) return `Distância (${sub.rangeValue})`;
-    return '';
+  const getCategoryIcon = (category?: string) => {
+    switch(category) {
+      case 'Combatente': return <Sword size={14} className="text-red-400" />;
+      case 'Feiticeiro': return <Wand2 size={14} className="text-curse-400" />;
+      case 'Especialista': return <Brain size={14} className="text-blue-400" />;
+      case 'Restrição Celestial': return <Hammer size={14} className="text-slate-200" />;
+      case 'Habilidades Amaldiçoadas': return <Ghost size={14} className="text-purple-400" />;
+      default: return <BookOpen size={14} className="text-slate-500" />;
+    }
   };
 
-  const handleAddToCharacter = (technique: Technique) => {
-    // Create a copy with new ID for the character
-    const techniqueCopy: Technique = {
-      ...technique,
-      id: Math.random().toString(36).substring(2, 9),
-      subTechniques: technique.subTechniques.map(st => ({
-        ...st,
-        id: Math.random().toString(36).substring(2, 9)
-      }))
+  const beginEdit = (ability: any) => {
+    setExpandedId(ability.name || null);
+    setEditingName(ability.baseName || ability.name || '');
+    setEditForm({
+      name: ability.name || '',
+      cost: ability.cost || '',
+      description: ability.description || ''
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingName(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingName) return;
+    const payload: Partial<Ability> = {
+      name: editForm.name,
+      cost: editForm.cost,
+      description: editForm.description,
+      category: activeTab,
+      subCategory: activeTab === 'Habilidades Amaldiçoadas' ? activeSubTab : undefined
     };
-    onAddToCharacter(techniqueCopy);
+    try {
+      const safePayload: Record<string, any> = { ...payload };
+      Object.keys(safePayload).forEach(k => {
+        if (safePayload[k] === undefined) {
+          delete safePayload[k];
+        }
+      });
+      const ref = doc(db, 'config', 'abilityOverrides');
+      await setDoc(ref, { [editingName]: safePayload }, { merge: true });
+      setOverrides(prev => ({ ...prev, [editingName]: safePayload }));
+      setEditingName(null);
+    } catch (err) {
+      console.error('Erro ao salvar override de habilidade', err);
+    }
   };
 
-  const allTechniques = [...PRESET_TECHNIQUES, ...userTechniques];
-  
-  const filteredTechniques = allTechniques.filter(tech =>
-    tech.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tech.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const removeOverride = async (abilityName: string) => {
+    try {
+      const ref = doc(db, 'config', 'abilityOverrides');
+      await updateDoc(ref, { [abilityName]: deleteField() });
+      setOverrides(prev => {
+        const next = { ...prev };
+        delete next[abilityName];
+        return next;
+      });
+      if (editingName === abilityName) setEditingName(null);
+    } catch (err) {
+      console.error('Erro ao remover override de habilidade', err);
+    }
+  };
 
-  const isPreset = (id: string) => PRESET_TECHNIQUES.some(p => p.id === id);
+  const triggerFeedback = () => {
+    try {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        (navigator as any).vibrate?.(12);
+      }
+      const AnyAudioContext = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AnyAudioContext) return;
+      audioCtx = audioCtx || new AnyAudioContext();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume?.();
+      }
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 220;
+      gain.gain.value = 0.02;
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } catch {}
+  };
+
+  const startCustom = () => {
+    setIsCreatingCustom(true);
+    setCustomForm({ name: '', cost: '', description: '' });
+    setEditingName(null);
+    setExpandedId(null);
+  };
+
+  const cancelCustom = () => {
+    setIsCreatingCustom(false);
+  };
+
+  const addCustomToSheet = () => {
+    triggerFeedback();
+    const payload: Partial<Ability> = {
+      name: customForm.name?.trim() || 'Habilidade Customizada',
+      cost: customForm.cost || '',
+      description: customForm.description || '',
+      category: activeTab,
+      subCategory: activeTab === 'Habilidades Amaldiçoadas' ? activeSubTab : undefined,
+    };
+    onSelect(payload);
+    setIsCreatingCustom(false);
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-0 sm:p-4">
-      <div className="bg-slate-900 w-full sm:max-w-4xl sm:rounded-2xl border-x-0 sm:border border-slate-800 shadow-2xl flex flex-col h-full sm:h-auto sm:max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-        {showCreatePage ? (
-          <TechniqueCreatePage
-            title="Nova Técnica"
-            submitLabel="Adicionar à Biblioteca"
-            onCancel={() => setShowCreatePage(false)}
-            onCreate={(technique) => {
-              onAddToLibrary(technique);
-              setExpandedTechniqueId(technique.id);
-              setEditingTechniqueId(null);
-              setShowCreatePage(false);
-            }}
-          />
-        ) : (
-          <>
-            <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 sm:rounded-t-2xl shrink-0">
-              <div>
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <BookOpen size={20} className="text-curse-400"/> Biblioteca de Técnicas
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">Crie técnicas globais e adicione em qualquer ficha</p>
-              </div>
-              <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors duration-100 p-2 hover:bg-slate-800 rounded-lg">
-                <X size={24} />
+      <div className="bg-slate-900 w-full sm:max-w-3xl sm:rounded-2xl border-x-0 sm:border border-slate-800 shadow-2xl flex flex-col h-full sm:h-auto sm:max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+        
+        {/* Header */}
+        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 sm:rounded-t-2xl shrink-0">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <BookOpen size={20} className="text-curse-400"/> Biblioteca
+            </h2>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors p-2 hover:bg-slate-800 rounded-lg">
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Scrollable Tabs Area */}
+        <div className="shrink-0 bg-slate-950 border-b border-slate-800">
+           <div className="flex w-full overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900 scroll-smooth px-2">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => { setActiveTab(cat); setActiveSubTab('Manipulação'); setIsCreatingCustom(false); }}
+                className={`flex-none py-3 px-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap mb-[-1px]
+                  ${getTabColor(cat, activeTab === cat)}
+                `}
+              >
+                {cat}
               </button>
-            </div>
-
-            <div className="p-4 border-b border-slate-800 bg-slate-900/50">
-              <div className="flex gap-3">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
-                  <input 
-                    type="text"
-                    placeholder="Buscar técnicas..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:border-curse-500 focus:outline-none"
-                  />
-                </div>
-                <button 
-                  onClick={handleCreateNewTechnique}
-                  className="flex items-center gap-2 bg-curse-600 hover:bg-curse-500 text-white px-4 py-2 rounded-lg transition-colors duration-100 font-bold text-sm whitespace-nowrap"
-                >
-                  <Plus size={16} /> Nova Técnica
-                </button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4">
-              {filteredTechniques.length === 0 && !searchTerm && (
-                <div className="text-center py-12">
-                  <Wand2 size={48} className="mx-auto text-slate-700 mb-3" />
-                  <p className="text-slate-400 text-sm mb-2">Nenhuma técnica na biblioteca</p>
-                  <p className="text-slate-600 text-xs">Clique em "Nova Técnica" para começar</p>
-                </div>
-              )}
-
-              {filteredTechniques.length === 0 && searchTerm && (
-                <div className="text-center py-12">
-                  <Search size={48} className="mx-auto text-slate-700 mb-3" />
-                  <p className="text-slate-400 text-sm">Nenhuma técnica encontrada</p>
-                </div>
-              )}
-
-              <div className="space-y-3">
-                {filteredTechniques.map(tech => (
-                  <div key={tech.id} className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
-                    
-                    <div className="flex items-center gap-3 p-3 border-l-4 border-curse-500">
-                  <button
-                    onClick={() => toggleExpandTechnique(tech.id)}
-                    className="text-curse-400 hover:text-curse-300 transition-colors duration-100"
-                  >
-                    {expandedTechniqueId === tech.id ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                  </button>
-                  
-                  <Wand2 size={16} className="text-curse-400" />
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center gap-2">
-                      <div className="flex items-center gap-2">
-                         <h3 className="font-bold text-white text-sm truncate">{tech.name}</h3>
-                         {isPreset(tech.id) && (
-                            <span className="text-[9px] uppercase font-bold text-slate-500 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-700 flex items-center gap-1">
-                               <Lock size={8} /> Sistema
-                            </span>
-                         )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <span className="text-[10px] uppercase font-bold text-slate-500 bg-slate-900 px-2 py-1 rounded border border-slate-700">
-                          {tech.subTechniques.length} {tech.subTechniques.length === 1 ? 'Habilidade' : 'Habilidades'}
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddToCharacter(tech);
-                          }}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-[10px] font-bold transition-colors duration-100"
-                          title="Adicionar na ficha atual"
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
-                    </div>
-                    {expandedTechniqueId !== tech.id && tech.description && (
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-1">{tech.description}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Technique Expanded Content */}
-                {expandedTechniqueId === tech.id && (
-                  <div className="border-t border-slate-800 bg-slate-900/30 animate-in slide-in-from-top-2">
-                    
-                    {/* Edit Mode */}
-                    {editingTechniqueId === tech.id && !isPreset(tech.id) ? (
-                      <div className="p-4 space-y-3 border-b border-slate-800/50">
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome da Técnica</label>
-                          <input 
-                            type="text"
-                            value={tech.name}
-                            onChange={(e) => onUpdateInLibrary(tech.id, 'name', e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
-                            placeholder="Ex: Manipulação de Sangue"
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição do Conceito</label>
-                          <textarea 
-                            value={tech.description}
-                            onChange={(e) => onUpdateInLibrary(tech.id, 'description', e.target.value)}
-                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-300 focus:border-curse-500 focus:outline-none min-h-[60px]"
-                            placeholder="Descreva o conceito geral e o funcionamento da técnica..."
-                          />
-                        </div>
-
-                        <div className="flex justify-between items-center pt-2 border-t border-slate-800/50">
-                          <button 
-                            onClick={() => handleAddSubTechnique(tech.id)}
-                            className="flex items-center gap-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
-                          >
-                            <Plus size={12} /> Adicionar Habilidade
-                          </button>
-                          <div className="flex gap-2">
-                            <button 
-                              onClick={() => setEditingTechniqueId(null)}
-                              className="text-xs text-slate-400 hover:text-white px-3 py-1 rounded hover:bg-slate-800 transition-colors duration-100"
-                            >
-                              Concluir
-                            </button>
-                            <button 
-                              onClick={() => {
-                                if (confirm(`Excluir "${tech.name}" da biblioteca?`)) {
-                                  onRemoveFromLibrary(tech.id);
-                                }
-                              }}
-                              className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 px-3 py-1 rounded hover:bg-red-950/30 transition-colors duration-100"
-                            >
-                              <Trash2 size={12} /> Excluir
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-4 border-b border-slate-800/50">
-                        <div className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3 mb-3">
-                          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Técnica Principal</div>
-                          <p className="text-sm text-slate-300">{tech.description}</p>
-                        </div>
-                        {!isPreset(tech.id) && (
-                            <button
-                            onClick={() => setEditingTechniqueId(tech.id)}
-                            className="flex items-center gap-1 text-xs text-slate-400 hover:text-white px-3 py-1 rounded hover:bg-slate-800 transition-colors duration-100"
-                            >
-                            <Edit2 size={12} /> Editar
-                            </button>
-                        )}
-                        {isPreset(tech.id) && (
-                            <p className="text-[10px] text-slate-600 italic">Técnicas de sistema não podem ser editadas diretamente. Adicione à ficha para usar.</p>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Sub-Techniques List */}
-                    <div className="p-3 space-y-2">
-                      {tech.subTechniques.length === 0 && (
-                        <div className="text-center text-slate-600 text-xs py-4 italic border border-dashed border-slate-800 rounded">
-                          Nenhuma habilidade criada. {editingTechniqueId === tech.id ? 'Clique em "Adicionar Habilidade" acima.' : 'Clique em "Editar" para adicionar.'}
-                        </div>
-                      )}
-
-                      {tech.subTechniques.map((subTech) => {
-                        const rangeLabel = getRangeLabel(subTech);
-                        const resistanceLabel = subTech.resistanceTest && subTech.resistanceTest !== 'Nenhum' ? subTech.resistanceTest : '';
-                        const topAttributes = [
-                          { label: 'Execução', value: subTech.usage?.trim() || '' },
-                          { label: 'Alcance', value: rangeLabel },
-                          { label: 'Resistência', value: resistanceLabel }
-                        ].filter(item => item.value);
-                        return (
-                        <div key={subTech.id} className="bg-slate-950/50 border border-slate-700 rounded-lg overflow-hidden">
-                          
-                          {/* Sub-Technique Header */}
-                          <div 
-                            className="flex items-center gap-2 p-2 cursor-pointer hover:bg-slate-800/50 transition-colors duration-100"
-                            onClick={() => toggleExpandSubTechnique(subTech.id)}
-                          >
-                            <div className="text-slate-500 transition-transform duration-100">
-                              {expandedSubTechniqueId === subTech.id ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                            </div>
-                            
-                            <Sparkles size={12} className="text-emerald-400" />
-                            
-                            <div className="flex-1 min-w-0">
-                              <span className="font-bold text-slate-200 text-xs">{subTech.name}</span>
-                              {expandedSubTechniqueId !== subTech.id && subTech.usage && (
-                                <span className="text-[10px] text-slate-500 ml-2">({subTech.usage})</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Sub-Technique Editor */}
-                          {expandedSubTechniqueId === subTech.id && editingTechniqueId === tech.id && (
-                            <div className="p-3 border-t border-slate-700 bg-slate-900/30 space-y-2 animate-in slide-in-from-top-1">
-                              
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Nome da Habilidade</label>
-                                <input 
-                                  type="text"
-                                  value={subTech.name}
-                                  onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'name', e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
-                                  placeholder="Ex: Lâmina de Sangue"
-                                />
-                              </div>
-                              
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Modo de Usar</label>
-                                <input 
-                                  type="text"
-                                  value={subTech.usage}
-                                  onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'usage', e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
-                                  placeholder="Ex: Ação Padrão, Reação, Passiva..."
-                                />
-                              </div>
-
-                              <div>
-                                 <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Dado de Dano/Efeito</label>
-                                 <select
-                                    value={subTech.diceFace || 'd6'}
-                                    onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'diceFace', e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
-                                 >
-                                     <option value="d4">d4</option>
-                                     <option value="d6">d6</option>
-                                     <option value="d8">d8</option>
-                                     <option value="d10">d10</option>
-                                     <option value="d12">d12</option>
-                                     <option value="d20">d20</option>
-                                 </select>
-                              </div>
-                              
-                              <div>
-                                <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Descrição e Efeitos</label>
-                                <textarea 
-                                  value={subTech.description}
-                                  onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'description', e.target.value)}
-                                  className="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-slate-300 focus:border-emerald-500 focus:outline-none min-h-[60px]"
-                                  placeholder="Descreva os efeitos, alcance, custo, etc..."
-                                />
-                              </div>
-
-                              <div className="flex justify-end pt-1">
-                                <button 
-                                  onClick={() => {
-                                    if (confirm(`Excluir "${subTech.name}"?`)) {
-                                      handleRemoveSubTechnique(tech.id, subTech.id);
-                                    }
-                                  }}
-                                  className="flex items-center gap-1 text-[10px] text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-red-950/30 transition-colors duration-100"
-                                >
-                                  <Trash2 size={10} /> Excluir
-                                </button>
-                              </div>
-
-                            </div>
-                          )}
-
-                          {/* Sub-Technique View Only */}
-                          {expandedSubTechniqueId === subTech.id && editingTechniqueId !== tech.id && (
-                            <div className="p-3 border-t border-slate-700 bg-slate-900/30 space-y-2">
-                              {topAttributes.length > 0 && (
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-300">
-                                  {topAttributes.map((item) => (
-                                    <div key={item.label} className="flex gap-2">
-                                      <span className="text-slate-500">{item.label}:</span>
-                                      <span className="text-slate-300">{item.value}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              <div>
-                                <span className="text-[9px] font-bold text-slate-500 uppercase">Descrição:</span>
-                                <p className="text-xs text-slate-300 mt-1 whitespace-pre-wrap">{subTech.description}</p>
-                              </div>
-                            </div>
-                          )}
-
-                        </div>
-                      );
-                    })}
-                    </div>
-
-                  </div>
-                )}
-
-              </div>
             ))}
+           </div>
+        </div>
+
+        {/* Sub-Tabs (Specific for Habilidades Amaldiçoadas) */}
+        {activeTab === 'Habilidades Amaldiçoadas' && (
+          <div className="shrink-0 bg-slate-900 border-b border-slate-800 px-3 py-2 flex gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+             {cursedSubCategories.map(sub => (
+               <button
+                 key={sub}
+                 onClick={() => { setActiveSubTab(sub); setIsCreatingCustom(false); }}
+                 className={`px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap transition-colors border
+                    ${activeSubTab === sub 
+                       ? 'bg-purple-900/50 text-purple-200 border-purple-500/50' 
+                       : 'bg-slate-950 text-slate-500 border-slate-800 hover:text-slate-300'}
+                 `}
+               >
+                 {sub}
+               </button>
+             ))}
+          </div>
+        )}
+
+        {/* Search */}
+        <div className="p-3 border-b border-slate-800 bg-slate-900 shrink-0">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+            <input 
+              type="text" 
+              placeholder={`Buscar em ${activeTab}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-curse-500 transition-colors placeholder:text-slate-600"
+            />
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950 sm:rounded-b-2xl shrink-0">
-          <p className="text-xs text-slate-500 text-center">
-            Técnicas criadas aqui ficam disponíveis para todas as suas fichas
-          </p>
-        </div>
-          </>
-        )}
+        {/* List */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-900/50 custom-scrollbar">
+          {filteredAbilities.length === 0 && !isCreatingCustom && (
+             <div className="text-center py-12 text-slate-500 text-sm flex flex-col items-center">
+                <BookOpen size={32} className="mb-3 opacity-20" />
+                Nenhuma habilidade encontrada nesta categoria.
+             </div>
+          )}
 
+          {isCreatingCustom && (
+            <div className="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between p-4 bg-slate-900/60 border-b border-slate-800">
+                <div className="flex items-center gap-2">
+                  {getCategoryIcon(activeTab)}
+                  <div className="text-sm font-bold text-white">Criar Habilidade</div>
+                  {activeTab === 'Habilidades Amaldiçoadas' && (
+                    <span className="text-[9px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700 uppercase">
+                      {activeSubTab}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={addCustomToSheet}
+                    className="bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded-lg transition-all active:scale-95 flex items-center gap-2 text-xs font-bold"
+                    title="Adicionar à ficha"
+                  >
+                    <Plus size={14} /> Adicionar
+                  </button>
+                  <button
+                    onClick={cancelCustom}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition-all active:scale-95 text-xs font-bold"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] text-slate-500 uppercase">Nome</label>
+                  <input
+                    value={customForm.name}
+                    onChange={(e) => setCustomForm(f => ({ ...f, name: e.target.value }))}
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                    placeholder="Ex: Corte Rápido"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] text-slate-500 uppercase">Custo</label>
+                  <input
+                    value={customForm.cost}
+                    onChange={(e) => setCustomForm(f => ({ ...f, cost: e.target.value }))}
+                    className="w-40 bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                    placeholder="Ex: 5 PE"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 uppercase mb-1">Descrição</label>
+                  <textarea
+                    value={customForm.description}
+                    onChange={(e) => setCustomForm(f => ({ ...f, description: e.target.value }))}
+                    className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                    rows={5}
+                    placeholder="Descreva os efeitos..."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {filteredAbilities.map((ability, idx) => (
+            <div 
+              key={idx} 
+              className="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden hover:border-slate-700 transition-colors group"
+            >
+              <div 
+                className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-900/80 transition-colors"
+                onClick={() => toggleExpand(ability.name || '')}
+              >
+                <div className="flex items-center gap-3">
+                   <div className={`transition-transform duration-200 ${expandedId === ability.name ? 'rotate-90 text-curse-400' : 'text-slate-600'}`}>
+                      <ChevronRight size={18} />
+                   </div>
+                   <div>
+                     <h3 className="font-bold text-slate-200 group-hover:text-white text-sm flex items-center gap-2">
+                        {getCategoryIcon(ability.category)}
+                        {ability.name}
+                        {ability.subCategory && activeTab === 'Habilidades Amaldiçoadas' && (
+                           <span className="text-[9px] bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded border border-slate-700 uppercase">{ability.subCategory}</span>
+                        )}
+                     </h3>
+                     {expandedId !== ability.name && (
+                       <p className="text-[10px] text-slate-500 truncate max-w-[200px] sm:max-w-xs">
+                         {ability.description?.replace(/\[([^\]]+)\]\s*Tier \d+ - Requisitos: [^.]+\.\s*/, '').substring(0, 60) || ''}
+                         {(ability.description?.replace(/\[([^\]]+)\]\s*Tier \d+ - Requisitos: [^.]+\.\s*/, '').length || 0) > 60 ? '...' : ''}
+                       </p>
+                     )}
+                   </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); beginEdit(ability); }}
+                      className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 rounded-lg transition-all active:scale-95 flex items-center gap-1"
+                      title="Editar"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                  )}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerFeedback();
+                      onSelect(ability);
+                    }}
+                    className="bg-slate-800 hover:bg-curse-600 text-slate-300 hover:text-white p-2 rounded-lg transition-all active:scale-95 flex items-center gap-2"
+                    title="Adicionar à ficha"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {expandedId === ability.name && (
+                <div className="px-4 pb-4 pt-0 text-xs text-slate-400 leading-relaxed border-t border-slate-800/50 bg-slate-900/50 mt-1 pt-3 animate-in slide-in-from-top-1">
+                  <div className="flex flex-wrap gap-2 mb-3">
+                     <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-slate-700">
+                       Custo: {ability.cost || 'Variável'}
+                     </span>
+                     {ability.description && ability.description.includes('Tier') && (
+                       <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-purple-700/50">
+                         {ability.description.match(/Tier \d+/)?.[0] || ''}
+                     </span>
+                     )}
+                     {ability.description && ability.description.includes('Requisitos:') && (
+                       <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded text-[10px] font-medium border border-blue-700/50 max-w-xs break-words">
+                         {ability.description.match(/Requisitos: [^.]*\./)?.[0]?.replace(/\.$/, '') || ''}
+                     </span>
+                     )}
+                  </div>
+                  <div className="text-slate-300 leading-relaxed space-y-2">
+                    {/* Extract action type */}
+                    {ability.description.match(/\[([^\]]+)\]/)?.[1] && (
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">
+                        Tipo de Ação: {ability.description.match(/\[([^\]]+)\]/)?.[1]}
+                      </div>
+                    )}
+                    {/* Extract effect description (everything after the tier/requisitos line) */}
+                    {isAdmin && editingName === ((ability as any).baseName || (ability.name || '')) ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] text-slate-500 uppercase">Nome</label>
+                          <input
+                            value={editForm.name}
+                            onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
+                            className="flex-1 bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] text-slate-500 uppercase">Custo</label>
+                          <input
+                            value={editForm.cost}
+                            onChange={(e) => setEditForm(f => ({ ...f, cost: e.target.value }))}
+                            className="w-40 bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 uppercase mb-1">Descrição</label>
+                          <textarea
+                            value={editForm.description}
+                            onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
+                            className="w-full bg-slate-950 border border-slate-700 rounded p-2 text-xs text-white"
+                            rows={5}
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={saveEdit}
+                            className="px-3 py-1.5 text-xs font-bold rounded bg-emerald-700 hover:bg-emerald-600 text-white flex items-center gap-1"
+                          >
+                            <Save size={14} /> Salvar
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="px-3 py-1.5 text-xs font-bold rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
+                          >
+                            Cancelar
+                          </button>
+                          {overrides[(ability as any).baseName || (ability.name || '')] && (
+                            <button
+                              onClick={() => removeOverride((ability as any).baseName || (ability.name || ''))}
+                              className="px-3 py-1.5 text-xs font-bold rounded bg-red-700 hover:bg-red-600 text-white flex items-center gap-1"
+                            >
+                              <Trash2 size={14} /> Remover Override
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="whitespace-pre-line text-slate-300 leading-relaxed">
+                        {(() => {
+                          const desc = ability.description || '';
+                          // Remove the action type, tier and requisitos part
+                          const cleaned = desc.replace(/\[([^\]]+)\]\s*Tier\s*\d+\s*-\s*Requisitos:\s*[^.]*\.\s*/i, '');
+                          return cleaned.trim() || desc;
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-800 bg-slate-950 sm:rounded-b-2xl flex justify-between items-center text-xs text-slate-500 shrink-0">
+           <span>{filteredAbilities.length} itens</span>
+           <button onClick={startCustom} className="hover:text-curse-400 underline">
+              Criar Customizada
+           </button>
+        </div>
       </div>
     </div>
   );
