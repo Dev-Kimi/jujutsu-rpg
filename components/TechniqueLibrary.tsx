@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Technique, SubTechnique } from '../types';
 import { PRESET_TECHNIQUES } from '../utils/templates';
 import { Search, Plus, X, BookOpen, ChevronDown, ChevronRight, Wand2, Sparkles, Trash2, Edit2, Lock } from 'lucide-react';
+import { TechniqueCreatePage } from './TechniqueCreatePage';
 
 interface TechniqueLibraryProps {
   userTechniques: Technique[];
@@ -24,6 +25,7 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
   const [expandedTechniqueId, setExpandedTechniqueId] = useState<string | null>(null);
   const [expandedSubTechniqueId, setExpandedSubTechniqueId] = useState<string | null>(null);
   const [editingTechniqueId, setEditingTechniqueId] = useState<string | null>(null);
+  const [showCreatePage, setShowCreatePage] = useState(false);
 
   const toggleExpandTechnique = (id: string) => {
     setExpandedTechniqueId(expandedTechniqueId === id ? null : id);
@@ -35,16 +37,7 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
   };
 
   const handleCreateNewTechnique = () => {
-    const newTechnique: Technique = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: "Nova Técnica",
-      category: "Inata",
-      description: "Descreva o conceito principal desta técnica.",
-      subTechniques: []
-    };
-    onAddToLibrary(newTechnique);
-    setExpandedTechniqueId(newTechnique.id);
-    setEditingTechniqueId(newTechnique.id);
+    setShowCreatePage(true);
   };
 
   const handleAddSubTechnique = (techniqueId: string) => {
@@ -109,65 +102,74 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-0 sm:p-4">
       <div className="bg-slate-900 w-full sm:max-w-4xl sm:rounded-2xl border-x-0 sm:border border-slate-800 shadow-2xl flex flex-col h-full sm:h-auto sm:max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-        
-        {/* Header */}
-        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 sm:rounded-t-2xl shrink-0">
-          <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <BookOpen size={20} className="text-curse-400"/> Biblioteca de Técnicas
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">Crie técnicas globais e adicione em qualquer ficha</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors duration-100 p-2 hover:bg-slate-800 rounded-lg">
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Search and Add */}
-        <div className="p-4 border-b border-slate-800 space-y-3 bg-slate-950/50 shrink-0">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-              <input 
-                type="text"
-                placeholder="Buscar técnicas..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:border-curse-500 focus:outline-none"
-              />
+        {showCreatePage ? (
+          <TechniqueCreatePage
+            title="Nova Técnica"
+            submitLabel="Adicionar à Biblioteca"
+            onCancel={() => setShowCreatePage(false)}
+            onCreate={(technique) => {
+              onAddToLibrary(technique);
+              setExpandedTechniqueId(technique.id);
+              setEditingTechniqueId(null);
+              setShowCreatePage(false);
+            }}
+          />
+        ) : (
+          <>
+            <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 sm:rounded-t-2xl shrink-0">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <BookOpen size={20} className="text-curse-400"/> Biblioteca de Técnicas
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">Crie técnicas globais e adicione em qualquer ficha</p>
+              </div>
+              <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors duration-100 p-2 hover:bg-slate-800 rounded-lg">
+                <X size={24} />
+              </button>
             </div>
-            <button 
-              onClick={handleCreateNewTechnique}
-              className="flex items-center gap-2 bg-curse-600 hover:bg-curse-500 text-white px-4 py-2 rounded-lg transition-colors duration-100 font-bold text-sm whitespace-nowrap"
-            >
-              <Plus size={16} /> Nova Técnica
-            </button>
-          </div>
-        </div>
 
-        {/* Techniques List */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {filteredTechniques.length === 0 && !searchTerm && (
-            <div className="text-center py-12">
-              <Wand2 size={48} className="mx-auto text-slate-700 mb-3" />
-              <p className="text-slate-400 text-sm mb-2">Nenhuma técnica na biblioteca</p>
-              <p className="text-slate-600 text-xs">Clique em "Nova Técnica" para começar</p>
+            <div className="p-4 border-b border-slate-800 bg-slate-900/50">
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
+                  <input 
+                    type="text"
+                    placeholder="Buscar técnicas..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:border-curse-500 focus:outline-none"
+                  />
+                </div>
+                <button 
+                  onClick={handleCreateNewTechnique}
+                  className="flex items-center gap-2 bg-curse-600 hover:bg-curse-500 text-white px-4 py-2 rounded-lg transition-colors duration-100 font-bold text-sm whitespace-nowrap"
+                >
+                  <Plus size={16} /> Nova Técnica
+                </button>
+              </div>
             </div>
-          )}
 
-          {filteredTechniques.length === 0 && searchTerm && (
-            <div className="text-center py-12">
-              <Search size={48} className="mx-auto text-slate-700 mb-3" />
-              <p className="text-slate-400 text-sm">Nenhuma técnica encontrada</p>
-            </div>
-          )}
+            <div className="flex-1 overflow-y-auto p-4">
+              {filteredTechniques.length === 0 && !searchTerm && (
+                <div className="text-center py-12">
+                  <Wand2 size={48} className="mx-auto text-slate-700 mb-3" />
+                  <p className="text-slate-400 text-sm mb-2">Nenhuma técnica na biblioteca</p>
+                  <p className="text-slate-600 text-xs">Clique em "Nova Técnica" para começar</p>
+                </div>
+              )}
 
-          <div className="space-y-3">
-            {filteredTechniques.map(tech => (
-              <div key={tech.id} className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
-                
-                {/* Technique Header */}
-                <div className="flex items-center gap-3 p-3 border-l-4 border-curse-500">
+              {filteredTechniques.length === 0 && searchTerm && (
+                <div className="text-center py-12">
+                  <Search size={48} className="mx-auto text-slate-700 mb-3" />
+                  <p className="text-slate-400 text-sm">Nenhuma técnica encontrada</p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {filteredTechniques.map(tech => (
+                  <div key={tech.id} className="bg-slate-950 border border-slate-800 rounded-lg overflow-hidden">
+                    
+                    <div className="flex items-center gap-3 p-3 border-l-4 border-curse-500">
                   <button
                     onClick={() => toggleExpandTechnique(tech.id)}
                     className="text-curse-400 hover:text-curse-300 transition-colors duration-100"
@@ -417,6 +419,8 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
             Técnicas criadas aqui ficam disponíveis para todas as suas fichas
           </p>
         </div>
+          </>
+        )}
 
       </div>
     </div>
