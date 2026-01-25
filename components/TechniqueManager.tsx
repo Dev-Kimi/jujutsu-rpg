@@ -13,6 +13,7 @@ import { CombatTabs } from './CombatTabs';
 import { MasterCombatTracker } from './MasterCombatTracker';
 import { calculateDerivedStats, rollDice } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
+import { TechniqueCreatePage } from './TechniqueCreatePage';
 
 interface CampaignManagerProps {
   currentUserChar: Character;
@@ -1394,6 +1395,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   >([]);
   const [expandedSubIds, setExpandedSubIds] = useState<Record<string, boolean>>({});
   const [ceSpent, setCeSpent] = useState<number>(0);
+  const [showCreatePage, setShowCreatePage] = useState(false);
 
   const toggleExpandSub = (id: string) => {
     setExpandedSubIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1406,17 +1408,6 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 3000);
-  };
-
-  const handleAdd = () => {
-    const newTechnique: import('../types').Technique = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: 'Nova Técnica',
-      category: 'Inata',
-      description: '',
-      subTechniques: []
-    };
-    onAdd(newTechnique);
   };
 
   const handleUpdateSubTechnique = (techId: string, subId: string, field: keyof import('../types').SubTechnique, value: any, currentSubTechniques: import('../types').SubTechnique[]) => {
@@ -1522,83 +1513,95 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
         </div>
       )}
 
-      <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-        <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Técnicas</h4>
-        <div className="flex gap-2">
-          <button
-            onClick={onOpenLibrary}
-            className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
-            title="Abrir biblioteca de técnicas"
-          >
-            <Eye size={14} /> Biblioteca
-          </button>
-          <button
-            onClick={handleAdd}
-            className="flex items-center gap-1 text-xs bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
-            title="Adicionar nova técnica"
-          >
-            <Plus size={14} /> Nova Técnica
-          </button>
-        </div>
-      </div>
-      
-      <div className="px-3 py-2 border-b border-slate-800 bg-slate-900/40">
-        <label className="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">
-          {`CE gasto (Max LL: ${llValue})`}
-        </label>
-        <div className="flex items-center gap-3">
-          <input
-            type="range"
-            min={0}
-            max={llValue}
-            step={1}
-            value={ceSpent}
-            onChange={(e) => setCeSpent(parseInt(e.target.value))}
-            className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
-          />
-          <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
-            {ceSpent}
-          </span>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
-        {techniques.length === 0 && (
-          <div className="text-center text-slate-600 text-sm py-10 italic">Nenhuma técnica adicionada.</div>
-        )}
-
-        {techniques.map((tech) => (
-          <div key={tech.id} className={`bg-slate-950 border rounded-lg overflow-hidden transition-colors ${editingTechId === tech.id ? 'border-curse-500/50' : 'border-slate-800'}`}>
-            <div className="p-3 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-1">
-                <Wand2 size={16} className="text-curse-400 shrink-0" />
-                <input
-                  type="text"
-                  value={tech.name}
-                  onChange={(e) => onUpdate(tech.id, 'name', e.target.value)}
-                  readOnly={editingTechId !== tech.id}
-                  className={`bg-transparent border-none outline-none text-white text-sm font-bold w-full placeholder-slate-500 ${editingTechId === tech.id ? 'cursor-text' : 'cursor-default'}`}
-                  placeholder="Nome da Técnica"
-                />
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                    onClick={() => setEditingTechId(editingTechId === tech.id ? null : tech.id)}
-                    className={`px-2 py-1.5 rounded transition-all flex items-center gap-1 text-[10px] font-bold ${editingTechId === tech.id ? 'bg-curse-500 text-white shadow-lg shadow-curse-500/20' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
-                    title={editingTechId === tech.id ? "Concluir Edição" : "Editar Extensões"}
-                >
-                    <Edit2 size={14} />
-                    <span>{editingTechId === tech.id ? 'Editando' : 'Editar Extensões'}</span>
-                </button>
-                <button
-                    onClick={() => onRemove(tech.id)}
-                    className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-slate-800 rounded"
-                    title="Remover técnica"
-                >
-                    <Trash2 size={14} />
-                </button>
-              </div>
+      {showCreatePage ? (
+        <TechniqueCreatePage
+          title="Nova Técnica"
+          submitLabel="Criar Técnica"
+          onCancel={() => setShowCreatePage(false)}
+          onCreate={(technique) => {
+            onAdd(technique);
+            setShowCreatePage(false);
+          }}
+        />
+      ) : (
+        <>
+          <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+            <h4 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Técnicas</h4>
+            <div className="flex gap-2">
+              <button
+                onClick={onOpenLibrary}
+                className="flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+                title="Abrir biblioteca de técnicas"
+              >
+                <Eye size={14} /> Biblioteca
+              </button>
+              <button
+                onClick={() => setShowCreatePage(true)}
+                className="flex items-center gap-1 text-xs bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
+                title="Adicionar nova técnica"
+              >
+                <Plus size={14} /> Nova Técnica
+              </button>
             </div>
+          </div>
+          
+          <div className="px-3 py-2 border-b border-slate-800 bg-slate-900/40">
+            <label className="block text-[10px] text-slate-400 mb-1 font-bold uppercase tracking-wider">
+              {`CE gasto (Max LL: ${llValue})`}
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="range"
+                min={0}
+                max={llValue}
+                step={1}
+                value={ceSpent}
+                onChange={(e) => setCeSpent(parseInt(e.target.value))}
+                className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
+              />
+              <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
+                {ceSpent}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3 space-y-4">
+            {techniques.length === 0 && (
+              <div className="text-center text-slate-600 text-sm py-10 italic">Nenhuma técnica adicionada.</div>
+            )}
+
+            {techniques.map((tech) => (
+              <div key={tech.id} className={`bg-slate-950 border rounded-lg overflow-hidden transition-colors ${editingTechId === tech.id ? 'border-curse-500/50' : 'border-slate-800'}`}>
+                <div className="p-3 bg-slate-900/40 border-b border-slate-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2 flex-1">
+                    <Wand2 size={16} className="text-curse-400 shrink-0" />
+                    <input
+                      type="text"
+                      value={tech.name}
+                      onChange={(e) => onUpdate(tech.id, 'name', e.target.value)}
+                      readOnly={editingTechId !== tech.id}
+                      className={`bg-transparent border-none outline-none text-white text-sm font-bold w-full placeholder-slate-500 ${editingTechId === tech.id ? 'cursor-text' : 'cursor-default'}`}
+                      placeholder="Nome da Técnica"
+                    />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                        onClick={() => setEditingTechId(editingTechId === tech.id ? null : tech.id)}
+                        className={`px-2 py-1.5 rounded transition-all flex items-center gap-1 text-[10px] font-bold ${editingTechId === tech.id ? 'bg-curse-500 text-white shadow-lg shadow-curse-500/20' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
+                        title={editingTechId === tech.id ? "Concluir Edição" : "Editar Extensões"}
+                    >
+                        <Edit2 size={14} />
+                        <span>{editingTechId === tech.id ? 'Editando' : 'Editar Extensões'}</span>
+                    </button>
+                    <button
+                        onClick={() => onRemove(tech.id)}
+                        className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-slate-800 rounded"
+                        title="Remover técnica"
+                    >
+                        <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
 
             <div className="p-3 space-y-4">
               <textarea
@@ -1758,6 +1761,8 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
           </div>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 };
