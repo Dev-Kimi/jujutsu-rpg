@@ -267,17 +267,34 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       let currentWeaponItem: Item | undefined;
 
       // Determine Weapon and Attack Skill
-      if (selectedWeaponId === 'unarmed') {
-         const impactDie = getUnarmedImpactDie(char.level);
-         const { count: dieCount, sides: dieSides } = parseDice(impactDie);
-         const impactRoll = rollDice(dieSides, dieCount);
-         const strengthBonus = (char.attributes.FOR || 0) * 5;
-         baseDamageValue = impactRoll + strengthBonus;
-         baseDamageText = `${impactRoll} (${impactDie}) + ${strengthBonus} (FOR*5)`;
-         rollTitle = "Ataque Desarmado";
+          if (selectedWeaponId === 'unarmed') {
+             const impactDie = getUnarmedImpactDie(char.level);
+             const { sides: dieSides } = parseDice(impactDie);
 
-         // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
-         const lutaSkill = char.skills.find(s => s.name === 'Luta');
+             // NOVA FÓRMULA: Dano do Soco = (4 + [CE gasto / 5]) * Dado de Impacto + (Força * 2) + (Resto da Liberação / 5)
+             const investedCE = isHR ? 0 : invested;
+             const ceDiceBonus = Math.floor(investedCE / 5);
+             const totalDice = 4 + ceDiceBonus;
+
+             let impactRoll = 0;
+             const rolls = [];
+             for(let i=0; i<totalDice; i++) {
+                const r = rollDice(dieSides, 1);
+                rolls.push(r);
+                impactRoll += r;
+             }
+
+             const strengthBonus = (char.attributes.FOR || 0) * 2;
+             const ll = stats.LL || 0;
+             const remainder = Math.max(0, ll - investedCE);
+             const remainderBonus = Math.floor(remainder / 5);
+
+             baseDamageValue = impactRoll + strengthBonus + remainderBonus;
+             baseDamageText = `[${rolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/5)`;
+             rollTitle = "Ataque Desarmado";
+
+             // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
+             const lutaSkill = char.skills.find(s => s.name === 'Luta');
          const lutaBonus = lutaSkill ? lutaSkill.value : 0;
          const llBonus = stats.LL || 0;
          const attrKey = getSkillAttribute('Luta');
@@ -332,15 +349,31 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       if (isCritical) {
         // Maximize apenas o dano base em crítico
         if (selectedWeaponId === 'unarmed') {
-          const impactDie = getUnarmedImpactDie(char.level);
-          const strengthBonus = (char.attributes.FOR || 0) * 5;
-          const maxImpact = getMaxRollFromDice(impactDie);
-          baseDamageValue = maxImpact + strengthBonus;
-          baseDamageText = `max(${impactDie}) = ${maxImpact} + ${strengthBonus} (FOR*5) (Crítico!)`;
+           const impactDie = getUnarmedImpactDie(char.level);
+           const { sides: dieSides } = parseDice(impactDie);
+           const investedCE = isHR ? 0 : invested;
+           const ceDiceBonus = Math.floor(investedCE / 5);
+           const totalDice = 4 + ceDiceBonus;
+           
+           const maxImpact = totalDice * dieSides;
+           const strengthBonus = (char.attributes.FOR || 0) * 2;
+           const ll = stats.LL || 0;
+           const remainder = Math.max(0, ll - investedCE);
+           const remainderBonus = Math.floor(remainder / 5);
+           
+           baseDamageValue = maxImpact + strengthBonus + remainderBonus;
+           baseDamageText = `max(${totalDice}d${dieSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/5) (Crítico!)`;
         }
       }
-      total = baseDamageValue + (isHR ? 0 : invested);
-      detail = `[DanoBase]${baseDamageText}${!isHR && invested > 0 ? ` + [Reforço]${invested}` : ''}`;
+      
+      if (selectedWeaponId === 'unarmed') {
+          total = baseDamageValue;
+          detail = `[Dano Total] ${baseDamageText}`;
+      } else {
+          total = baseDamageValue + (isHR ? 0 : invested);
+          detail = `[DanoBase]${baseDamageText}${!isHR && invested > 0 ? ` + [Reforço]${invested}` : ''}`;
+      }
+      
       actionCostCE = isHR ? 0 : Math.ceil(invested / 2);
     } 
     else if (activeTab === 'defense') {
