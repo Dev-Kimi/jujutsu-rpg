@@ -1396,6 +1396,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   const [expandedSubIds, setExpandedSubIds] = useState<Record<string, boolean>>({});
   const [ceSpent, setCeSpent] = useState<number>(0);
   const [showCreatePage, setShowCreatePage] = useState(false);
+  const [editingTechniqueData, setEditingTechniqueData] = useState<import('../types').Technique | null>(null);
 
   const toggleExpandSub = (id: string) => {
     setExpandedSubIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1565,12 +1566,24 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
 
       {showCreatePage ? (
         <TechniqueCreatePage
-          title="Nova Técnica"
-          submitLabel="Criar Técnica"
-          onCancel={() => setShowCreatePage(false)}
-          onCreate={(technique) => {
-            onAdd(technique);
+          title={editingTechniqueData ? "Editar Técnica" : "Nova Técnica"}
+          submitLabel={editingTechniqueData ? "Salvar Alterações" : "Criar Técnica"}
+          initialTechnique={editingTechniqueData || undefined}
+          onCancel={() => {
             setShowCreatePage(false);
+            setEditingTechniqueData(null);
+          }}
+          onCreate={(technique) => {
+            if (editingTechniqueData) {
+              onUpdate(editingTechniqueData.id, 'name', technique.name);
+              onUpdate(editingTechniqueData.id, 'description', technique.description);
+              onUpdate(editingTechniqueData.id, 'subTechniques', technique.subTechniques);
+              setShowCreatePage(false);
+              setEditingTechniqueData(null);
+            } else {
+              onAdd(technique);
+              setShowCreatePage(false);
+            }
           }}
         />
       ) : (
@@ -1636,12 +1649,16 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                   </div>
                   <div className="flex items-center gap-1">
                     <button
-                        onClick={() => setEditingTechId(editingTechId === tech.id ? null : tech.id)}
+                      onClick={() => {
+                        setEditingTechId(null);
+                        setEditingTechniqueData(tech);
+                        setShowCreatePage(true);
+                      }}
                         className={`px-2 py-1.5 rounded transition-all flex items-center gap-1 text-[10px] font-bold ${editingTechId === tech.id ? 'bg-curse-500 text-white shadow-lg shadow-curse-500/20' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
-                        title={editingTechId === tech.id ? "Concluir Edição" : "Editar Extensões"}
+                      title="Editar Técnica e Extensões"
                     >
                         <Edit2 size={14} />
-                        <span>{editingTechId === tech.id ? 'Editando' : 'Editar Extensões'}</span>
+                      <span>Editar</span>
                     </button>
                     <button
                         onClick={() => onRemove(tech.id)}
