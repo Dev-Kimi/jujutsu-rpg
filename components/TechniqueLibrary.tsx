@@ -77,6 +77,13 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
     }
   };
 
+  const getRangeLabel = (sub: SubTechnique) => {
+    if (sub.range?.trim()) return sub.range.trim();
+    if (sub.rangeType === 'Toque') return 'Toque (Adjacente)';
+    if (sub.rangeType === 'Distância' && sub.rangeValue) return `Distância (${sub.rangeValue})`;
+    return '';
+  };
+
   const handleAddToCharacter = (technique: Technique) => {
     // Create a copy with new ID for the character
     const techniqueCopy: Technique = {
@@ -268,7 +275,10 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                       </div>
                     ) : (
                       <div className="p-4 border-b border-slate-800/50">
-                        <p className="text-sm text-slate-300 mb-3">{tech.description}</p>
+                        <div className="rounded-lg border border-slate-800/60 bg-slate-900/40 p-3 mb-3">
+                          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Técnica Principal</div>
+                          <p className="text-sm text-slate-300">{tech.description}</p>
+                        </div>
                         {!isPreset(tech.id) && (
                             <button
                             onClick={() => setEditingTechniqueId(tech.id)}
@@ -291,7 +301,15 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                         </div>
                       )}
 
-                      {tech.subTechniques.map((subTech) => (
+                      {tech.subTechniques.map((subTech) => {
+                        const rangeLabel = getRangeLabel(subTech);
+                        const resistanceLabel = subTech.resistanceTest && subTech.resistanceTest !== 'Nenhum' ? subTech.resistanceTest : '';
+                        const topAttributes = [
+                          { label: 'Execução', value: subTech.usage?.trim() || '' },
+                          { label: 'Alcance', value: rangeLabel },
+                          { label: 'Resistência', value: resistanceLabel }
+                        ].filter(item => item.value);
+                        return (
                         <div key={subTech.id} className="bg-slate-950/50 border border-slate-700 rounded-lg overflow-hidden">
                           
                           {/* Sub-Technique Header */}
@@ -307,7 +325,7 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                             
                             <div className="flex-1 min-w-0">
                               <span className="font-bold text-slate-200 text-xs">{subTech.name}</span>
-                              {expandedSubTechniqueId !== subTech.id && (
+                              {expandedSubTechniqueId !== subTech.id && subTech.usage && (
                                 <span className="text-[10px] text-slate-500 ml-2">({subTech.usage})</span>
                               )}
                             </div>
@@ -384,14 +402,14 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                           {/* Sub-Technique View Only */}
                           {expandedSubTechniqueId === subTech.id && editingTechniqueId !== tech.id && (
                             <div className="p-3 border-t border-slate-700 bg-slate-900/30 space-y-2">
-                              <div>
-                                <span className="text-[9px] font-bold text-slate-500 uppercase">Modo de Usar:</span>
-                                <p className="text-xs text-slate-300 mt-1">{subTech.usage}</p>
-                              </div>
-                              {subTech.diceFace && (
-                                <div>
-                                    <span className="text-[9px] font-bold text-slate-500 uppercase">Dado:</span>
-                                    <p className="text-xs text-slate-300 mt-1 font-mono">(LL){subTech.diceFace}</p>
+                              {topAttributes.length > 0 && (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-300">
+                                  {topAttributes.map((item) => (
+                                    <div key={item.label} className="flex gap-2">
+                                      <span className="text-slate-500">{item.label}:</span>
+                                      <span className="text-slate-300">{item.value}</span>
+                                    </div>
+                                  ))}
                                 </div>
                               )}
                               <div>
@@ -402,7 +420,8 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                           )}
 
                         </div>
-                      ))}
+                      );
+                    })}
                     </div>
 
                   </div>
