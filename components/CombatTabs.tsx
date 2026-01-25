@@ -273,8 +273,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
              // NOVA FÓRMULA: Dano do Soco = (4 + [CE gasto / 5]) * Dado de Impacto + (Força * 2) + (Resto da Liberação / 5)
              const investedCE = isHR ? 0 : invested;
-             const { dados_adicionais, dano_fixo } = computeCEInvestmentBonus(investedCE, 5);
-             const totalDice = 4 + dados_adicionais;
+             const ceDiceBonus = Math.floor(investedCE / 5);
+             const totalDice = 4 + ceDiceBonus;
 
              let impactRoll = 0;
              const impactRolls: number[] = [];
@@ -285,10 +285,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              }
 
              const strengthBonus = (char.attributes.FOR || 0) * 2;
-             const remainderBonus = dano_fixo;
+             const ll = stats.LL || 0;
+             const remainder = Math.max(0, ll - investedCE);
+             const remainderBonus = Math.floor(remainder / 5);
 
              baseDamageValue = impactRoll + strengthBonus + remainderBonus;
-             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto CE/2)`;
+             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/5)`;
              rollTitle = "Ataque Desarmado";
 
              // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
@@ -350,15 +352,17 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            const impactDie = getUnarmedImpactDie(char.level);
            const { sides: dieSides } = parseDice(impactDie);
            const investedCE = isHR ? 0 : invested;
-           const { dados_adicionais, dano_fixo } = computeCEInvestmentBonus(investedCE, 5);
-           const totalDice = 4 + dados_adicionais;
+           const ceDiceBonus = Math.floor(investedCE / 5);
+           const totalDice = 4 + ceDiceBonus;
            
            const maxImpact = totalDice * dieSides;
            const strengthBonus = (char.attributes.FOR || 0) * 2;
-           const remainderBonus = dano_fixo;
+           const ll = stats.LL || 0;
+           const remainder = Math.max(0, ll - investedCE);
+           const remainderBonus = Math.floor(remainder / 5);
            
            baseDamageValue = maxImpact + strengthBonus + remainderBonus;
-           baseDamageText = `max(${totalDice}d${dieSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto CE/2) (Crítico!)`;
+           baseDamageText = `max(${totalDice}d${dieSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/5) (Crítico!)`;
         }
       }
       
