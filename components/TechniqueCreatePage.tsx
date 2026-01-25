@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Technique } from '../types';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 
@@ -8,9 +8,12 @@ type Props = {
   onCancel: () => void;
   onCreate: (technique: Technique) => void;
   initialTechnique?: Technique;
+  initialFocusSubTechniqueId?: string;
 };
 
-export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCancel, onCreate, initialTechnique }) => {
+export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCancel, onCreate, initialTechnique, initialFocusSubTechniqueId }) => {
+  const [focusedSubId, setFocusedSubId] = useState<string | null>(initialFocusSubTechniqueId || null);
+  const subContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [techName, setTechName] = useState(initialTechnique?.name || '');
   const [techDescription, setTechDescription] = useState(initialTechnique?.description || '');
   const [subForms, setSubForms] = useState<Array<{
@@ -60,6 +63,7 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
         description: st.description || ''
       }))
     : [{
+        id: Math.random().toString(36).substring(2, 9),
         name: '',
         usage: 'Ação Padrão',
         tier: 1,
@@ -81,14 +85,27 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
         causesExhaustion: false,
         description: ''
       }]);
+  useEffect(() => {
+    if (!initialFocusSubTechniqueId) return;
+    setFocusedSubId(initialFocusSubTechniqueId);
+    const el = subContainerRefs.current[initialFocusSubTechniqueId];
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const focusEl = el.querySelector('input, select, textarea') as HTMLElement | null;
+    focusEl?.focus();
+  }, [initialFocusSubTechniqueId]);
   const addSubForm = () => {
     setSubForms(prev => [...prev, {
       id: Math.random().toString(36).substring(2, 9),
       name: '',
       usage: 'Ação Padrão',
       tier: 1,
+      tierLabel: '',
+      grade: '',
       diceFace: 'd6',
       peCost: 0,
+      powerCategory: undefined,
+      efficiency: '',
       rangeType: 'Toque',
       rangeValue: '',
       areaType: 'Único Alvo',
@@ -106,7 +123,9 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
     setSubForms(prev => prev.map((f, i) => i === index ? { ...f, [field]: value } : f));
   };
   const removeForm = (index: number) => {
+    const removedId = subForms[index]?.id;
     setSubForms(prev => prev.filter((_, i) => i !== index));
+    if (removedId && removedId === focusedSubId) setFocusedSubId(null);
   };
   const handleSubmit = () => {
     const techniqueId = initialTechnique?.id || Math.random().toString(36).substring(2, 9);
@@ -207,7 +226,16 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
           </div>
           <div className="space-y-4">
             {subForms.map((f, idx) => (
-              <div key={idx} className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3">
+              <div
+                key={f.id || idx}
+                ref={(el) => {
+                  if (f.id) subContainerRefs.current[f.id] = el;
+                }}
+                onClick={() => {
+                  if (f.id) setFocusedSubId(f.id);
+                }}
+                className={`bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-3 ${f.id && focusedSubId === f.id ? 'ring-2 ring-curse-500/60' : ''}`}
+              >
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome da Habilidade</label>
