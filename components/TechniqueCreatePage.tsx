@@ -10,10 +10,11 @@ type Props = {
 };
 
 export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCancel, onCreate }) => {
-  const [name, setName] = useState('');
+  const [techName, setTechName] = useState('');
+  const [techDescription, setTechDescription] = useState('');
+  const [extName, setExtName] = useState('');
   const [tier, setTier] = useState(1);
   const [actionType, setActionType] = useState('Ação Padrão');
-  const [narrative, setNarrative] = useState('');
   const [powerCategory, setPowerCategory] = useState<'Pouco Dano' | 'Dano Médio' | 'Alto Dano'>('Pouco Dano');
   const [peCost, setPeCost] = useState(0);
   const [rangeType, setRangeType] = useState<'Toque' | 'Distância'>('Toque');
@@ -69,14 +70,14 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
     const techniqueId = Math.random().toString(36).substring(2, 9);
     const subId = Math.random().toString(36).substring(2, 9);
     const summary = buildSummary();
-    const subName = name.trim() || 'Nova Técnica';
+    const subName = extName.trim() || 'Nova Habilidade';
     const rangeText = rangeType === 'Toque' ? 'Toque' : `Distância ${rangeValue || '0m'}`;
 
     const technique: Technique = {
       id: techniqueId,
-      name: subName,
+      name: techName.trim() || 'Nova Técnica',
       category: 'Inata',
-      description: narrative.trim() || 'Descrição narrativa não informada.',
+      description: techDescription.trim() || 'Descrição narrativa não informada.',
       subTechniques: [
         {
           id: subId,
@@ -119,7 +120,7 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
           </button>
           <div>
             <h2 className="text-lg font-bold text-white">{title}</h2>
-            <p className="text-xs text-slate-400 mt-1">Preencha os campos para gerar a técnica completa</p>
+            <p className="text-xs text-slate-400 mt-1">Preencha nome e descrição da técnica e configure suas extensões</p>
           </div>
         </div>
         <button
@@ -132,29 +133,40 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         <section className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Informações Básicas</h3>
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Técnica Principal</h3>
           <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome da Habilidade</label>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome da Técnica</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={techName}
+              onChange={(e) => setTechName(e.target.value)}
               placeholder="Ex: Descarga Atmosférica"
               className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
             />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição da Técnica</label>
+            <textarea
+              value={techDescription}
+              onChange={(e) => setTechDescription(e.target.value)}
+              placeholder="Descreva o efeito visual e o flavor da técnica..."
+              className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:border-curse-500 focus:outline-none min-h-[90px]"
+            />
+          </div>
+        </section>
+
+        <section className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Extensão</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tier (Grau de Refinamento)</label>
-              <select
-                value={tier}
-                onChange={(e) => setTier(parseInt(e.target.value))}
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nome da Habilidade</label>
+              <input
+                type="text"
+                value={extName}
+                onChange={(e) => setExtName(e.target.value)}
+                placeholder="Ex: Lâmina de Sangue"
                 className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
-              >
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <option key={value} value={value}>{value}</option>
-                ))}
-              </select>
+              />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Ação</label>
@@ -168,15 +180,18 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
                 ))}
               </select>
             </div>
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Descrição Narrativa</label>
-            <textarea
-              value={narrative}
-              onChange={(e) => setNarrative(e.target.value)}
-              placeholder="Descreva o efeito visual e o flavor da técnica..."
-              className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:border-curse-500 focus:outline-none min-h-[90px]"
-            />
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tier</label>
+              <select
+                value={tier}
+                onChange={(e) => setTier(parseInt(e.target.value))}
+                className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
+              >
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </section>
 
