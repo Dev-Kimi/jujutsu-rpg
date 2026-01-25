@@ -7,12 +7,14 @@ type Props = {
   submitLabel: string;
   onCancel: () => void;
   onCreate: (technique: Technique) => void;
+  initialTechnique?: Technique;
 };
 
-export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCancel, onCreate }) => {
-  const [techName, setTechName] = useState('');
-  const [techDescription, setTechDescription] = useState('');
+export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCancel, onCreate, initialTechnique }) => {
+  const [techName, setTechName] = useState(initialTechnique?.name || '');
+  const [techDescription, setTechDescription] = useState(initialTechnique?.description || '');
   const [subForms, setSubForms] = useState<Array<{
+    id?: string;
     name: string;
     usage: string;
     tier: number;
@@ -29,26 +31,47 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
     consumesCharges: boolean;
     causesExhaustion: boolean;
     description: string;
-  }>>([{
-    name: '',
-    usage: 'Ação Padrão',
-    tier: 1,
-    diceFace: 'd6',
-    peCost: 0,
-    rangeType: 'Toque',
-    rangeValue: '',
-    areaType: 'Único Alvo',
-    areaValue: '',
-    resistanceTest: 'Nenhum',
-    successEffect: '',
-    conditionApplied: 'Nenhuma',
-    guaranteedHit: false,
-    consumesCharges: false,
-    causesExhaustion: false,
-    description: ''
-  }]);
+  }>>(initialTechnique
+    ? (initialTechnique.subTechniques || []).map(st => ({
+        id: st.id,
+        name: st.name || '',
+        usage: st.usage || 'Ação Padrão',
+        tier: st.tier || 1,
+        diceFace: st.diceFace || 'd6',
+        peCost: typeof st.peCost === 'number' ? st.peCost : 0,
+        rangeType: st.rangeType === 'Distância' ? 'Distância' : 'Toque',
+        rangeValue: st.rangeValue || '',
+        areaType: st.areaType || 'Único Alvo',
+        areaValue: st.areaValue || '',
+        resistanceTest: st.resistanceTest || 'Nenhum',
+        successEffect: st.successEffect || '',
+        conditionApplied: st.conditionApplied || 'Nenhuma',
+        guaranteedHit: !!st.guaranteedHit,
+        consumesCharges: !!st.consumesCharges,
+        causesExhaustion: !!st.causesExhaustion,
+        description: st.description || ''
+      }))
+    : [{
+        name: '',
+        usage: 'Ação Padrão',
+        tier: 1,
+        diceFace: 'd6',
+        peCost: 0,
+        rangeType: 'Toque',
+        rangeValue: '',
+        areaType: 'Único Alvo',
+        areaValue: '',
+        resistanceTest: 'Nenhum',
+        successEffect: '',
+        conditionApplied: 'Nenhuma',
+        guaranteedHit: false,
+        consumesCharges: false,
+        causesExhaustion: false,
+        description: ''
+      }]);
   const addSubForm = () => {
     setSubForms(prev => [...prev, {
+      id: Math.random().toString(36).substring(2, 9),
       name: '',
       usage: 'Ação Padrão',
       tier: 1,
@@ -74,9 +97,9 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
     setSubForms(prev => prev.filter((_, i) => i !== index));
   };
   const handleSubmit = () => {
-    const techniqueId = Math.random().toString(36).substring(2, 9);
+    const techniqueId = initialTechnique?.id || Math.random().toString(36).substring(2, 9);
     const subTechniques = subForms.map(f => {
-      const subId = Math.random().toString(36).substring(2, 9);
+      const subId = f.id || Math.random().toString(36).substring(2, 9);
       const rangeText = f.rangeType === 'Toque' ? 'Toque' : `Distância ${f.rangeValue || '0m'}`;
       return {
         id: subId,
