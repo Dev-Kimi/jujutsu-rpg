@@ -280,7 +280,7 @@ export const SkillList: React.FC<SkillListProps> = ({
           
           const isPhysical = skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute);
           const isSorcery = normalize(skill.name) === normalize('Feitiçaria');
-          const llBonus = (isPhysical || isSorcery) ? LL : 0;
+          const llBonus = (isPhysical || isSorcery) ? Math.floor(LL / 2) : 0;
           const voteBonus = (char.bindingVows || [])
             .filter(v => v.isActive)
             .reduce((sum, v) => {
@@ -334,7 +334,7 @@ export const SkillList: React.FC<SkillListProps> = ({
                           <span className={`font-medium truncate ${hasQueuedBuff ? 'text-emerald-400' : trainingColor}`}>
                               {skill.name}
                           </span>
-                          {(((skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) || isSorcery)) && <span className="text-[9px] text-slate-500 font-mono">+LL</span>}
+                          {(((skill.attribute && ['FOR', 'AGI', 'VIG', 'PRE'].includes(skill.attribute)) || isSorcery)) && <span className="text-[9px] text-slate-500 font-mono">+LL/2</span>}
                           {voteBonus !== 0 && <span className="text-[9px] text-curse-300 font-mono ml-1">{voteBonus > 0 ? `+${voteBonus}` : voteBonus}</span>}
                       </div>
                    )}
