@@ -1397,6 +1397,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   const [ceSpent, setCeSpent] = useState<number>(0);
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [editingTechniqueData, setEditingTechniqueData] = useState<import('../types').Technique | null>(null);
+  const [focusSubTechniqueId, setFocusSubTechniqueId] = useState<string | null>(null);
 
   const toggleExpandSub = (id: string) => {
     setExpandedSubIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1569,9 +1570,11 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
           title={editingTechniqueData ? "Editar Técnica" : "Nova Técnica"}
           submitLabel={editingTechniqueData ? "Salvar Alterações" : "Criar Técnica"}
           initialTechnique={editingTechniqueData || undefined}
+          initialFocusSubTechniqueId={focusSubTechniqueId || undefined}
           onCancel={() => {
             setShowCreatePage(false);
             setEditingTechniqueData(null);
+            setFocusSubTechniqueId(null);
           }}
           onCreate={(technique) => {
             if (editingTechniqueData) {
@@ -1580,6 +1583,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
               onUpdate(editingTechniqueData.id, 'subTechniques', technique.subTechniques);
               setShowCreatePage(false);
               setEditingTechniqueData(null);
+              setFocusSubTechniqueId(null);
             } else {
               onAdd(technique);
               setShowCreatePage(false);
@@ -1599,7 +1603,11 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                 <Eye size={14} /> Biblioteca
               </button>
               <button
-                onClick={() => setShowCreatePage(true)}
+                onClick={() => {
+                  setEditingTechniqueData(null);
+                  setFocusSubTechniqueId(null);
+                  setShowCreatePage(true);
+                }}
                 className="flex items-center gap-1 text-xs bg-curse-600 hover:bg-curse-500 text-white px-3 py-1.5 rounded transition-colors duration-100 font-bold"
                 title="Adicionar nova técnica"
               >
@@ -1652,6 +1660,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                       onClick={() => {
                         setEditingTechId(null);
                         setEditingTechniqueData(tech);
+                        setFocusSubTechniqueId(null);
                         setShowCreatePage(true);
                       }}
                         className={`px-2 py-1.5 rounded transition-all flex items-center gap-1 text-[10px] font-bold ${editingTechId === tech.id ? 'bg-curse-500 text-white shadow-lg shadow-curse-500/20' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'}`}
@@ -1738,6 +1747,19 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{sub.grade || 'NORMAL'}</div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingTechId(null);
+                                setEditingTechniqueData(tech);
+                                setFocusSubTechniqueId(sub.id);
+                                setShowCreatePage(true);
+                              }}
+                              className="text-slate-400 hover:text-white transition-colors"
+                              title="Editar esta habilidade"
+                            >
+                              <Edit2 size={14} />
+                            </button>
                             {diceLabel && (
                               <button
                                 onClick={(e) => {
