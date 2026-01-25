@@ -1458,6 +1458,17 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     const updated = currentSubTechniques.filter(s => s.id !== subId);
     onUpdate(techId, 'subTechniques', updated);
   };
+  const handleAddSubTechnique = (techId: string, currentSubTechniques: import('../types').SubTechnique[]) => {
+    const newSub = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: 'Nova Habilidade',
+      description: '',
+      usage: 'Ação Padrão'
+    } as import('../types').SubTechnique;
+    const updated = [...currentSubTechniques, newSub];
+    onUpdate(techId, 'subTechniques', updated);
+    setExpandedSubIds(prev => ({ ...prev, [newSub.id]: true }));
+  };
 
   const handleRoll = (subName: string, diceFace?: string) => {
     if (!diceFace) return;
@@ -1658,6 +1669,14 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
               <div className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Extensões</h5>
+                  {editingTechId === tech.id && (
+                    <button
+                      onClick={() => handleAddSubTechnique(tech.id, tech.subTechniques || [])}
+                      className="text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white px-2 py-1 rounded font-bold"
+                    >
+                      Adicionar Habilidade
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-2">
