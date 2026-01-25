@@ -26,6 +26,7 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
   const [expandedSubTechniqueId, setExpandedSubTechniqueId] = useState<string | null>(null);
   const [editingTechniqueId, setEditingTechniqueId] = useState<string | null>(null);
   const [showCreatePage, setShowCreatePage] = useState(false);
+  const [editingTechniqueData, setEditingTechniqueData] = useState<Technique | null>(null);
 
   const toggleExpandTechnique = (id: string) => {
     setExpandedTechniqueId(expandedTechniqueId === id ? null : id);
@@ -111,14 +112,28 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
       <div className="bg-slate-900 w-full sm:max-w-4xl sm:rounded-2xl border-x-0 sm:border border-slate-800 shadow-2xl flex flex-col h-full sm:h-auto sm:max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
         {showCreatePage ? (
           <TechniqueCreatePage
-            title="Nova Técnica"
-            submitLabel="Adicionar à Biblioteca"
-            onCancel={() => setShowCreatePage(false)}
-            onCreate={(technique) => {
-              onAddToLibrary(technique);
-              setExpandedTechniqueId(technique.id);
-              setEditingTechniqueId(null);
+            title={editingTechniqueData ? "Editar Técnica" : "Nova Técnica"}
+            submitLabel={editingTechniqueData ? "Salvar Alterações" : "Adicionar à Biblioteca"}
+            initialTechnique={editingTechniqueData || undefined}
+            onCancel={() => {
               setShowCreatePage(false);
+              setEditingTechniqueData(null);
+            }}
+            onCreate={(technique) => {
+              if (editingTechniqueData) {
+                onUpdateInLibrary(editingTechniqueData.id, 'name', technique.name);
+                onUpdateInLibrary(editingTechniqueData.id, 'description', technique.description);
+                onUpdateInLibrary(editingTechniqueData.id, 'subTechniques', technique.subTechniques);
+                setExpandedTechniqueId(editingTechniqueData.id);
+                setEditingTechniqueId(null);
+                setEditingTechniqueData(null);
+                setShowCreatePage(false);
+              } else {
+                onAddToLibrary(technique);
+                setExpandedTechniqueId(technique.id);
+                setEditingTechniqueId(null);
+                setShowCreatePage(false);
+              }
             }}
           />
         ) : (
@@ -281,7 +296,10 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                         </div>
                         {!isPreset(tech.id) && (
                             <button
-                            onClick={() => setEditingTechniqueId(tech.id)}
+                            onClick={() => {
+                              setEditingTechniqueData(tech);
+                              setShowCreatePage(true);
+                            }}
                             className="flex items-center gap-1 text-xs text-slate-400 hover:text-white px-3 py-1 rounded hover:bg-slate-800 transition-colors duration-100"
                             >
                             <Edit2 size={12} /> Editar
