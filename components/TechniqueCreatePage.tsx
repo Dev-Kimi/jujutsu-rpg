@@ -18,8 +18,12 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
     name: string;
     usage: string;
     tier: number;
+    tierLabel?: string;
+    grade?: string;
     diceFace: string;
     peCost: number;
+    powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano';
+    efficiency?: string;
     rangeType: 'Toque' | 'Distância';
     rangeValue: string;
     areaType: 'Único Alvo' | 'Cone' | 'Linha' | 'Explosão/Esfera';
@@ -37,8 +41,12 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
         name: st.name || '',
         usage: st.usage || 'Ação Padrão',
         tier: st.tier || 1,
+        tierLabel: st.tierLabel || '',
+        grade: st.grade || '',
         diceFace: st.diceFace || 'd6',
         peCost: typeof st.peCost === 'number' ? st.peCost : 0,
+        powerCategory: st.powerCategory,
+        efficiency: st.efficiency || '',
         rangeType: st.rangeType === 'Distância' ? 'Distância' : 'Toque',
         rangeValue: st.rangeValue || '',
         areaType: st.areaType || 'Único Alvo',
@@ -55,8 +63,12 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
         name: '',
         usage: 'Ação Padrão',
         tier: 1,
+        tierLabel: '',
+        grade: '',
         diceFace: 'd6',
         peCost: 0,
+        powerCategory: undefined,
+        efficiency: '',
         rangeType: 'Toque',
         rangeValue: '',
         areaType: 'Único Alvo',
@@ -108,7 +120,10 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
         usage: f.usage,
         diceFace: f.diceFace,
         range: rangeText,
-        tierLabel: `TIER ${f.tier}`,
+        tierLabel: (f.tierLabel && f.tierLabel.trim()) ? f.tierLabel.trim() : `TIER ${f.tier}`,
+        grade: (f.grade && f.grade.trim()) ? f.grade.trim() : undefined,
+        powerCategory: f.powerCategory,
+        efficiency: (f.efficiency && f.efficiency.trim()) ? f.efficiency.trim() : undefined,
         peCost: f.peCost,
         tier: f.tier,
         rangeType: f.rangeType,
@@ -231,6 +246,28 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tag da Habilidade</label>
+                    <input
+                      type="text"
+                      value={f.tierLabel || ''}
+                      onChange={(e) => updateForm(idx, 'tierLabel', e.target.value)}
+                      placeholder="Ex: CONHECIMENTO 1, SANGUE 1"
+                      className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Grau</label>
+                    <input
+                      type="text"
+                      value={f.grade || ''}
+                      onChange={(e) => updateForm(idx, 'grade', e.target.value)}
+                      placeholder="Ex: NORMAL"
+                      className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Dado</label>
                     <select
                       value={f.diceFace}
@@ -250,6 +287,29 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
                       className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
                     />
                   </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Potência</label>
+                    <select
+                      value={f.powerCategory || ''}
+                      onChange={(e) => updateForm(idx, 'powerCategory', e.target.value ? e.target.value : undefined)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="Pouco Dano">Pouco Dano</option>
+                      <option value="Dano Médio">Dano Médio</option>
+                      <option value="Alto Dano">Alto Dano</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Eficiência</label>
+                  <input
+                    type="text"
+                    value={f.efficiency || ''}
+                    onChange={(e) => updateForm(idx, 'efficiency', e.target.value)}
+                    placeholder="Ex: 1:3 (1 dado a cada 3 CE)"
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
+                  />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
