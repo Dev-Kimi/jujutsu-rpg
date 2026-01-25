@@ -296,7 +296,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
              const lutaSkill = char.skills.find(s => s.name === 'Luta');
          const lutaBonus = lutaSkill ? lutaSkill.value : 0;
-         const llBonus = stats.LL || 0;
+         const llBonus = Math.floor((stats.LL || 0) / 2);
          const attrKey = getSkillAttribute('Luta');
          const { rolls, best } = rollD20Pool(char.attributes[attrKey] + (hasAdvAttack ? 1 : 0));
          attackRolls = rolls;
@@ -322,7 +322,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const attackSkill = char.skills.find(s => s.name === attackSkillName);
              const attackBonus = attackSkill ? attackSkill.value : 0;
 
-             const llBonus = stats.LL || 0;
+         const llBonus = Math.floor((stats.LL || 0) / 2);
              const attrKey = getSkillAttribute(attackSkillName);
              const { rolls, best } = rollD20Pool(char.attributes[attrKey] + (hasAdvAttack ? 1 : 0));
              attackRolls = rolls;
@@ -544,11 +544,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     const lutaBonus = lutaSkill ? lutaSkill.value : 0;
     const attrKey = getSkillAttribute('Luta');
     const { best } = rollD20Pool(char.attributes[attrKey]);
-    const total = best + lutaBonus + stats.LL; // Adding LL as standard proficiency/power
+    const llHalf = Math.floor((stats.LL || 0) / 2);
+    const total = best + lutaBonus + llHalf;
     
     setLastResult({
       total: total,
-      detail: `[d20]${best} + ${lutaBonus} (Luta) + ${stats.LL} (LL)`,
+      detail: `[d20]${best} + ${lutaBonus} (Luta) + ${llHalf} (LL/2)`,
       title: "Quadro de Frame (Ataque)",
       isDamageTaken: false,
       weaponBroken: false
