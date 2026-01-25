@@ -236,12 +236,21 @@ export const AccordionList: React.FC<AccordionListProps> = ({
           return (
             <div
               key={item.id}
-              className={`border rounded-lg overflow-hidden transition-all ${
+              className={`border rounded-lg overflow-hidden transition-all duration-500 relative ${
                 isActive
-                  ? 'bg-curse-950/20 border-curse-500/50'
+                  ? 'bg-curse-950/20 border-curse-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
                   : 'bg-slate-950 border-slate-800'
+              } ${
+                expandedId === item.id
+                  ? 'shadow-[0_0_30px_rgba(16,185,129,0.15)] border-emerald-500/40 ring-1 ring-emerald-500/20'
+                  : ''
               }`}
             >
+              {/* Glow Effect Layer */}
+              {expandedId === item.id && (
+                <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none animate-pulse" style={{ animationDuration: '3s' }} />
+              )}
+              
               {/* Header / Summary */}
               <div className="flex items-center gap-2 p-3 hover:bg-slate-900/50 transition-colors relative">
                 <button
