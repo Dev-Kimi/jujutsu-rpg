@@ -357,16 +357,12 @@ export const computeUnarmedD8Damage = (ceInvested: number, strength: number, lev
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
   
-  // Obter dados base conforme o nível e tipo de dano
-  const baseDice = getBaseDiceByLevel(level);
-  const baseDiceCount = baseDice[damageType];
-  
-  // Adicionar dados de CE investido (a cada 5 CE, +1d8)
-  const ceDiceCount = Math.floor(ceInvested / 5);
-  const diceCount = baseDiceCount + ceDiceCount;
-  
-  // Bônus fixo: FOR * 5 + floor(CE % 5 / 2)
-  const fixedBonus = (strength * 5) + Math.floor((ceInvested % 5) / 2);
+  const mark = Math.ceil(Math.max(0, level) / 4);
+  const baseDiceCount = mark * 2;
+  const unit = Math.floor(ceInvested / 5);
+  const investDice = Math.floor(unit * 1.0);
+  const diceCount = baseDiceCount + investDice;
+  const fixedBonus = (strength * 4) + (ceInvested % 5);
   
   return { diceCount, fixedBonus };
 };
@@ -381,19 +377,20 @@ export const computeTechniqueD8Damage = (
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
   
-  // Obter dados base conforme o nível e tipo de dano
-  const baseDice = getBaseDiceByLevel(level);
-  const baseDiceKey = powerCategory === 'Alto Dano' ? 'highDamage' : powerCategory === 'Dano Médio' ? 'medium' : 'utility';
-  const baseDiceCount = baseDice[baseDiceKey];
-  
-  // Adicionar dados de CE investido (1d8 por 3 CE)
-  const ceDiceCount = Math.floor(ceInvested / 3);
-  const diceCount = baseDiceCount + ceDiceCount;
-  
-  // Bônus fixo: INT * 4 + (CE % 3)
-  const fixedBonus = (int * 5) + (ceInvested % 3);
+  const mark = Math.ceil(Math.max(0, level) / 4);
+  const baseDiceCount = mark * 2;
+  const unit = Math.floor(ceInvested / 5);
+  const multiplier = powerCategory === 'Alto Dano' ? 1.9 : powerCategory === 'Dano Médio' ? 1.5 : 1.1;
+  const investDice = Math.floor(unit * multiplier);
+  const diceCount = baseDiceCount + investDice;
+  const fixedBonus = (int * 4) + (ceInvested % 5);
   
   return { diceCount, fixedBonus };
+};
+
+export const getPowerMarkBaseDice = (level: number): number => {
+  const mark = Math.ceil(Math.max(0, level) / 4);
+  return mark * 2;
 };
 
 
