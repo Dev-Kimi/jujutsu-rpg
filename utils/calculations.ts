@@ -360,7 +360,13 @@ export const calculateMaxD8Damage = (diceCount: number, fixedBonus: number): num
   return (diceCount * 8) + fixedBonus;
 };
 
-export const computeWeaponD8Damage = (ceInvested: number, strength: number, baseDice: string): { diceCount: number; fixedBonus: number; baseSides: number } => {
+export const computeWeaponD8Damage = (ceInvested: number, strength: number, baseDice: string): { 
+  baseDiceCount: number; 
+  baseDiceSides: number;
+  cursedDiceCount: number;
+  cursedDiceSides: number;
+  fixedBonus: number; 
+} => {
   if (!Number.isInteger(ceInvested) || ceInvested < 0) {
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
@@ -374,12 +380,21 @@ export const computeWeaponD8Damage = (ceInvested: number, strength: number, base
   const baseCount = parseInt(diceMatch[1]);
   const baseSides = parseInt(diceMatch[2]);
   
-  // Fórmula: (dados base + [Investimento / 5]) * dado da arma(faces) + (FOR * 5) + (Investimento % 5 / 2, arrendondado para baixo)
-  const extraDice = Math.floor(ceInvested / 5);
-  const diceCount = baseCount + extraDice;
-  const fixedBonus = (strength * 5) + Math.floor((ceInvested % 5) / 2);
+  // Nova fórmula: Base da Arma + Reforço Amaldiçoado + Bônus Fixo
+  // Base da Arma: numBase * faceArma (mantém as faces originais)
+  // Reforço Amaldiçoado: floor(Investimento / 5) * 1d8
+  // Bônus Fixo: FOR * 4 + floor(Investimento % 5 / 2)
+  const cursedDiceCount = Math.floor(ceInvested / 5);
+  const cursedDiceSides = 8; // Sempre d8 para reforço amaldiçoado
+  const fixedBonus = (strength * 4) + Math.floor((ceInvested % 5) / 2);
   
-  return { diceCount, fixedBonus, baseSides };
+  return { 
+    baseDiceCount: baseCount, 
+    baseDiceSides: baseSides,
+    cursedDiceCount: cursedDiceCount,
+    cursedDiceSides: cursedDiceSides,
+    fixedBonus: fixedBonus 
+  };
 };
 
 export const getTechniqueDamageDieSides = (
