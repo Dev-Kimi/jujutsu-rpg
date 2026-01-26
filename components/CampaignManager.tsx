@@ -1089,6 +1089,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({
                         onUpdate={handleTechniqueUpdate}
                         onRemove={handleTechniqueRemove}
                         onOpenLibrary={() => alert('Biblioteca de técnicas não disponível nesta visualização.')}
+                        character={viewingChar}
                         characterLevel={viewingChar.level}
                         llValue={stats.LL}
                         intValue={viewingChar.attributes.INT}
