@@ -1091,6 +1091,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({
                         onOpenLibrary={() => alert('Biblioteca de técnicas não disponível nesta visualização.')}
                         characterLevel={viewingChar.level}
                         llValue={stats.LL}
+                        intValue={viewingChar.attributes.INT}
                         currentCE={viewingStats.ce}
                         onConsumeCE={consumeCE}
                       />
