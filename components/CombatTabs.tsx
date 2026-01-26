@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap, CheckCircle } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
-import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
+import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeCEInvestmentBonus } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
 import { logDiceRoll } from '../utils/diceRollLogger';
 
@@ -274,12 +274,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const { sides: dieSides } = parseDice(impactDie);
 
              const ll = stats.LL || 0;
-             const totalDice = 4 + Math.floor(ll / 5);
-             const adjustedSides = dieSides + (Math.floor(unarmedCE / 3) * 2);
+             const baseDice = 4 + Math.floor(ll / 5);
+             const { dados_adicionais: ceDiceBonus, dano_fixo: ceFixedBonus } = computeCEInvestmentBonus(Math.max(0, unarmedCE || 0));
+             const totalDice = baseDice + ceDiceBonus;
              let impactRoll = 0;
              const impactRolls: number[] = [];
              for (let i = 0; i < totalDice; i++) {
-               const r = rollDice(adjustedSides, 1);
+               const r = rollDice(dieSides, 1);
                impactRolls.push(r);
                impactRoll += r;
              }
@@ -287,8 +288,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const strengthBonus = (char.attributes.FOR || 0) * 2;
              const remainderBonus = ll % 5;
 
-             baseDamageValue = impactRoll + strengthBonus + remainderBonus;
-             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${adjustedSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5)`;
+             baseDamageValue = impactRoll + strengthBonus + remainderBonus + ceFixedBonus;
+             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5)${ceFixedBonus ? ` + ${ceFixedBonus} (CE)` : ''}`;
              rollTitle = "Ataque Desarmado";
 
              // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
@@ -350,14 +351,15 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            const impactDie = getUnarmedImpactDie(char.level);
            const { sides: dieSides } = parseDice(impactDie);
            const ll = stats.LL || 0;
-           const totalDice = 4 + Math.floor(ll / 5);
-           const adjustedSides = dieSides + (Math.floor(unarmedCE / 3) * 2);
-           const maxImpact = totalDice * adjustedSides;
+           const baseDice = 4 + Math.floor(ll / 5);
+           const { dados_adicionais: ceDiceBonus, dano_fixo: ceFixedBonus } = computeCEInvestmentBonus(Math.max(0, unarmedCE || 0));
+           const totalDice = baseDice + ceDiceBonus;
+           const maxImpact = totalDice * dieSides;
            const strengthBonus = (char.attributes.FOR || 0) * 2;
            const remainderBonus = ll % 5;
            
-           baseDamageValue = maxImpact + strengthBonus + remainderBonus;
-           baseDamageText = `max(${totalDice}d${adjustedSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5) (Crítico!)`;
+           baseDamageValue = maxImpact + strengthBonus + remainderBonus + ceFixedBonus;
+           baseDamageText = `max(${totalDice}d${dieSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5)${ceFixedBonus ? ` + ${ceFixedBonus} (CE)` : ''} (Crítico!)`;
         }
       }
       
@@ -571,7 +573,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const weaponLimit = getCurrentWeaponLimit();
   const currentCostCE = activeTab === 'defense'
     ? Math.floor(defenseCEMitigation / 2)
-    : (selectedWeaponId === 'unarmed' ? 0 : Math.ceil(invested / 2));
+    : (selectedWeaponId === 'unarmed' ? Math.ceil((unarmedCE || 0) / 2) : Math.ceil(invested / 2));
   const willBreak = weaponLimit !== null && currentCostCE > weaponLimit;
 
   const getWeaponCriticalThreshold = (weapon: Item): number => {
@@ -945,8 +947,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                         <span className="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-white font-mono text-sm">
                           {(() => {
                             const { sides } = parseDice(getUnarmedImpactDie(char.level));
-                            const adjusted = sides + (Math.floor(unarmedCE / 3) * 2);
-                            return `d${adjusted}`;
+                            return `d${sides}`;
                           })()}
                         </span>
                       </div>
