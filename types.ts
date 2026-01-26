@@ -59,6 +59,7 @@ export interface SubTechnique {
   guaranteedHit?: boolean;
   consumesCharges?: boolean;
   causesExhaustion?: boolean;
+  attackSkill?: string; // Perícia usada para o teste de ataque (ex: "Pontaria", "Luta")
 }
 
 // Técnica agora é um conjunto com conceito principal e sub-habilidades
