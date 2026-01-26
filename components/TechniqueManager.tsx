@@ -1395,7 +1395,13 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   onConsumeCE
 }) => {
   const [editingTechId, setEditingTechId] = useState<string | null>(null);
-  const [rollResult, setRollResult] = useState<{ name: string; result: number; total: string } | null>(null);
+  const [rollResult, setRollResult] = useState<{ 
+    name: string; 
+    result: number; 
+    total: string;
+    attack?: { value: number; detail: string; isCrit: boolean };
+    damage?: { value: number; detail: string };
+  } | null>(null);
   const [notifications, setNotifications] = useState<
     Array<{ id: string; message: string; type: 'success' | 'error' }>
   >([]);
@@ -1592,7 +1598,16 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
         setRollResult({
           name: subName,
           result: totalDamage,
-          total: `${attackString} | Dano: ${damageDetail} = ${totalDamage}`
+          total: `${attackString} | Dano: ${damageDetail} = ${totalDamage}`,
+          attack: {
+            value: attackTotal,
+            detail: `[${highlightedRolls.join(', ')}] + ${skillValue} ${skill.name} + ${llBonus} LL`,
+            isCrit: isCritical
+          },
+          damage: {
+            value: totalDamage,
+            detail: damageDetail
+          }
         });
         return;
       }
@@ -1602,6 +1617,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     const { rolls: d20Rolls, best: bestD20, randomIndex } = rollD20Pool(3);
     const criticalDieValue = d20Rolls[randomIndex];
     const isCritical = criticalDieValue === 20;
+    
     let extraDamage = 0;
     const extraRolls: number[] = [];
     if (isCritical) {
@@ -1624,7 +1640,11 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     setRollResult({
       name: subName,
       result: total,
-      total: `${detail} | D20 Pool: ${d20Detail}`
+      total: `${detail} | D20 Pool: ${d20Detail}`,
+      damage: {
+        value: total,
+        detail: detail
+      }
     });
   };
 
@@ -1665,16 +1685,45 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
             </div>
 
             <div className="flex items-center justify-center gap-4">
-              <div className="flex-1 flex flex-col items-center text-center relative group">
-                <span className="text-3xl font-black text-white">
-                  {rollResult.result}
-                </span>
-                <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Resultado</span>
-                
-                <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 right-0 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
-                    <span>{rollResult.total}</span>
+              {rollResult.attack ? (
+                <>
+                  <div className="flex-1 flex flex-col items-center text-center relative group border-r border-slate-700 pr-4">
+                    <span className={`text-3xl font-black ${rollResult.attack.isCrit ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]' : 'text-white'}`}>
+                      {rollResult.attack.value}
+                    </span>
+                    <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Ataque</span>
+                    {rollResult.attack.isCrit && (
+                      <span className="text-[8px] font-bold text-yellow-500 uppercase tracking-widest mt-1 animate-pulse">Crítico!</span>
+                    )}
+                    
+                    <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
+                        <span>{rollResult.attack.detail}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 flex flex-col items-center text-center relative group pl-4">
+                    <span className="text-3xl font-black text-white">
+                      {rollResult.damage?.value || rollResult.result}
+                    </span>
+                    <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Dano</span>
+                    
+                    <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
+                        <span>{rollResult.damage?.detail || rollResult.total}</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex flex-col items-center text-center relative group">
+                  <span className="text-3xl font-black text-white">
+                    {rollResult.result}
+                  </span>
+                  <span className="mt-1 text-[10px] uppercase tracking-[0.35em] text-slate-400">Resultado</span>
+                  
+                  <div className="hidden group-hover:flex flex-col gap-1 absolute bottom-full mb-2 right-0 bg-[#1f1b2a] text-slate-100 text-xs font-mono px-3 py-2 border border-slate-700 shadow-xl max-w-[240px] whitespace-normal break-words text-left z-20">
+                      <span>{rollResult.total}</span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
