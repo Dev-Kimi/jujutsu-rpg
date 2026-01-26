@@ -282,7 +282,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             }
 
             baseDamageValue = impactRoll + fixedBonus;
-            baseDamageText = `[${impactRolls.join(', ')}] (${diceCount}d8) + ${fixedBonus} (FOR*2 + CE%5)`;
+            baseDamageText = `[${impactRolls.join(', ')}] (${diceCount}d8) + ${fixedBonus}`;
              rollTitle = "Ataque Desarmado";
 
              // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
@@ -1003,6 +1003,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                 <span className="text-[11px] text-slate-400">
                   {`custo ${Math.ceil(unarmedCE / 2)} CE`}
                 </span>
+              </div>
+              <div className="mt-2 text-xs text-slate-400 bg-slate-900 p-2 rounded">
+                {(() => {
+                  const { diceCount, fixedBonus } = computeUnarmedD8Damage(unarmedCE, char.attributes.FOR || 0);
+                  return `${diceCount}d8${fixedBonus ? `+${fixedBonus}` : ''}`;
+                })()}
               </div>
             </div>
           )}
