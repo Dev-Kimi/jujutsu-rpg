@@ -271,10 +271,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const impactDie = getUnarmedImpactDie(char.level);
              const { sides: dieSides } = parseDice(impactDie);
 
-             // NOVA FÓRMULA: Dano do Soco = (4 + [CE gasto / 5]) * Dado de Impacto + (Força * 2) + (Resto da Liberação / 2)
-             const investedCE = isHR ? 0 : invested;
-             const ceDiceBonus = Math.floor(investedCE / 5);
-             const totalDice = 4 + ceDiceBonus;
+             const ll = stats.LL || 0;
+             const totalDice = Math.floor(ll / 5);
 
              let impactRoll = 0;
              const impactRolls: number[] = [];
@@ -285,12 +283,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              }
 
              const strengthBonus = (char.attributes.FOR || 0) * 2;
-             const ll = stats.LL || 0;
-             const remainder = Math.max(0, investedCE % 5);
-             const remainderBonus = Math.floor(remainder / 2);
+             const remainderBonus = ll % 5;
 
              baseDamageValue = impactRoll + strengthBonus + remainderBonus;
-             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/2)`;
+             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5)`;
              rollTitle = "Ataque Desarmado";
 
              // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
@@ -351,17 +347,15 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         if (selectedWeaponId === 'unarmed') {
            const impactDie = getUnarmedImpactDie(char.level);
            const { sides: dieSides } = parseDice(impactDie);
-           const investedCE = isHR ? 0 : invested;
-           const ceDiceBonus = Math.floor(investedCE / 5);
-           const totalDice = 4 + ceDiceBonus;
+           const ll = stats.LL || 0;
+           const totalDice = Math.floor(ll / 5);
            
            const maxImpact = totalDice * dieSides;
            const strengthBonus = (char.attributes.FOR || 0) * 2;
-           const remainder = Math.max(0, investedCE % 5);
-           const remainderBonus = Math.floor(remainder / 2);
+           const remainderBonus = ll % 5;
            
            baseDamageValue = maxImpact + strengthBonus + remainderBonus;
-           baseDamageText = `max(${totalDice}d${dieSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (Resto/2) (Crítico!)`;
+           baseDamageText = `max(${totalDice}d${dieSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5) (Crítico!)`;
         }
       }
       
@@ -373,7 +367,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           detail = `[DanoBase]${baseDamageText}${!isHR && invested > 0 ? ` + [Reforço]${invested}` : ''}`;
       }
       
-      actionCostCE = isHR ? 0 : Math.ceil(invested / 2);
+      actionCostCE = (selectedWeaponId === 'unarmed') ? 0 : (isHR ? 0 : Math.ceil(invested / 2));
     } 
     else if (activeTab === 'defense') {
        if (isHR) {
@@ -558,8 +552,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   };
 
   let maxInvest = stats.LL;
+  if (activeTab === 'physical' && selectedWeaponId === 'unarmed') {
+    maxInvest = 0;
+  }
   if (isHR && activeTab === 'physical') {
-     maxInvest = 0;
+    maxInvest = 0;
   }
 
   // Determine current limit description for UI
@@ -570,7 +567,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       return getWeaponCELimit(weapon);
   };
   const weaponLimit = getCurrentWeaponLimit();
-  const currentCostCE = activeTab === 'defense' ? Math.floor(defenseCEMitigation / 2) : Math.ceil(invested / 2);
+  const currentCostCE = activeTab === 'defense'
+    ? Math.floor(defenseCEMitigation / 2)
+    : (selectedWeaponId === 'unarmed' ? 0 : Math.ceil(invested / 2));
   const willBreak = weaponLimit !== null && currentCostCE > weaponLimit;
 
   const getWeaponCriticalThreshold = (weapon: Item): number => {
@@ -965,7 +964,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             </div>
           )}
 
-          {!isHR && activeTab === 'physical' && (
+          {!isHR && activeTab === 'physical' && selectedWeaponId !== 'unarmed' && (
             <div>
                 <label className="block text-xs text-slate-400 mb-1">
                   {`Pontos de Reforço (Max LL: ${stats.LL})`}
