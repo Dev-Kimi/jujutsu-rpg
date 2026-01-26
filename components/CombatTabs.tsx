@@ -77,7 +77,6 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 }) => {
   const consumePVSafe = consumePV || (() => {});
   const [activeTab, setActiveTab] = useState<'physical' | 'defense'>('physical');
-  const [invested, setInvested] = useState<number>(1);
   const [defenseCEMitigation, setDefenseCEMitigation] = useState<number>(0);
   const [unarmedDamageDie, setUnarmedDamageDie] = useState<string>('1d4');
   const [selectedWeaponId, setSelectedWeaponId] = useState<string>('unarmed');
@@ -373,7 +372,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          }
       }
 
-      // Simplificação: Dano físico = Dano Base + LL (sem reforço por dados, sem bônus de FOR)
+      // Simplificação: Dano físico = Dano Base (sem reforço por dados)
       if (isCritical) {
         // Maximize apenas o dano base em crítico
         if (selectedWeaponId === 'unarmed') {
@@ -383,18 +382,20 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            
            baseDamageValue = maxDamage;
            baseDamageText = `max(${diceCount}d8) = ${maxDamage} (${diceCount}*8 + ${fixedBonus}) (Crítico!)`;
+        } else {
+           const ceSelected = Math.max(0, weaponCE || 0);
+           const { diceCount, fixedBonus, baseSides } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
+           const maxDamage = calculateMaxD8Damage(diceCount, fixedBonus);
+           
+           baseDamageValue = maxDamage;
+           baseDamageText = `max(${diceCount}d${baseSides}) = ${maxDamage} (${diceCount}*${baseSides} + ${fixedBonus}) (Crítico!)`;
         }
       }
       
-      if (selectedWeaponId === 'unarmed') {
-          total = baseDamageValue;
-          detail = `[Dano Total] ${baseDamageText}`;
-      } else {
-          total = baseDamageValue + (isHR ? 0 : invested);
-          detail = `[DanoBase]${baseDamageText}${!isHR && invested > 0 ? ` + [Reforço]${invested}` : ''}`;
-      }
+      total = baseDamageValue;
+      detail = `[Dano Total] ${baseDamageText}`;
       
-      actionCostCE = (selectedWeaponId === 'unarmed') ? (isHR ? 0 : Math.ceil(unarmedCE / 2)) : (isHR ? 0 : Math.ceil(invested / 2));
+      actionCostCE = (selectedWeaponId === 'unarmed') ? (isHR ? 0 : Math.ceil(unarmedCE / 2)) : (isHR ? 0 : Math.ceil(weaponCE / 2));
     } 
     else if (activeTab === 'defense') {
        if (isHR) {
@@ -596,7 +597,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const weaponLimit = getCurrentWeaponLimit();
   const currentCostCE = activeTab === 'defense'
     ? Math.floor(defenseCEMitigation / 2)
-    : (selectedWeaponId === 'unarmed' ? Math.ceil((unarmedCE || 0) / 2) : Math.ceil(invested / 2));
+    : (selectedWeaponId === 'unarmed' ? Math.ceil((unarmedCE || 0) / 2) : Math.ceil(weaponCE / 2));
   const willBreak = weaponLimit !== null && currentCostCE > weaponLimit;
 
   const getWeaponCriticalThreshold = (weapon: Item): number => {
@@ -983,27 +984,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             </div>
           )}
 
-          {!isHR && activeTab === 'physical' && selectedWeaponId !== 'unarmed' && (
-            <div>
-                <label className="block text-xs text-slate-400 mb-1">
-                  {`Pontos de Reforço (Max LL: ${stats.LL})`}
-                </label>
-                <div className="flex items-center gap-3">
-                <input 
-                    type="range" 
-                    min="0" 
-                    max={maxInvest} 
-                    step="1"
-                    value={invested}
-                    onChange={(e) => setInvested(parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
-                />
-                <span className="w-12 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
-                    {invested}
-                </span>
-                </div>
-            </div>
-          )}
+
 
           {!isHR && activeTab === 'physical' && selectedWeaponId === 'unarmed' && (
             <div>
