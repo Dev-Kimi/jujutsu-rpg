@@ -406,23 +406,26 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            const baseDice = getBaseDiceByLevel(char.level);
            const extraDiceCount = baseDice.punch;
            
-           // Nova regra: adicionar dados base extras ao invés de maximizar
-           baseDamageValue = 0; // Será calculado durante a rolagem real
-           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados)`;
+           // Calcular dano máximo para críticos
+           const maxDamage = diceCount * 8 + fixedBonus; // Dados amaldiçoados são sempre d8
+           baseDamageValue = maxDamage;
+           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) = ${maxDamage} (${diceCount}*8 + ${fixedBonus})`;
         } else {
            const ceSelected = Math.max(0, weaponCE || 0);
            const { baseDiceCount, baseDiceSides, cursedDiceCount, cursedDiceSides, fixedBonus } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
            const baseDice = getBaseDiceByLevel(char.level);
            const extraDiceCount = baseDice.punch;
            
-           // Nova regra: adicionar dados base extras ao invés de maximizar
-           baseDamageValue = 0; // Será calculado durante a rolagem real
+           // Calcular dano máximo para críticos
+           const maxBaseDamage = baseDiceCount * baseDiceSides;
+           const maxCursedDamage = cursedDiceCount * cursedDiceSides;
+           baseDamageValue = maxBaseDamage + maxCursedDamage + fixedBonus;
            
            const baseDiceText = baseDiceCount > 0 ? `${baseDiceCount}d${baseDiceSides}` : '';
            const cursedDiceText = cursedDiceCount > 0 ? ` + ${cursedDiceCount}d${cursedDiceSides}` : '';
            const fixedBonusText = fixedBonus ? ` + ${fixedBonus}` : '';
            
-           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) ${baseDiceText}${cursedDiceText}${fixedBonusText}`;
+           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) ${baseDiceText}${cursedDiceText}${fixedBonusText} = ${baseDamageValue} (${baseDiceCount > 0 ? `${baseDiceCount}*${baseDiceSides}` : ''}${cursedDiceCount > 0 ? ` + ${cursedDiceCount}*${cursedDiceSides}` : ''}${fixedBonus ? ` + ${fixedBonus}` : ''})`;
         }
       }
       
