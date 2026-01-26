@@ -1490,8 +1490,10 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     }
 
     const faces = getTechniqueDamageDieSides(powerCategory, characterLevel);
-    const { dados_adicionais: diceCount, dano_fixo: fixed } = computeCEInvestmentBonus(investedCE);
-    const multiplier = 4 + diceCount;
+    const { dano_fixo: fixed } = computeCEInvestmentBonus(investedCE);
+    const baseDice = 2;
+    const ceDiceBonus = Math.floor(investedCE / 4);
+    const multiplier = baseDice + ceDiceBonus;
 
     let sum = 0;
     const rolls: number[] = [];
