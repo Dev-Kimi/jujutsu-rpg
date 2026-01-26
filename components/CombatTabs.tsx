@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap, CheckCircle } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
-import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeUnarmedD8Damage, computeTechniqueD8Damage, calculateMaxD8Damage } from '../utils/calculations';
+import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeUnarmedD8Damage, computeTechniqueD8Damage, calculateMaxD8Damage, computeWeaponD8Damage } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
 import { logDiceRoll } from '../utils/diceRollLogger';
 
@@ -82,6 +82,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const [unarmedDamageDie, setUnarmedDamageDie] = useState<string>('1d4');
   const [selectedWeaponId, setSelectedWeaponId] = useState<string>('unarmed');
   const [unarmedCE, setUnarmedCE] = useState<number>(0);
+  const [weaponCE, setWeaponCE] = useState<number>(0);
 
   const [incomingDamage, setIncomingDamage] = useState<number>(0);
   const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, attackRolls?: number[], isCritical?: boolean, isCritSuccess?: boolean, isCritFail?: boolean, damageTotal?: number, defenseRoll?: number, defenseRollDetail?: string, attackHits?: boolean } | null>(null);
@@ -318,9 +319,21 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
          if (currentWeaponItem) {
              const diceStr = getWeaponDamageString(currentWeaponItem);
-             const roll = parseAndRollDice(diceStr);
-             baseDamageValue = roll.total;
-             baseDamageText = `${roll.total} (${diceStr})`;
+             const ceSelected = Math.max(0, weaponCE || 0);
+             const { diceCount, fixedBonus, baseSides } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
+             
+             // Roll the damage dice
+             let damageRoll = 0;
+             const damageRolls: number[] = [];
+             for (let i = 0; i < diceCount; i++) {
+               const roll = rollDice(baseSides, 1);
+               damageRolls.push(roll);
+               damageRoll += roll;
+             }
+             damageRoll += fixedBonus;
+             
+             baseDamageValue = damageRoll;
+             baseDamageText = `${damageRoll} (${diceCount}d${baseSides}${fixedBonus ? `+${fixedBonus}` : ''})`;
              rollTitle = currentWeaponItem.name;
 
              // Use weapon's attack skill (default to Luta)
@@ -353,8 +366,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              // Nova verificação de crítico: se o dado aleatório for 20
              if (criticalDieValue === 20) {
                isCritical = true;
-               baseDamageValue = getMaxRollFromDice(diceStr);
-               baseDamageText = `max(${diceStr}) = ${baseDamageValue} (Crítico!)`;
+               const maxDamage = calculateMaxD8Damage(diceCount, fixedBonus);
+               baseDamageValue = maxDamage;
+               baseDamageText = `max(${diceCount}d${baseSides}${fixedBonus ? `+${fixedBonus}` : ''}) = ${maxDamage} (Crítico!)`;
              }
          }
       }
@@ -1017,6 +1031,44 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                 {(() => {
                   const { diceCount, fixedBonus } = computeUnarmedD8Damage(unarmedCE, char.attributes.FOR || 0);
                   return `${diceCount}d8${fixedBonus ? `+${fixedBonus}` : ''}`;
+                })()}
+              </div>
+            </div>
+          )}
+
+          {!isHR && activeTab === 'physical' && selectedWeaponId !== 'unarmed' && (
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">
+                {`CE para Arma (Max LL: ${stats.LL})`}
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={stats.LL || 0}
+                  step={1}
+                  value={weaponCE}
+                  onChange={(e) => setWeaponCE(parseInt(e.target.value))}
+                  className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
+                />
+                <span className="w-16 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
+                  {weaponCE}
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  {`custo ${Math.ceil(weaponCE / 2)} CE`}
+                </span>
+              </div>
+              <div className="mt-2 text-xs text-slate-400 bg-slate-900 p-2 rounded">
+                {(() => {
+                  if (selectedWeaponId !== 'unarmed') {
+                    const currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
+                    if (currentWeaponItem) {
+                      const diceStr = getWeaponDamageString(currentWeaponItem);
+                      const { diceCount, fixedBonus, baseSides } = computeWeaponD8Damage(weaponCE, char.attributes.FOR || 0, diceStr);
+                      return `${diceCount}d${baseSides}${fixedBonus ? `+${fixedBonus}` : ''}`;
+                    }
+                  }
+                  return "-";
                 })()}
               </div>
             </div>
