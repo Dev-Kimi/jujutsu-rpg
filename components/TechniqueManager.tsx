@@ -11,7 +11,7 @@ import { InventoryList } from './InventoryList';
 import { BindingVowsManager } from './BindingVowsManager';
 import { CombatTabs } from './CombatTabs';
 import { MasterCombatTracker } from './MasterCombatTracker';
-import { calculateDerivedStats, computeCEInvestmentBonus, getTechniqueDamageDieSides, rollDice, computeTechniqueD8Damage, calculateMaxD8Damage, getBaseDiceByLevel } from '../utils/calculations';
+import { calculateDerivedStats, computeCEInvestmentBonus, getTechniqueDamageDieSides, rollDice, computeTechniqueD8Damage, calculateMaxD8Damage, getPowerMarkBaseDice } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
 import { TechniqueCreatePage } from './TechniqueCreatePage';
 
@@ -1494,12 +1494,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     return { rolls, best, randomIndex };
   };
 
-  const getBaseTechniqueDice = (level: number, powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano') => {
-    const baseDice = getBaseDiceByLevel(level);
-    if (powerCategory === 'Alto Dano') return baseDice.highDamage;
-    if (powerCategory === 'Dano Médio') return baseDice.medium;
-    return baseDice.utility;
-  };
+  const getBaseTechniqueDice = (level: number) => getPowerMarkBaseDice(level);
 
   const handleRoll = (subName: string, powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano', attackSkillName?: string) => {
     const selected = Math.max(0, ceSpent);
@@ -1572,7 +1567,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
         let extraDamage = 0;
         const extraRolls: number[] = [];
         if (isCritical) {
-          const baseDice = getBaseTechniqueDice(characterLevel, powerCategory);
+          const baseDice = getBaseTechniqueDice(characterLevel);
           for (let i = 0; i < baseDice; i++) {
             const r = rollDice(8, 1);
             extraRolls.push(r);
@@ -1621,7 +1616,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     let extraDamage = 0;
     const extraRolls: number[] = [];
     if (isCritical) {
-      const baseDice = getBaseTechniqueDice(characterLevel, powerCategory);
+      const baseDice = getBaseTechniqueDice(characterLevel);
       for (let i = 0; i < baseDice; i++) {
         const r = rollDice(8, 1);
         extraRolls.push(r);
