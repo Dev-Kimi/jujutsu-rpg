@@ -277,7 +277,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              let impactRoll = 0;
              const impactRolls: number[] = [];
              for (let i = 0; i < totalDice; i++) {
-               const r = rollDice(dieSides, 1);
+               const r = rollDice(adjustedSides, 1);
                impactRolls.push(r);
                impactRoll += r;
              }
