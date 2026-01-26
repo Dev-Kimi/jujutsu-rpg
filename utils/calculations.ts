@@ -1,5 +1,26 @@
 import { Attributes, Character, DEFAULT_SKILLS, DerivedStats, Origin, Item } from '../types';
 import { MUNDANE_WEAPONS } from './equipmentData';
+
+export interface BaseDiceProgression {
+  utility: number;
+  punch: number;
+  medium: number;
+  highDamage: number;
+}
+
+export const getBaseDiceByLevel = (level: number): BaseDiceProgression => {
+  if (level >= 17 && level <= 20) {
+    return { utility: 9, punch: 10, medium: 10, highDamage: 12 };
+  } else if (level >= 13 && level <= 16) {
+    return { utility: 7, punch: 8, medium: 8, highDamage: 10 };
+  } else if (level >= 9 && level <= 12) {
+    return { utility: 5, punch: 6, medium: 6, highDamage: 8 };
+  } else if (level >= 5 && level <= 8) {
+    return { utility: 3, punch: 4, medium: 4, highDamage: 6 };
+  } else {
+    return { utility: 1, punch: 2, medium: 2, highDamage: 4 };
+  }
+};
 const LL_GAIN_TABLE = [
   2, 2, 2,
   3, 3, 3, 3,
@@ -331,34 +352,45 @@ export const computeCEInvestmentBonus = (ceInvested: number): { dados_adicionais
   return { dados_adicionais, dano_fixo };
 };
 
-export const computeUnarmedD8Damage = (ceInvested: number, strength: number): { diceCount: number; fixedBonus: number } => {
+export const computeUnarmedD8Damage = (ceInvested: number, strength: number, level: number, damageType: 'punch' | 'medium' | 'highDamage' = 'punch'): { diceCount: number; fixedBonus: number } => {
   if (!Number.isInteger(ceInvested) || ceInvested < 0) {
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
-  const diceCount = 2 + Math.floor(ceInvested / 5);
+  
+  // Obter dados base conforme o nível e tipo de dano
+  const baseDice = getBaseDiceByLevel(level);
+  const baseDiceCount = baseDice[damageType];
+  
+  // Adicionar dados de CE investido
+  const ceDiceCount = Math.floor(ceInvested / 5);
+  const diceCount = baseDiceCount + ceDiceCount;
+  
+  // Bônus fixo: FOR * 5 + floor(CE % 5 / 2)
   const fixedBonus = (strength * 5) + Math.floor((ceInvested % 5) / 2);
+  
   return { diceCount, fixedBonus };
 };
 
-export const computeTechniqueD8Damage = (ceInvested: number): { diceCount: number; fixedBonus: number } => {
+export const computeTechniqueD8Damage = (ceInvested: number, level: number, damageType: 'utility' | 'medium' | 'highDamage' = 'utility'): { diceCount: number; fixedBonus: number } => {
   if (!Number.isInteger(ceInvested) || ceInvested < 0) {
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
   
-  // Primeiros 2 pontos de CE dão base 4d4, valores acima aumentam dados e bônus
-  if (ceInvested <= 2) {
-    return { diceCount: 4, fixedBonus: 0 };
-  }
+  // Obter dados base conforme o nível e tipo de dano
+  const baseDice = getBaseDiceByLevel(level);
+  const baseDiceCount = baseDice[damageType];
   
-  const extraCE = ceInvested - 2;
-  const diceCount = 4 + Math.floor(extraCE / 3);
-  const fixedBonus = extraCE % 3;
+  // Adicionar dados de CE investido (1d8 por 5 CE)
+  const ceDiceCount = Math.floor(ceInvested / 5);
+  const diceCount = baseDiceCount + ceDiceCount;
+  
+  // Bônus fixo: floor(CE % 5 / 2)
+  const fixedBonus = Math.floor((ceInvested % 5) / 2);
+  
   return { diceCount, fixedBonus };
 };
 
-export const calculateMaxD8Damage = (diceCount: number, fixedBonus: number): number => {
-  return (diceCount * 8) + fixedBonus;
-};
+
 
 export const computeWeaponD8Damage = (ceInvested: number, strength: number, baseDice: string): { 
   baseDiceCount: number; 
