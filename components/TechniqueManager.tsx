@@ -1491,10 +1491,11 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
 
     const faces = getTechniqueDamageDieSides(powerCategory, characterLevel);
     const { dados_adicionais: diceCount, dano_fixo: fixed } = computeCEInvestmentBonus(investedCE);
+    const multiplier = 4 + diceCount;
 
-    const total = (diceCount * faces) + fixed;
+    const total = (multiplier * faces) + fixed;
 
-    const diceText = diceCount > 0 ? `${diceCount}d${faces}` : '';
+    const diceText = `${multiplier}d${faces}`;
     const fixedText = fixed > 0 ? `${fixed}` : '';
     const joiner = diceText && fixedText ? ' + ' : '';
     const detail = `${diceText}${joiner}${fixedText}` || '0';
@@ -1702,15 +1703,10 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                   {(tech.subTechniques || []).map(sub => {
                     const expanded = !!expandedSubIds[sub.id];
                     const previewCe = Math.max(0, ceSpent || 0);
-                    const preview = previewCe > 0
-                      ? computeCEInvestmentBonus(previewCe)
-                      : null;
+                    const preview = computeCEInvestmentBonus(previewCe);
                     const faces = getTechniqueDamageDieSides(sub.powerCategory, characterLevel);
-                    const diceLabel = preview
-                      ? (preview.dados_adicionais > 0
-                          ? `${preview.dados_adicionais}d${faces}${preview.dano_fixo ? `+${preview.dano_fixo}` : ''}`
-                          : `${preview.dano_fixo}`)
-                      : null;
+                    const previewMultiplier = 4 + preview.dados_adicionais;
+                    const diceLabel = `${previewMultiplier}d${faces}${preview.dano_fixo ? `+${preview.dano_fixo}` : ''}`;
                     const summaryText = buildSubSummary(sub);
                     const descriptionText = sub.description || 'Sem descrição.';
                     const rangeLabel = getRangeLabel(sub);
