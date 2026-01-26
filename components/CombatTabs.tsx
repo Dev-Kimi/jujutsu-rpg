@@ -926,20 +926,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                     </select>
                   </div>
 
-                  {/* Manual Input (Only if Unarmed) */}
-                  {selectedWeaponId === 'unarmed' && (
-                    <div className="flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-1">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-slate-400">Dado de Impacto</span>
-                        <span className="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-white font-mono text-sm">
-                          {(() => {
-                            const { sides } = parseDice(getUnarmedImpactDie(char.level));
-                            return `d${sides}`;
-                          })()}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+
                 </div>
              </div>
           )}
