@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap, CheckCircle } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
-import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeUnarmedD8Damage, computeTechniqueD8Damage, calculateMaxD8Damage, computeWeaponD8Damage } from '../utils/calculations';
+import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeUnarmedD8Damage, computeTechniqueD8Damage, computeWeaponD8Damage, getBaseDiceByLevel } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
 import { logDiceRoll } from '../utils/diceRollLogger';
 
@@ -275,7 +275,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       // Determine Weapon and Attack Skill
           if (selectedWeaponId === 'unarmed') {
             const ceSelected = Math.max(0, unarmedCE || 0);
-            const { diceCount, fixedBonus } = computeUnarmedD8Damage(ceSelected, char.attributes.FOR || 0);
+            const { diceCount, fixedBonus } = computeUnarmedD8Damage(ceSelected, char.attributes.FOR || 0, char.level, 'punch');
             
             let impactRoll = 0;
             const impactRolls: number[] = [];
@@ -378,9 +378,21 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              // Nova verificação de crítico: se o dado aleatório for 20
              if (criticalDieValue === 20) {
                isCritical = true;
-               const maxDamage = calculateMaxD8Damage(diceCount, fixedBonus);
-               baseDamageValue = maxDamage;
-               baseDamageText = `max(${diceCount}d${baseSides}${fixedBonus ? `+${fixedBonus}` : ''}) = ${maxDamage} (Crítico!)`;
+               // Nova regra: adicionar dados base extras ao invés de maximizar
+               const baseDice = getBaseDiceByLevel(char.level);
+               const extraDiceCount = baseDice.punch; // Adiciona dados base extras
+               
+               // Rolar dados extras para o crítico
+               let extraDamage = 0;
+               const extraRolls: number[] = [];
+               for (let i = 0; i < extraDiceCount; i++) {
+                 const roll = rollDice(8, 1);
+                 extraRolls.push(roll);
+                 extraDamage += roll;
+               }
+               
+               baseDamageValue += extraDamage;
+               baseDamageText = `${baseDamageValue} (${damageRolls.join(', ')} + ${extraRolls.join(', ')}${fixedBonus ? ` + ${fixedBonus}` : ''}) = ${damageRoll} + ${extraDamage}${fixedBonus ? ` + ${fixedBonus}` : ''} (Crítico! +${extraDiceCount}d8)`;
              }
          }
       }
@@ -390,24 +402,27 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         // Maximize apenas o dano base em crítico
         if (selectedWeaponId === 'unarmed') {
            const ceSelected = Math.max(0, unarmedCE || 0);
-           const { diceCount, fixedBonus } = computeUnarmedD8Damage(ceSelected, char.attributes.FOR || 0);
-           const maxDamage = calculateMaxD8Damage(diceCount, fixedBonus);
+           const { diceCount, fixedBonus } = computeUnarmedD8Damage(ceSelected, char.attributes.FOR || 0, char.level, 'punch');
+           const baseDice = getBaseDiceByLevel(char.level);
+           const extraDiceCount = baseDice.punch;
            
-           baseDamageValue = maxDamage;
-           baseDamageText = `max(${diceCount}d8) = ${maxDamage} (${diceCount}*8 + ${fixedBonus}) (Crítico!)`;
+           // Nova regra: adicionar dados base extras ao invés de maximizar
+           baseDamageValue = 0; // Será calculado durante a rolagem real
+           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados)`;
         } else {
            const ceSelected = Math.max(0, weaponCE || 0);
            const { baseDiceCount, baseDiceSides, cursedDiceCount, cursedDiceSides, fixedBonus } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
-           const maxBaseDamage = baseDiceCount * baseDiceSides;
-           const maxCursedDamage = cursedDiceCount * cursedDiceSides;
-           const maxDamage = maxBaseDamage + maxCursedDamage + fixedBonus;
+           const baseDice = getBaseDiceByLevel(char.level);
+           const extraDiceCount = baseDice.punch;
+           
+           // Nova regra: adicionar dados base extras ao invés de maximizar
+           baseDamageValue = 0; // Será calculado durante a rolagem real
            
            const baseDiceText = baseDiceCount > 0 ? `${baseDiceCount}d${baseDiceSides}` : '';
            const cursedDiceText = cursedDiceCount > 0 ? ` + ${cursedDiceCount}d${cursedDiceSides}` : '';
            const fixedBonusText = fixedBonus ? ` + ${fixedBonus}` : '';
            
-           baseDamageValue = maxDamage;
-           baseDamageText = `max(${baseDiceText}${cursedDiceText}${fixedBonusText}) = ${maxDamage} (${baseDiceCount > 0 ? `${baseDiceCount}*${baseDiceSides}` : ''}${cursedDiceCount > 0 ? ` + ${cursedDiceCount}*${cursedDiceSides}` : ''}${fixedBonus ? ` + ${fixedBonus}` : ''}) (Crítico!)`;
+           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) ${baseDiceText}${cursedDiceText}${fixedBonusText}`;
         }
       }
       
@@ -1029,7 +1044,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
               </div>
               <div className="mt-2 text-xs text-slate-400 bg-slate-900 p-2 rounded">
                 {(() => {
-                  const { diceCount, fixedBonus } = computeUnarmedD8Damage(unarmedCE, char.attributes.FOR || 0);
+                  const { diceCount, fixedBonus } = computeUnarmedD8Damage(unarmedCE, char.attributes.FOR || 0, char.level, 'punch');
                   return `${diceCount}d8${fixedBonus ? `+${fixedBonus}` : ''}`;
                 })()}
               </div>
