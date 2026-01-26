@@ -1492,7 +1492,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     const faces = getTechniqueDamageDieSides(powerCategory, characterLevel);
     const { dano_fixo: fixed } = computeCEInvestmentBonus(investedCE);
     const baseDice = 2;
-    const ceDiceBonus = Math.floor(investedCE / 4);
+    const ceDiceBonus = Math.floor(investedCE / 3);
     const multiplier = baseDice + ceDiceBonus;
 
     let sum = 0;
@@ -1715,7 +1715,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                     const previewFixed = computeCEInvestmentBonus(previewCe).dano_fixo;
                     const faces = getTechniqueDamageDieSides(sub.powerCategory, characterLevel);
                     const baseDice = 2;
-                    const ceDiceBonus = Math.floor(previewCe / 4);
+                    const ceDiceBonus = Math.floor(previewCe / 3);
                     const previewMultiplier = baseDice + ceDiceBonus;
                     const diceLabel = `${previewMultiplier}d${faces}${previewFixed ? `+${previewFixed}` : ''}`;
                     const summaryText = buildSubSummary(sub);
