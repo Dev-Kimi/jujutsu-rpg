@@ -395,22 +395,6 @@ export const TechniqueLibrary: React.FC<TechniqueLibraryProps> = ({
                               </div>
 
                               <div>
-                                 <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Dado de Dano/Efeito</label>
-                                 <select
-                                    value={subTech.diceFace || 'd6'}
-                                    onChange={(e) => handleUpdateSubTechnique(tech.id, subTech.id, 'diceFace', e.target.value)}
-                                    className="w-full bg-slate-950 border border-slate-700 rounded p-1.5 text-xs text-white focus:border-emerald-500 focus:outline-none"
-                                 >
-                                     <option value="d4">d4</option>
-                                     <option value="d6">d6</option>
-                                     <option value="d8">d8</option>
-                                     <option value="d10">d10</option>
-                                     <option value="d12">d12</option>
-                                     <option value="d20">d20</option>
-                                 </select>
-                              </div>
-                              
-                              <div>
                                 <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Descrição e Efeitos</label>
                                 <textarea 
                                   value={subTech.description}
