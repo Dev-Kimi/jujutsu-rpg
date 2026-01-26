@@ -344,8 +344,15 @@ export const computeTechniqueD8Damage = (ceInvested: number): { diceCount: numbe
   if (!Number.isInteger(ceInvested) || ceInvested < 0) {
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
-  const diceCount = 4 + Math.floor(ceInvested / 3);
-  const fixedBonus = ceInvested % 3;
+  
+  // Primeiros 2 pontos de CE dão base 4d4, valores acima aumentam dados e bônus
+  if (ceInvested <= 2) {
+    return { diceCount: 4, fixedBonus: 0 };
+  }
+  
+  const extraCE = ceInvested - 2;
+  const diceCount = 4 + Math.floor(extraCE / 3);
+  const fixedBonus = extraCE % 3;
   return { diceCount, fixedBonus };
 };
 
