@@ -165,7 +165,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       rolls.push(rollDice(20, 1));
     }
     const best = Math.max(...rolls);
-    return { rolls, best };
+    
+    // Seleciona um índice aleatório para verificação de crítico
+    const randomIndex = Math.floor(Math.random() * count);
+    
+    return { rolls, best, randomIndex };
   };
 
   const reset = () => {
@@ -290,16 +294,26 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          const lutaBonus = lutaSkill ? lutaSkill.value : 0;
          const llBonus = Math.floor((stats.LL || 0) / 2);
          const attrKey = getSkillAttribute('Luta');
-         const { rolls, best } = rollD20Pool(char.attributes[attrKey] + (hasAdvAttack ? 1 : 0));
+         const { rolls, best, randomIndex } = rollD20Pool(char.attributes[attrKey] + (hasAdvAttack ? 1 : 0));
          attackRolls = rolls;
          const baseAttackRoll = best;
          attackRoll = baseAttackRoll + lutaBonus + totalBuffBonus + llBonus + projectionBonus;
-         const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
+         
+         // Nova lógica de crítico: seleção aleatória de um dado para verificar se é 20
+         const criticalDieIndex = randomIndex;
+         const criticalDieValue = rolls[criticalDieIndex];
+         isCritical = criticalDieValue === 20;
+         
+         // Destacar visualmente o dado escolhido para crítico
+         const highlightedRolls = rolls.map((roll, index) => 
+           index === criticalDieIndex ? `**${roll}**` : `${roll}`
+         );
+         
+         const dicePart = `[${highlightedRolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
          const lutaTotal = lutaBonus + llBonus;
          attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${lutaTotal} (Luta)${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
          isCritSuccess = baseAttackRoll === 20;
          isCritFail = baseAttackRoll === 1;
-         if (isCritSuccess) isCritical = true;
   } else {
          currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
          if (currentWeaponItem) {
@@ -316,20 +330,28 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
          const llBonus = Math.floor((stats.LL || 0) / 2);
              const attrKey = getSkillAttribute(attackSkillName);
-             const { rolls, best } = rollD20Pool(char.attributes[attrKey] + (hasAdvAttack ? 1 : 0));
+             const { rolls, best, randomIndex } = rollD20Pool(char.attributes[attrKey] + (hasAdvAttack ? 1 : 0));
              attackRolls = rolls;
              const baseAttackRoll = best;
 
+             // Nova lógica de crítico: seleção aleatória de um dado para verificar se é 20
+             const criticalDieIndex = randomIndex;
+             const criticalDieValue = rolls[criticalDieIndex];
+             
+             // Destacar visualmente o dado escolhido para crítico
+             const highlightedRolls = rolls.map((roll, index) => 
+               index === criticalDieIndex ? `**${roll}**` : `${roll}`
+             );
+             
              attackRoll = baseAttackRoll + attackBonus + totalBuffBonus + llBonus + projectionBonus;
-             const dicePart = `[${rolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
+             const dicePart = `[${highlightedRolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
              const skillTotal = attackBonus + llBonus;
              attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${skillTotal} (${attackSkillName})${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
              isCritSuccess = baseAttackRoll === 20;
              isCritFail = baseAttackRoll === 1;
 
-             // Check for critical hit
-             const criticalThreshold = getWeaponCriticalThreshold(currentWeaponItem);
-             if (attackRoll >= criticalThreshold) {
+             // Nova verificação de crítico: se o dado aleatório for 20
+             if (criticalDieValue === 20) {
                isCritical = true;
                baseDamageValue = getMaxRollFromDice(diceStr);
                baseDamageText = `max(${diceStr}) = ${baseDamageValue} (Crítico!)`;
