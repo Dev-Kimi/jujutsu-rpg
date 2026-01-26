@@ -371,21 +371,27 @@ export const computeUnarmedD8Damage = (ceInvested: number, strength: number, lev
   return { diceCount, fixedBonus };
 };
 
-export const computeTechniqueD8Damage = (ceInvested: number, level: number, damageType: 'utility' | 'medium' | 'highDamage' = 'utility'): { diceCount: number; fixedBonus: number } => {
+export const computeTechniqueD8Damage = (
+  ceInvested: number,
+  level: number,
+  powerCategory: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano' = 'Pouco Dano',
+  int: number
+): { diceCount: number; fixedBonus: number } => {
   if (!Number.isInteger(ceInvested) || ceInvested < 0) {
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
   
   // Obter dados base conforme o nível e tipo de dano
   const baseDice = getBaseDiceByLevel(level);
-  const baseDiceCount = baseDice[damageType];
+  const baseDiceKey = powerCategory === 'Alto Dano' ? 'highDamage' : powerCategory === 'Dano Médio' ? 'medium' : 'utility';
+  const baseDiceCount = baseDice[baseDiceKey];
   
-  // Adicionar dados de CE investido (1d8 por 5 CE)
-  const ceDiceCount = Math.floor(ceInvested / 5);
+  // Adicionar dados de CE investido (1d8 por 3 CE)
+  const ceDiceCount = Math.floor(ceInvested / 3);
   const diceCount = baseDiceCount + ceDiceCount;
   
-  // Bônus fixo: floor(CE % 5 / 2)
-  const fixedBonus = Math.floor((ceInvested % 5) / 2);
+  // Bônus fixo: INT * 4 + (CE % 3)
+  const fixedBonus = (int * 4) + (ceInvested % 3);
   
   return { diceCount, fixedBonus };
 };
