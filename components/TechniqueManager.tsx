@@ -1758,19 +1758,18 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                             >
                               <Edit2 size={14} />
                             </button>
-                            {diceLabel && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRoll(sub.name, sub.powerCategory);
-                                }}
-                                className="flex items-center gap-1 text-xs text-slate-300 hover:text-white"
-                                title={`Rolar ${diceLabel}`}
-                              >
-                                <span className="font-mono">{diceLabel}</span>
-                                <Hexagon size={14} className="text-purple-500" />
-                              </button>
-                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRoll(sub.name, sub.powerCategory);
+                              }}
+                              className={`flex items-center gap-1 text-xs ${diceLabel ? 'text-slate-300 hover:text-white' : 'text-slate-600 cursor-not-allowed'} `}
+                              title={diceLabel ? `Rolar ${diceLabel}` : 'Selecione o CE na barra acima para rolar'}
+                              disabled={!diceLabel}
+                            >
+                              <span className="font-mono">{diceLabel ?? `d${faces}`}</span>
+                              <Hexagon size={14} className={diceLabel ? "text-purple-500" : "text-slate-600"} />
+                            </button>
                           </div>
                         </button>
 
