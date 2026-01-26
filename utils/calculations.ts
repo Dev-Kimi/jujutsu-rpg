@@ -361,12 +361,12 @@ export const computeUnarmedD8Damage = (ceInvested: number, strength: number, lev
   const baseDice = getBaseDiceByLevel(level);
   const baseDiceCount = baseDice[damageType];
   
-  // Adicionar dados de CE investido
-  const ceDiceCount = Math.floor(ceInvested / 5);
+  // Adicionar dados de CE investido (a cada 3 CE, +1d8)
+  const ceDiceCount = Math.floor(ceInvested / 3);
   const diceCount = baseDiceCount + ceDiceCount;
   
-  // Bônus fixo: FOR * 5 + floor(CE % 5 / 2)
-  const fixedBonus = (strength * 5) + Math.floor((ceInvested % 5) / 2);
+  // Bônus fixo: FOR * 5 + floor(CE % 3 / 2)
+  const fixedBonus = (strength * 5) + Math.floor((ceInvested % 3) / 2);
   
   return { diceCount, fixedBonus };
 };
