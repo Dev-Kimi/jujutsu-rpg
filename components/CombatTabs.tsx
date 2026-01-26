@@ -270,11 +270,10 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       // Determine Weapon and Attack Skill
           if (selectedWeaponId === 'unarmed') {
-             const impactDie = getUnarmedImpactDie(char.level);
-             const { sides: dieSides } = parseDice(impactDie);
+            const impactDie = getUnarmedImpactDie(char.level);
+            const { count: baseDice, sides: dieSides } = parseDice(impactDie);
 
-             const ll = stats.LL || 0;
-             const baseDice = 4 + Math.floor(ll / 5);
+            const ll = stats.LL || 0;
              const { dados_adicionais: ceDiceBonus, dano_fixo: ceFixedBonus } = computeCEInvestmentBonus(Math.max(0, unarmedCE || 0));
              const totalDice = baseDice + ceDiceBonus;
              let impactRoll = 0;
@@ -349,9 +348,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
         // Maximize apenas o dano base em crítico
         if (selectedWeaponId === 'unarmed') {
            const impactDie = getUnarmedImpactDie(char.level);
-           const { sides: dieSides } = parseDice(impactDie);
+           const { count: baseDice, sides: dieSides } = parseDice(impactDie);
            const ll = stats.LL || 0;
-           const baseDice = 4 + Math.floor(ll / 5);
            const { dados_adicionais: ceDiceBonus, dano_fixo: ceFixedBonus } = computeCEInvestmentBonus(Math.max(0, unarmedCE || 0));
            const totalDice = baseDice + ceDiceBonus;
            const maxImpact = totalDice * dieSides;
