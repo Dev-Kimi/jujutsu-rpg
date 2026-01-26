@@ -1346,6 +1346,7 @@ interface TechniqueManagerProps {
   onUpdate: (id: string, field: keyof import('../types').Technique, value: any) => void;
   onRemove: (id: string) => void;
   onOpenLibrary: () => void;
+  character: Character;
   characterLevel: number;
   llValue: number;
   intValue: number;
@@ -1386,6 +1387,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   onUpdate,
   onRemove,
   onOpenLibrary,
+  character,
   characterLevel,
   llValue,
   intValue,
@@ -1493,7 +1495,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     return baseDice.utility;
   };
 
-  const handleRoll = (subName: string, powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano') => {
+  const handleRoll = (subName: string, powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano', attackSkillName?: string) => {
     const selected = Math.max(0, ceSpent);
 
     const investedCE = Math.min(llValue, selected);
@@ -1524,6 +1526,79 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
       rolls.push(r);
       sum += r;
     }
+
+    // Determine D20 Pool size
+    let d20PoolSize = 3; // Default for just "Dado do Destino" check if no attack skill
+    let attackDetails = '';
+    let attackTotal = 0;
+    let isAttack = false;
+
+    if (attackSkillName) {
+      const skill = character.skills.find(s => s.name === attackSkillName);
+      if (skill) {
+        isAttack = true;
+        const attrKey = skill.attribute || 'FOR'; // Fallback
+        const attrValue = character.attributes[attrKey] || 0;
+        const skillValue = skill.value || 0;
+        const hasAdvAttack = (character.bindingVows || []).some(v => v.isActive && v.advantageType === 'attackTests');
+        
+        d20PoolSize = Math.max(1, attrValue + (hasAdvAttack ? 1 : 0));
+        
+        const { rolls: attRolls, best: attBest, randomIndex: attRandomIndex } = rollD20Pool(d20PoolSize);
+        
+        // Use the pool from attack for critical check
+        // Note: rollD20Pool returns new rolls. We use these for both attack and crit check.
+        // But wait, the previous logic used a fixed pool of 3? No, previously it was `rollD20Pool(3)` hardcoded.
+        // Now we use the attribute pool size.
+        
+        // Recalculate with correct pool
+        const { rolls: d20Rolls, best: bestD20, randomIndex } = rollD20Pool(d20PoolSize);
+        
+        const criticalDieValue = d20Rolls[randomIndex];
+        const isCritical = criticalDieValue === 20;
+        
+        // Attack Total calculation
+        // Total = Best D20 + Skill Value + (Buffs? - ignored for now as they are in CombatTabs)
+        // We can add LL bonus if applicable? CombatTabs adds llBonus = floor(LL/2).
+        const llBonus = Math.floor(llValue / 2);
+        attackTotal = bestD20 + skillValue + llBonus;
+        
+        let extraDamage = 0;
+        const extraRolls: number[] = [];
+        if (isCritical) {
+          const baseDice = getBaseTechniqueDice(characterLevel, powerCategory);
+          for (let i = 0; i < baseDice; i++) {
+            const r = rollDice(8, 1);
+            extraRolls.push(r);
+            extraDamage += r;
+          }
+        }
+        const totalDamage = sum + fixedBonus + extraDamage;
+
+        const diceText = `${diceCount}d${diceType}=[${rolls.join('+')}]`;
+        const extraText = isCritical ? `+${extraRolls.length}d8=[${extraRolls.join('+')}]` : '';
+        const fixedText = fixedBonus > 0 ? `${fixedBonus}` : '';
+        const joiner = diceText && (fixedText || extraText) ? ' + ' : '';
+        const damageDetail = `${diceText}${joiner}${fixedText}${extraText ? ` + ${extraText}` : ''}` || '0';
+        
+        // Highlight critical die
+        const highlightedRolls = d20Rolls.map((roll, index) => 
+           index === randomIndex ? `**${roll}**` : `${roll}`
+        );
+         
+        const d20Detail = `[${highlightedRolls.join(', ')}] ➜ ${bestD20}`;
+        const attackString = `Ataque: ${attackTotal} (${d20Detail} + ${skillValue} ${skill.name} + ${llBonus} LL)${isCritical ? ' - CRÍTICO!' : ''}`;
+        
+        setRollResult({
+          name: subName,
+          result: totalDamage,
+          total: `${attackString} | Dano: ${damageDetail} = ${totalDamage}`
+        });
+        return;
+      }
+    }
+
+    // Fallback if no attack skill or skill not found (Original Logic)
     const { rolls: d20Rolls, best: bestD20, randomIndex } = rollD20Pool(3);
     const criticalDieValue = d20Rolls[randomIndex];
     const isCritical = criticalDieValue === 20;
@@ -1806,7 +1881,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRoll(sub.name, sub.powerCategory);
+                                handleRoll(sub.name, sub.powerCategory, sub.attackSkill);
                               }}
                               className={`flex items-center gap-1 text-xs ${diceLabel ? 'text-slate-300 hover:text-white' : 'text-slate-600 cursor-not-allowed'} `}
                               title={diceLabel ? `Rolar ${diceLabel}` : 'Selecione o CE na barra acima para rolar'}
