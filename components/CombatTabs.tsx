@@ -303,6 +303,24 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          const criticalDieIndex = randomIndex;
          const criticalDieValue = rolls[criticalDieIndex];
          isCritical = criticalDieValue === 20;
+
+         if (isCritical) {
+            const baseDice = getBaseDiceByLevel(char.level);
+            const extraDiceCount = baseDice.punch;
+            
+            let extraDamage = 0;
+            const extraRolls: number[] = [];
+            for (let i = 0; i < extraDiceCount; i++) {
+              const r = rollDice(8, 1);
+              extraRolls.push(r);
+              extraDamage += r;
+            }
+            
+            baseDamageValue += extraDamage;
+            baseDamageText = `${baseDamageValue} ([${impactRolls.join(', ')}] + [${extraRolls.join(', ')}] + ${fixedBonus}) (Crítico! +${extraDiceCount}d8)`;
+         } else {
+            baseDamageText = `${baseDamageValue} ([${impactRolls.join(', ')}] + ${fixedBonus})`;
+         }
          
          // Destacar visualmente o dado escolhido para crítico
          const highlightedRolls = rolls.map((roll, index) => 
@@ -397,27 +415,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          }
       }
 
-      // Simplificação: Dano físico = Dano Base (sem reforço por dados)
-      if (isCritical) {
-        // Em crítico, adicionamos dados extras iguais aos dados base
-        if (selectedWeaponId === 'unarmed') {
-           const ceSelected = Math.max(0, unarmedCE || 0);
-           const { diceCount, fixedBonus } = computeUnarmedD8Damage(ceSelected, char.attributes.FOR || 0, char.level, 'punch');
-           const baseDice = getBaseDiceByLevel(char.level);
-           const extraDiceCount = baseDice.punch;
-           
-           // Manter o dano base calculado anteriormente e apenas adicionar a informação dos extras
-           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) ${baseDamageText}`;
-        } else {
-           const ceSelected = Math.max(0, weaponCE || 0);
-           const { baseDiceCount, baseDiceSides, cursedDiceCount, cursedDiceSides, fixedBonus } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
-           const baseDice = getBaseDiceByLevel(char.level);
-           const extraDiceCount = baseDice.punch;
-           
-           // Manter o dano base calculado anteriormente e apenas adicionar a informação dos extras
-           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) ${baseDamageText}`;
-        }
-      }
+
       
       total = baseDamageValue;
       detail = `[Dano Total] ${baseDamageText}`;
