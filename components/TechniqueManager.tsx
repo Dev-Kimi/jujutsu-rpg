@@ -1475,27 +1475,34 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
 
   const handleRoll = (subName: string, powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano') => {
     const selected = Math.max(0, ceSpent);
-    if (selected <= 0) {
-      showNotification(`Selecione quanto CE gastar (até ${llValue}).`, 'error');
-      return;
-    }
 
     const investedCE = Math.min(llValue, selected);
-    if (currentCE < investedCE) {
+    if (investedCE > 0 && currentCE < investedCE) {
       showNotification(`Energia insuficiente para esta técnica! Necessário: ${investedCE} CE, Atual: ${currentCE} CE`, 'error');
       return;
     }
 
-    onConsumeCE(investedCE);
-    showNotification(`Técnica ativada! Consumido ${investedCE} CE.`, 'success');
+    if (investedCE > 0) {
+      onConsumeCE(investedCE);
+      showNotification(`Técnica ativada! Consumido ${investedCE} CE.`, 'success');
+    } else {
+      showNotification(`Técnica ativada sem consumo de CE.`, 'success');
+    }
 
     const faces = getTechniqueDamageDieSides(powerCategory, characterLevel);
     const { dados_adicionais: diceCount, dano_fixo: fixed } = computeCEInvestmentBonus(investedCE);
     const multiplier = 4 + diceCount;
 
-    const total = (multiplier * faces) + fixed;
+    let sum = 0;
+    const rolls: number[] = [];
+    for (let i = 0; i < multiplier; i++) {
+      const r = rollDice(faces, 1);
+      rolls.push(r);
+      sum += r;
+    }
+    const total = sum + fixed;
 
-    const diceText = `${multiplier}d${faces}`;
+    const diceText = `${multiplier}d${faces}=[${rolls.join('+')}]`;
     const fixedText = fixed > 0 ? `${fixed}` : '';
     const joiner = diceText && fixedText ? ' + ' : '';
     const detail = `${diceText}${joiner}${fixedText}` || '0';
