@@ -273,10 +273,11 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
              const ll = stats.LL || 0;
              const totalDice = 4 + Math.floor(ll / 5);
+             const adjustedSides = dieSides + (Math.floor(unarmedCE / 3) * 2);
              let impactRoll = 0;
              const impactRolls: number[] = [];
              for (let i = 0; i < totalDice; i++) {
-               const r = rollDice(dieSides, 1);
+               const r = rollDice(adjustedSides, 1);
                impactRolls.push(r);
                impactRoll += r;
              }
@@ -285,7 +286,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const remainderBonus = ll % 5;
 
              baseDamageValue = impactRoll + strengthBonus + remainderBonus;
-             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5)`;
+             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${adjustedSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5)`;
              rollTitle = "Ataque Desarmado";
 
              // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
@@ -348,13 +349,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            const { sides: dieSides } = parseDice(impactDie);
            const ll = stats.LL || 0;
            const totalDice = 4 + Math.floor(ll / 5);
-           
-           const maxImpact = totalDice * dieSides;
+           const adjustedSides = dieSides + (Math.floor(unarmedCE / 3) * 2);
+           const maxImpact = totalDice * adjustedSides;
            const strengthBonus = (char.attributes.FOR || 0) * 2;
            const remainderBonus = ll % 5;
            
            baseDamageValue = maxImpact + strengthBonus + remainderBonus;
-           baseDamageText = `max(${totalDice}d${dieSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5) (Crítico!)`;
+           baseDamageText = `max(${totalDice}d${adjustedSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5) (Crítico!)`;
         }
       }
       
@@ -366,7 +367,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
           detail = `[DanoBase]${baseDamageText}${!isHR && invested > 0 ? ` + [Reforço]${invested}` : ''}`;
       }
       
-      actionCostCE = (selectedWeaponId === 'unarmed') ? 0 : (isHR ? 0 : Math.ceil(invested / 2));
+      actionCostCE = (selectedWeaponId === 'unarmed') ? (isHR ? 0 : Math.ceil(unarmedCE / 2)) : (isHR ? 0 : Math.ceil(invested / 2));
     } 
     else if (activeTab === 'defense') {
        if (isHR) {
@@ -937,10 +938,16 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                   {/* Manual Input (Only if Unarmed) */}
                   {selectedWeaponId === 'unarmed' && (
                     <div className="flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-1">
-                      <span className="text-xs text-slate-400">Dado de Impacto (por nível)</span>
-                      <span className="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-white font-mono text-sm">
-                        {getUnarmedImpactDie(char.level)}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-slate-400">Dado de Impacto</span>
+                        <span className="px-2 py-1 bg-slate-800 border border-slate-700 rounded text-white font-mono text-sm">
+                          {(() => {
+                            const { sides } = parseDice(getUnarmedImpactDie(char.level));
+                            const adjusted = sides + (Math.floor(unarmedCE / 3) * 2);
+                            return `d${adjusted}`;
+                          })()}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -985,7 +992,30 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             </div>
           )}
 
-          {/* Sem CE em ataque desarmado: dano determinado por LL e nível */}
+          {!isHR && activeTab === 'physical' && selectedWeaponId === 'unarmed' && (
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">
+                {`CE para Impacto (Max LL: ${stats.LL})`}
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={stats.LL || 0}
+                  step={1}
+                  value={unarmedCE}
+                  onChange={(e) => setUnarmedCE(parseInt(e.target.value))}
+                  className="flex-1 h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-curse-500"
+                />
+                <span className="w-16 text-center font-mono text-lg font-bold text-white bg-slate-800 rounded p-1">
+                  {unarmedCE}
+                </span>
+                <span className="text-[11px] text-slate-400">
+                  {`custo ${Math.ceil(unarmedCE / 2)} CE`}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Slider de defesa removido: mitigação agora baseada somente em LL */}
 
