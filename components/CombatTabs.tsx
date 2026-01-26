@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap, CheckCircle } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
-import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeUnarmedD8Damage, computeTechniqueD8Damage, computeWeaponD8Damage, getBaseDiceByLevel } from '../utils/calculations';
+import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeUnarmedD8Damage, computeTechniqueD8Damage, computeWeaponD8Damage, getPowerMarkBaseDice } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
 import { logDiceRoll } from '../utils/diceRollLogger';
 
@@ -305,8 +305,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          isCritical = criticalDieValue === 20;
 
          if (isCritical) {
-            const baseDice = getBaseDiceByLevel(char.level);
-            const extraDiceCount = baseDice.punch;
+            const extraDiceCount = getPowerMarkBaseDice(char.level);
             
             let extraDamage = 0;
             const extraRolls: number[] = [];
