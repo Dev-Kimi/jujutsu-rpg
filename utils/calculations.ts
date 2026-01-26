@@ -449,3 +449,106 @@ export const getTechniqueDamageDieFace = (
   powerCategory: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano' | undefined,
   level: number
 ): string => `d${getTechniqueDamageDieSides(powerCategory, level)}`;
+
+/**
+ * Função reutilizável para rolar 1d8 (gera número inteiro aleatório entre 1 e 8)
+ */
+export const rolarD8 = (): number => {
+  return Math.floor(Math.random() * 8) + 1;
+};
+
+/**
+ * Função modular para verificar se um ataque é crítico
+ * @param d20Roll Valor do d20 rolado
+ * @param criticalThreshold Limite para crítico (padrão: 20)
+ * @returns Verdadeiro se for acerto crítico
+ */
+export const verificarCritico = (d20Roll: number, criticalThreshold: number = 20): boolean => {
+  if (!Number.isInteger(d20Roll) || d20Roll < 1 || d20Roll > 20) {
+    throw new Error('Valor do d20 inválido: deve ser entre 1 e 20');
+  }
+  if (!Number.isInteger(criticalThreshold) || criticalThreshold < 2 || criticalThreshold > 20) {
+    throw new Error('Limite de crítico inválido: deve ser entre 2 e 20');
+  }
+  return d20Roll >= criticalThreshold;
+};
+
+/**
+ * Calcula dano físico para ataques com armas
+ * Fórmula: (baseDice + floor(CE/5)) * weaponFaces + (FOR * 2) + floor((CE % 5)/2)
+ */
+export const calcularDanoFisico = (
+  ceInvested: number,
+  strength: number,
+  baseDice: number,
+  weaponFaces: number
+): { totalDamage: number; baseDamage: number; ceBonus: number; strengthBonus: number; remainderBonus: number } => {
+  // Validações de entrada
+  if (!Number.isInteger(ceInvested) || ceInvested < 0) {
+    throw new Error('CE inválido: forneça um inteiro não-negativo');
+  }
+  if (!Number.isInteger(strength) || strength < 0) {
+    throw new Error('FOR inválida: forneça um inteiro não-negativo');
+  }
+  if (!Number.isInteger(baseDice) || baseDice < 0) {
+    throw new Error('Dados base inválidos: forneça um inteiro não-negativo');
+  }
+  if (!Number.isInteger(weaponFaces) || weaponFaces < 2) {
+    throw new Error('Faces da arma inválidas: forneça um inteiro maior ou igual a 2');
+  }
+
+  // Cálculo dos componentes da fórmula
+  const ceDiceBonus = Math.floor(ceInvested / 5);
+  const totalDice = baseDice + ceDiceBonus;
+  const baseDamage = totalDice * weaponFaces;
+  const strengthBonus = strength * 2;
+  const remainderBonus = Math.floor((ceInvested % 5) / 2);
+  
+  const totalDamage = baseDamage + strengthBonus + remainderBonus;
+
+  return {
+    totalDamage,
+    baseDamage,
+    ceBonus: ceDiceBonus * weaponFaces,
+    strengthBonus,
+    remainderBonus
+  };
+};
+
+/**
+ * Calcula dano de energia para técnicas
+ * Fórmula: (baseDice + floor(CE/5)) * 8 + (CE % 5) + (FOR * 2)
+ */
+export const calcularDanoEnergia = (
+  ceInvested: number,
+  strength: number,
+  baseDice: number
+): { totalDamage: number; baseDamage: number; ceBonus: number; remainderBonus: number; strengthBonus: number } => {
+  // Validações de entrada
+  if (!Number.isInteger(ceInvested) || ceInvested < 0) {
+    throw new Error('CE inválido: forneça um inteiro não-negativo');
+  }
+  if (!Number.isInteger(strength) || strength < 0) {
+    throw new Error('FOR inválida: forneça um inteiro não-negativo');
+  }
+  if (!Number.isInteger(baseDice) || baseDice < 0) {
+    throw new Error('Dados base inválidos: forneça um inteiro não-negativo');
+  }
+
+  // Cálculo dos componentes da fórmula
+  const ceDiceBonus = Math.floor(ceInvested / 5);
+  const totalDice = baseDice + ceDiceBonus;
+  const baseDamage = totalDice * 8; // Sempre d8 para técnicas
+  const remainderBonus = ceInvested % 5;
+  const strengthBonus = strength * 2;
+  
+  const totalDamage = baseDamage + remainderBonus + strengthBonus;
+
+  return {
+    totalDamage,
+    baseDamage,
+    ceBonus: ceDiceBonus * 8,
+    remainderBonus,
+    strengthBonus
+  };
+};
