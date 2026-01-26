@@ -360,6 +360,28 @@ export const calculateMaxD8Damage = (diceCount: number, fixedBonus: number): num
   return (diceCount * 8) + fixedBonus;
 };
 
+export const computeWeaponD8Damage = (ceInvested: number, strength: number, baseDice: string): { diceCount: number; fixedBonus: number; baseSides: number } => {
+  if (!Number.isInteger(ceInvested) || ceInvested < 0) {
+    throw new Error('CE inválido: forneça um inteiro não-negativo');
+  }
+  
+  // Parse base dice string (e.g., "1d6", "2d4", etc.)
+  const diceMatch = baseDice.match(/(\d+)d(\d+)/i);
+  if (!diceMatch) {
+    throw new Error('Formato de dado inválido: use formato XdY');
+  }
+  
+  const baseCount = parseInt(diceMatch[1]);
+  const baseSides = parseInt(diceMatch[2]);
+  
+  // Fórmula: (dados base + [Investimento / 5]) * dado da arma(faces) + (FOR * 2) + (Investimento % 5 / 2, arrendondado para baixo)
+  const extraDice = Math.floor(ceInvested / 5);
+  const diceCount = baseCount + extraDice;
+  const fixedBonus = (strength * 2) + Math.floor((ceInvested % 5) / 2);
+  
+  return { diceCount, fixedBonus, baseSides };
+};
+
 export const getTechniqueDamageDieSides = (
   powerCategory: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano' | undefined,
   level: number
