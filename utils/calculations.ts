@@ -336,7 +336,7 @@ export const computeUnarmedD8Damage = (ceInvested: number, strength: number): { 
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
   const diceCount = 4 + Math.floor(ceInvested / 5);
-  const fixedBonus = (strength * 2) + (ceInvested % 5);
+  const fixedBonus = (strength * 2) + Math.floor((ceInvested % 5) / 2);
   return { diceCount, fixedBonus };
 };
 
