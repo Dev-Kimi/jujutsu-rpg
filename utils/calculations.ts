@@ -325,8 +325,29 @@ export const computeCEInvestmentBonus = (ceInvested: number): { dados_adicionais
   if (!Number.isInteger(ceInvested) || ceInvested < 0) {
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
-  const dados_adicionais = Math.floor(ceInvested / 5);
-  const resto = ceInvested % 5;
-  const dano_fixo = Math.floor(resto / 2);
+  const dados_adicionais = Math.floor(ceInvested / 3);
+  const resto = ceInvested % 3;
+  const dano_fixo = Math.ceil(resto / 2);
   return { dados_adicionais, dano_fixo };
 };
+
+export const getTechniqueDamageDieSides = (
+  powerCategory: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano' | undefined,
+  level: number
+): number => {
+  const lvl = Number.isFinite(level) ? Math.max(0, Math.floor(level)) : 0;
+  const tier = lvl >= 16 ? 3 : lvl >= 11 ? 2 : lvl >= 6 ? 1 : 0;
+
+  const base = powerCategory === 'Pouco Dano'
+    ? [4, 6, 8, 10]
+    : powerCategory === 'Alto Dano'
+    ? [8, 10, 12, 14]
+    : [6, 8, 10, 12];
+
+  return base[tier] || base[0];
+};
+
+export const getTechniqueDamageDieFace = (
+  powerCategory: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano' | undefined,
+  level: number
+): string => `d${getTechniqueDamageDieSides(powerCategory, level)}`;

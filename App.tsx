@@ -1702,6 +1702,7 @@ const App: React.FC = () => {
                     onUpdate={handleTechniqueUpdate}
                     onRemove={handleTechniqueRemove}
                     onOpenLibrary={() => setShowTechniqueLibrary(true)}
+                    characterLevel={character.level}
                     llValue={stats.LL}
                     currentCE={currentStats.ce}
                     onConsumeCE={consumeCE}

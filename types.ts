@@ -41,9 +41,13 @@ export interface SubTechnique {
   name: string;
   description: string;
   usage: string; // Modo de usar (ação padrão, reação, etc.)
+  diceFace?: string; // e.g. "d4", "d6", "d8", "d10", "d12"
   range?: string; // Alcance textual opcional
+  tierLabel?: string; // Ex: "CONHECIMENTO 1", "SANGUE 1"
+  grade?: string; // Exibição de grau, ex: "NORMAL"
   tier?: number;
   powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano';
+  efficiency?: string;
   peCost?: number;
   rangeType?: 'Toque' | 'Distância';
   rangeValue?: string;
