@@ -11,7 +11,7 @@ import { InventoryList } from './InventoryList';
 import { BindingVowsManager } from './BindingVowsManager';
 import { CombatTabs } from './CombatTabs';
 import { MasterCombatTracker } from './MasterCombatTracker';
-import { calculateDerivedStats, computeCEInvestmentBonus, getTechniqueDamageDieSides, rollDice, computeTechniqueD8Damage, calculateMaxD8Damage } from '../utils/calculations';
+import { calculateDerivedStats, computeCEInvestmentBonus, getTechniqueDamageDieSides, rollDice, computeTechniqueD8Damage, calculateMaxD8Damage, getBaseDiceByLevel } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
 import { TechniqueCreatePage } from './TechniqueCreatePage';
 
@@ -1348,6 +1348,7 @@ interface TechniqueManagerProps {
   onOpenLibrary: () => void;
   characterLevel: number;
   llValue: number;
+  intValue: number;
   currentCE: number;
   onConsumeCE: (amount: number) => void;
 }
@@ -1387,6 +1388,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   onOpenLibrary,
   characterLevel,
   llValue,
+  intValue,
   currentCE,
   onConsumeCE
 }) => {
@@ -1473,6 +1475,24 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     setExpandedSubIds(prev => ({ ...prev, [newSub.id]: true }));
   };
 
+  const rollD20Pool = (diceCount: number) => {
+    const count = Math.max(1, diceCount);
+    const rolls: number[] = [];
+    for (let i = 0; i < count; i++) {
+      rolls.push(rollDice(20, 1));
+    }
+    const best = Math.max(...rolls);
+    const randomIndex = Math.floor(Math.random() * count);
+    return { rolls, best, randomIndex };
+  };
+
+  const getBaseTechniqueDice = (level: number, powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano') => {
+    const baseDice = getBaseDiceByLevel(level);
+    if (powerCategory === 'Alto Dano') return baseDice.highDamage;
+    if (powerCategory === 'Dano Médio') return baseDice.medium;
+    return baseDice.utility;
+  };
+
   const handleRoll = (subName: string, powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano') => {
     const selected = Math.max(0, ceSpent);
 
@@ -1489,27 +1509,47 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
       showNotification(`Técnica ativada sem consumo de CE.`, 'success');
     }
 
-    const { diceCount, fixedBonus } = computeTechniqueD8Damage(investedCE);
+    const { diceCount, fixedBonus } = computeTechniqueD8Damage(
+      investedCE,
+      characterLevel,
+      powerCategory || 'Pouco Dano',
+      intValue
+    );
     
     let sum = 0;
     const rolls: number[] = [];
-    const diceType = investedCE <= 2 ? 4 : 8;
+    const diceType = 8;
     for (let i = 0; i < diceCount; i++) {
       const r = rollDice(diceType, 1);
       rolls.push(r);
       sum += r;
     }
-    const total = sum + fixedBonus;
+    const { rolls: d20Rolls, best: bestD20, randomIndex } = rollD20Pool(3);
+    const criticalDieValue = d20Rolls[randomIndex];
+    const isCritical = criticalDieValue === 20;
+    let extraDamage = 0;
+    const extraRolls: number[] = [];
+    if (isCritical) {
+      const baseDice = getBaseTechniqueDice(characterLevel, powerCategory);
+      for (let i = 0; i < baseDice; i++) {
+        const r = rollDice(8, 1);
+        extraRolls.push(r);
+        extraDamage += r;
+      }
+    }
+    const total = sum + fixedBonus + extraDamage;
 
     const diceText = `${diceCount}d${diceType}=[${rolls.join('+')}]`;
+    const extraText = isCritical ? `+${extraRolls.length}d8=[${extraRolls.join('+')}]` : '';
     const fixedText = fixedBonus > 0 ? `${fixedBonus}` : '';
-    const joiner = diceText && fixedText ? ' + ' : '';
-    const detail = `${diceText}${joiner}${fixedText}` || '0';
+    const joiner = diceText && (fixedText || extraText) ? ' + ' : '';
+    const detail = `${diceText}${joiner}${fixedText}${extraText ? ` + ${extraText}` : ''}` || '0';
+    const d20Detail = `[${d20Rolls.join(', ')}] ➜ ${bestD20} (Dado do Destino: ${criticalDieValue}${isCritical ? ' - CRÍTICO!' : ''})`;
 
     setRollResult({
       name: subName,
       result: total,
-      total: detail
+      total: `${detail} | D20 Pool: ${d20Detail}`
     });
   };
 
@@ -1709,9 +1749,13 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                   {(tech.subTechniques || []).map(sub => {
                     const expanded = !!expandedSubIds[sub.id];
                     const previewCe = Math.max(0, ceSpent || 0);
-                    const { diceCount, fixedBonus } = computeTechniqueD8Damage(previewCe);
-                    const diceType = previewCe <= 2 ? 'd4' : 'd8';
-                    const diceLabel = `${diceCount}${diceType}${fixedBonus ? `+${fixedBonus}` : ''}`;
+                    const { diceCount, fixedBonus } = computeTechniqueD8Damage(
+                      previewCe,
+                      characterLevel,
+                      sub.powerCategory || 'Pouco Dano',
+                      intValue
+                    );
+                    const diceLabel = `${diceCount}d8${fixedBonus ? `+${fixedBonus}` : ''}`;
                     const summaryText = buildSubSummary(sub);
                     const descriptionText = sub.description || 'Sem descrição.';
                     const rangeLabel = getRangeLabel(sub);
