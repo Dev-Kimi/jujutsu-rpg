@@ -1493,14 +1493,15 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     
     let sum = 0;
     const rolls: number[] = [];
+    const diceType = investedCE <= 2 ? 4 : 8;
     for (let i = 0; i < diceCount; i++) {
-      const r = rollDice(8, 1);
+      const r = rollDice(diceType, 1);
       rolls.push(r);
       sum += r;
     }
     const total = sum + fixedBonus;
 
-    const diceText = `${diceCount}d8=[${rolls.join('+')}]`;
+    const diceText = `${diceCount}d${diceType}=[${rolls.join('+')}]`;
     const fixedText = fixedBonus > 0 ? `${fixedBonus}` : '';
     const joiner = diceText && fixedText ? ' + ' : '';
     const detail = `${diceText}${joiner}${fixedText}` || '0';
@@ -1709,7 +1710,8 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                     const expanded = !!expandedSubIds[sub.id];
                     const previewCe = Math.max(0, ceSpent || 0);
                     const { diceCount, fixedBonus } = computeTechniqueD8Damage(previewCe);
-                    const diceLabel = `${diceCount}d8${fixedBonus ? `+${fixedBonus}` : ''}`;
+                    const diceType = previewCe <= 2 ? 'd4' : 'd8';
+                    const diceLabel = `${diceCount}${diceType}${fixedBonus ? `+${fixedBonus}` : ''}`;
                     const summaryText = buildSubSummary(sub);
                     const descriptionText = sub.description || 'Sem descrição.';
                     const rangeLabel = getRangeLabel(sub);
