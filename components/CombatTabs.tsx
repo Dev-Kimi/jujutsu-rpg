@@ -319,20 +319,33 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          if (currentWeaponItem) {
              const diceStr = getWeaponDamageString(currentWeaponItem);
              const ceSelected = Math.max(0, weaponCE || 0);
-             const { diceCount, fixedBonus, baseSides } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
+             const { baseDiceCount, baseDiceSides, cursedDiceCount, cursedDiceSides, fixedBonus } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
              
-             // Roll the damage dice
+             // Roll the damage dice - pools mistos: base da arma + reforço amaldiçoado
              let damageRoll = 0;
              const damageRolls: number[] = [];
-             for (let i = 0; i < diceCount; i++) {
-               const roll = rollDice(baseSides, 1);
+             
+             // Rola dados base da arma
+             for (let i = 0; i < baseDiceCount; i++) {
+               const roll = rollDice(baseDiceSides, 1);
                damageRolls.push(roll);
                damageRoll += roll;
              }
+             
+             // Rola dados de reforço amaldiçoado (sempre d8)
+             for (let i = 0; i < cursedDiceCount; i++) {
+               const roll = rollDice(cursedDiceSides, 1);
+               damageRolls.push(roll);
+               damageRoll += roll;
+             }
+             
              damageRoll += fixedBonus;
              
              baseDamageValue = damageRoll;
-             baseDamageText = `${damageRoll} (${diceCount}d${baseSides}${fixedBonus ? `+${fixedBonus}` : ''})`;
+             const baseDiceText = baseDiceCount > 0 ? `${baseDiceCount}d${baseDiceSides}` : '';
+             const cursedDiceText = cursedDiceCount > 0 ? ` + ${cursedDiceCount}d${cursedDiceSides}` : '';
+             const fixedBonusText = fixedBonus ? ` + ${fixedBonus}` : '';
+             baseDamageText = `${damageRoll} (${baseDiceText}${cursedDiceText}${fixedBonusText})`;
              rollTitle = currentWeaponItem.name;
 
              // Use weapon's attack skill (default to Luta)
@@ -384,11 +397,17 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            baseDamageText = `max(${diceCount}d8) = ${maxDamage} (${diceCount}*8 + ${fixedBonus}) (Crítico!)`;
         } else {
            const ceSelected = Math.max(0, weaponCE || 0);
-           const { diceCount, fixedBonus, baseSides } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
-           const maxDamage = calculateMaxD8Damage(diceCount, fixedBonus);
+           const { baseDiceCount, baseDiceSides, cursedDiceCount, cursedDiceSides, fixedBonus } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
+           const maxBaseDamage = baseDiceCount * baseDiceSides;
+           const maxCursedDamage = cursedDiceCount * cursedDiceSides;
+           const maxDamage = maxBaseDamage + maxCursedDamage + fixedBonus;
+           
+           const baseDiceText = baseDiceCount > 0 ? `${baseDiceCount}d${baseDiceSides}` : '';
+           const cursedDiceText = cursedDiceCount > 0 ? ` + ${cursedDiceCount}d${cursedDiceSides}` : '';
+           const fixedBonusText = fixedBonus ? ` + ${fixedBonus}` : '';
            
            baseDamageValue = maxDamage;
-           baseDamageText = `max(${diceCount}d${baseSides}) = ${maxDamage} (${diceCount}*${baseSides} + ${fixedBonus}) (Crítico!)`;
+           baseDamageText = `max(${baseDiceText}${cursedDiceText}${fixedBonusText}) = ${maxDamage} (${baseDiceCount > 0 ? `${baseDiceCount}*${baseDiceSides}` : ''}${cursedDiceCount > 0 ? ` + ${cursedDiceCount}*${cursedDiceSides}` : ''}${fixedBonus ? ` + ${fixedBonus}` : ''}) (Crítico!)`;
         }
       }
       
@@ -1044,10 +1063,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                   if (selectedWeaponId !== 'unarmed') {
                     const currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
                     if (currentWeaponItem) {
-                      const diceStr = getWeaponDamageString(currentWeaponItem);
-                      const { diceCount, fixedBonus, baseSides } = computeWeaponD8Damage(weaponCE, char.attributes.FOR || 0, diceStr);
-                      return `${diceCount}d${baseSides}${fixedBonus ? `+${fixedBonus}` : ''}`;
-                    }
+                    const diceStr = getWeaponDamageString(currentWeaponItem);
+                    const { baseDiceCount, baseDiceSides, cursedDiceCount, cursedDiceSides, fixedBonus } = computeWeaponD8Damage(weaponCE, char.attributes.FOR || 0, diceStr);
+                    const baseDiceText = baseDiceCount > 0 ? `${baseDiceCount}d${baseDiceSides}` : '';
+                    const cursedDiceText = cursedDiceCount > 0 ? ` + ${cursedDiceCount}d${cursedDiceSides}` : '';
+                    const fixedBonusText = fixedBonus ? ` + ${fixedBonus}` : '';
+                    return `${baseDiceText}${cursedDiceText}${fixedBonusText}`;
+                  }
                   }
                   return "-";
                 })()}
