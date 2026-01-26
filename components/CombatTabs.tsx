@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap, CheckCircle } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
-import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeCEInvestmentBonus } from '../utils/calculations';
+import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
 import { logDiceRoll } from '../utils/diceRollLogger';
 
@@ -274,7 +274,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
             const { count: baseDice, sides: dieSides } = parseDice(impactDie);
 
             const ll = stats.LL || 0;
-             const { dados_adicionais: ceDiceBonus, dano_fixo: ceFixedBonus } = computeCEInvestmentBonus(Math.max(0, unarmedCE || 0));
+             const ceSelected = Math.max(0, unarmedCE || 0);
+             const ceDiceBonus = Math.floor(ceSelected / 5);
+             const ceFixedBonus = Math.floor((ceSelected % 5) / 2);
              const totalDice = baseDice + ceDiceBonus;
              let impactRoll = 0;
              const impactRolls: number[] = [];
@@ -350,7 +352,9 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
            const impactDie = getUnarmedImpactDie(char.level);
            const { count: baseDice, sides: dieSides } = parseDice(impactDie);
            const ll = stats.LL || 0;
-           const { dados_adicionais: ceDiceBonus, dano_fixo: ceFixedBonus } = computeCEInvestmentBonus(Math.max(0, unarmedCE || 0));
+           const ceSelected = Math.max(0, unarmedCE || 0);
+           const ceDiceBonus = Math.floor(ceSelected / 5);
+           const ceFixedBonus = Math.floor((ceSelected % 5) / 2);
            const totalDice = baseDice + ceDiceBonus;
            const maxImpact = totalDice * dieSides;
            const strengthBonus = (char.attributes.FOR || 0) * 2;
