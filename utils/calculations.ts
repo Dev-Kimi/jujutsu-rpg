@@ -331,6 +331,28 @@ export const computeCEInvestmentBonus = (ceInvested: number): { dados_adicionais
   return { dados_adicionais, dano_fixo };
 };
 
+export const computeUnarmedD8Damage = (ceInvested: number, strength: number): { diceCount: number; fixedBonus: number } => {
+  if (!Number.isInteger(ceInvested) || ceInvested < 0) {
+    throw new Error('CE inválido: forneça um inteiro não-negativo');
+  }
+  const diceCount = 4 + Math.floor(ceInvested / 5);
+  const fixedBonus = (strength * 2) + (ceInvested % 5);
+  return { diceCount, fixedBonus };
+};
+
+export const computeTechniqueD8Damage = (ceInvested: number): { diceCount: number; fixedBonus: number } => {
+  if (!Number.isInteger(ceInvested) || ceInvested < 0) {
+    throw new Error('CE inválido: forneça um inteiro não-negativo');
+  }
+  const diceCount = 4 + Math.floor(ceInvested / 3);
+  const fixedBonus = ceInvested % 3;
+  return { diceCount, fixedBonus };
+};
+
+export const calculateMaxD8Damage = (diceCount: number, fixedBonus: number): number => {
+  return (diceCount * 8) + fixedBonus;
+};
+
 export const getTechniqueDamageDieSides = (
   powerCategory: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano' | undefined,
   level: number
