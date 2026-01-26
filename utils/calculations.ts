@@ -391,7 +391,7 @@ export const computeTechniqueD8Damage = (
   const diceCount = baseDiceCount + ceDiceCount;
   
   // Bônus fixo: INT * 4 + (CE % 3)
-  const fixedBonus = (int * 4) + (ceInvested % 3);
+  const fixedBonus = (int * 5) + (ceInvested % 3);
   
   return { diceCount, fixedBonus };
 };
