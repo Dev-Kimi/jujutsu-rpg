@@ -11,7 +11,7 @@ import { InventoryList } from './InventoryList';
 import { BindingVowsManager } from './BindingVowsManager';
 import { CombatTabs } from './CombatTabs';
 import { MasterCombatTracker } from './MasterCombatTracker';
-import { calculateDerivedStats, rollDice } from '../utils/calculations';
+import { calculateDerivedStats, computeCEInvestmentBonus, getTechniqueDamageDieSides, rollDice } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
 import { TechniqueCreatePage } from './TechniqueCreatePage';
 
@@ -1346,6 +1346,7 @@ interface TechniqueManagerProps {
   onUpdate: (id: string, field: keyof import('../types').Technique, value: any) => void;
   onRemove: (id: string) => void;
   onOpenLibrary: () => void;
+  characterLevel: number;
   llValue: number;
   currentCE: number;
   onConsumeCE: (amount: number) => void;
@@ -1384,6 +1385,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
   onUpdate,
   onRemove,
   onOpenLibrary,
+  characterLevel,
   llValue,
   currentCE,
   onConsumeCE
@@ -1431,8 +1433,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
       sub.causesExhaustion ? 'Causa Exaustão' : null
     ].filter(Boolean) as string[];
     const lines = [
-      sub.powerCategory && sub.diceFace ? `Potência: ${sub.powerCategory} (${sub.diceFace})` : null,
-      sub.efficiency ? `Eficiência: ${sub.efficiency === '1:3' ? '1 dado a cada 3 CE' : sub.efficiency}` : null,
+      sub.powerCategory ? `Potência: ${sub.powerCategory}` : null,
       typeof sub.peCost === 'number' && sub.peCost > 0 ? `Custo PE: ${sub.peCost}` : null,
       rangeText ? `Alcance: ${rangeText}` : null,
       areaText ? `Área: ${areaText}` : null,
@@ -1472,45 +1473,37 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
     setExpandedSubIds(prev => ({ ...prev, [newSub.id]: true }));
   };
 
-  const handleRoll = (subName: string, diceFace?: string) => {
-    if (!diceFace) return;
-    
-    const match = diceFace.match(/(\d+)?d(\d+)([+-]\d+)?/);
-    if (match) {
-      const selected = Math.max(0, ceSpent);
-      if (selected <= 0) {
-        showNotification(`Selecione quanto CE gastar (até ${llValue}).`, 'error');
-        return;
-      }
-      const count = Math.min(llValue, selected);
-      const faces = parseInt(match[2]);
-      const modifier = parseInt(match[3] || '0');
-      
-      // CE Verification
-      if (currentCE < count) {
-        showNotification(`Energia insuficiente para esta técnica! Necessário: ${count} CE, Atual: ${currentCE} CE`, 'error');
-        return;
-      }
-
-      // Consume CE
-      onConsumeCE(count);
-      showNotification(`Técnica ativada! Consumido ${count} CE.`, 'success');
-
-      let total = 0;
-      const rolls: number[] = [];
-      for (let i = 0; i < count; i++) {
-        const roll = rollDice(faces, 1);
-        rolls.push(roll);
-        total += roll;
-      }
-      total += modifier;
-      
-      setRollResult({
-        name: subName,
-        result: total,
-        total: `${count}d${faces}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}: ${rolls.join('+')}${modifier !== 0 ? (modifier > 0 ? '+' : '') + modifier : ''}`
-      });
+  const handleRoll = (subName: string, powerCategory?: 'Pouco Dano' | 'Dano Médio' | 'Alto Dano') => {
+    const selected = Math.max(0, ceSpent);
+    if (selected <= 0) {
+      showNotification(`Selecione quanto CE gastar (até ${llValue}).`, 'error');
+      return;
     }
+
+    const investedCE = Math.min(llValue, selected);
+    if (currentCE < investedCE) {
+      showNotification(`Energia insuficiente para esta técnica! Necessário: ${investedCE} CE, Atual: ${currentCE} CE`, 'error');
+      return;
+    }
+
+    onConsumeCE(investedCE);
+    showNotification(`Técnica ativada! Consumido ${investedCE} CE.`, 'success');
+
+    const faces = getTechniqueDamageDieSides(powerCategory, characterLevel);
+    const { dados_adicionais: diceCount, dano_fixo: fixed } = computeCEInvestmentBonus(investedCE);
+
+    const total = (diceCount * faces) + fixed;
+
+    const diceText = diceCount > 0 ? `${diceCount}d${faces}` : '';
+    const fixedText = fixed > 0 ? `${fixed}` : '';
+    const joiner = diceText && fixedText ? ' + ' : '';
+    const detail = `${diceText}${joiner}${fixedText}` || '0';
+
+    setRollResult({
+      name: subName,
+      result: total,
+      total: detail
+    });
   };
 
   return (
@@ -1708,10 +1701,16 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                 <div className="space-y-2">
                   {(tech.subTechniques || []).map(sub => {
                     const expanded = !!expandedSubIds[sub.id];
-                    const diceLabel = sub.diceFace ? `${Math.max(1, ceSpent || 0)}${sub.diceFace}` : null;
-                    const tierColor = sub.tierLabel?.toLowerCase().includes('sangue')
-                      ? 'bg-red-600'
-                      : 'bg-purple-600';
+                    const previewCe = Math.max(0, ceSpent || 0);
+                    const preview = previewCe > 0
+                      ? computeCEInvestmentBonus(previewCe)
+                      : null;
+                    const faces = getTechniqueDamageDieSides(sub.powerCategory, characterLevel);
+                    const diceLabel = preview
+                      ? (preview.dados_adicionais > 0
+                          ? `${preview.dados_adicionais}d${faces}${preview.dano_fixo ? `+${preview.dano_fixo}` : ''}`
+                          : `${preview.dano_fixo}`)
+                      : null;
                     const summaryText = buildSubSummary(sub);
                     const descriptionText = sub.description || 'Sem descrição.';
                     const rangeLabel = getRangeLabel(sub);
@@ -1746,7 +1745,6 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                             )}
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">{sub.grade || 'NORMAL'}</div>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1764,7 +1762,7 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleRoll(sub.name, sub.diceFace);
+                                  handleRoll(sub.name, sub.powerCategory);
                                 }}
                                 className="flex items-center gap-1 text-xs text-slate-300 hover:text-white"
                                 title={`Rolar ${diceLabel}`}
@@ -1779,23 +1777,6 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                         {expanded && (
                           <div className="px-3 pb-3">
                             <div className="border-t border-purple-600 mb-2" />
-                            
-                            {sub.tierLabel && (
-                              <span className={`inline-block ${tierColor} text-white text-[10px] font-bold uppercase px-2 py-0.5 rounded mb-2`}>
-                                {sub.tierLabel}
-                              </span>
-                            )}
-                            {editingTechId === tech.id && (
-                              <div className="mb-2">
-                                <input
-                                  type="text"
-                                  value={sub.tierLabel || ''}
-                                  onChange={(e) => handleUpdateSubTechnique(tech.id, sub.id, 'tierLabel', e.target.value, tech.subTechniques)}
-                                  className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[11px] text-white focus:outline-none focus:border-curse-500/50"
-                                  placeholder="Tag da habilidade (ex: CONHECIMENTO 1, SANGUE 1)"
-                                />
-                              </div>
-                            )}
 
                             <div className="text-xs space-y-1">
                               {editingTechId === tech.id ? (
