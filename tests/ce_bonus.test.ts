@@ -13,19 +13,19 @@ describe('computeCEInvestmentBonus', () => {
     expect(res.dano_fixo).toBe(0);
   });
 
-  it('caso 4 CE: 1 dado, resto 1 => ceil(1/2)=1 fixo', () => {
+  it('caso 4 CE: 1 dado, resto 1 => ceil(1/3)=1 fixo', () => {
     const res = computeCEInvestmentBonus(4);
     expect(res.dados_adicionais).toBe(1);
     expect(res.dano_fixo).toBe(1);
   });
 
-  it('caso 5 CE: 1 dado, resto 2 => ceil(2/2)=1 fixo', () => {
+  it('caso 5 CE: 1 dado, resto 2 => ceil(2/3)=1 fixo', () => {
     const res = computeCEInvestmentBonus(5);
     expect(res.dados_adicionais).toBe(1);
     expect(res.dano_fixo).toBe(1);
   });
 
-  it('caso 8 CE: 2 dados, resto 2 => ceil(2/2)=1 fixo', () => {
+  it('caso 8 CE: 2 dados, resto 2 => ceil(2/3)=1 fixo', () => {
     const res = computeCEInvestmentBonus(8);
     expect(res.dados_adicionais).toBe(2);
     expect(res.dano_fixo).toBe(1);
