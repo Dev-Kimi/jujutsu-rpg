@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sword, Shield, Dices, ArrowRight, Layers, Crosshair, Hammer, X, Hexagon, Zap, CheckCircle } from 'lucide-react';
 import { Character, DerivedStats, DieType, CurrentStats, Origin, Ability, Item } from '../types';
-import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit } from '../utils/calculations';
+import { rollDice, parseAbilityCost, parseAbilityEffect, parseAndRollDice, getWeaponCELimit, computeUnarmedD8Damage, computeTechniqueD8Damage, calculateMaxD8Damage } from '../utils/calculations';
 import { MUNDANE_WEAPONS } from '../utils/equipmentData';
 import { logDiceRoll } from '../utils/diceRollLogger';
 
@@ -270,27 +270,19 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       // Determine Weapon and Attack Skill
           if (selectedWeaponId === 'unarmed') {
-            const impactDie = getUnarmedImpactDie(char.level);
-            const { count: baseDice, sides: dieSides } = parseDice(impactDie);
+            const ceSelected = Math.max(0, unarmedCE || 0);
+            const { diceCount, fixedBonus } = computeUnarmedD8Damage(ceSelected, char.attributes.FOR || 0);
+            
+            let impactRoll = 0;
+            const impactRolls: number[] = [];
+            for (let i = 0; i < diceCount; i++) {
+              const r = rollDice(8, 1);
+              impactRolls.push(r);
+              impactRoll += r;
+            }
 
-            const ll = stats.LL || 0;
-             const ceSelected = Math.max(0, unarmedCE || 0);
-             const ceDiceBonus = Math.floor(ceSelected / 5);
-             const ceFixedBonus = Math.floor((ceSelected % 5) / 2);
-             const totalDice = baseDice + ceDiceBonus;
-             let impactRoll = 0;
-             const impactRolls: number[] = [];
-             for (let i = 0; i < totalDice; i++) {
-               const r = rollDice(dieSides, 1);
-               impactRolls.push(r);
-               impactRoll += r;
-             }
-
-             const strengthBonus = (char.attributes.FOR || 0) * 2;
-             const remainderBonus = ll % 5;
-
-             baseDamageValue = impactRoll + strengthBonus + remainderBonus + ceFixedBonus;
-             baseDamageText = `[${impactRolls.join(', ')}] (${totalDice}d${dieSides}) + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5)${ceFixedBonus ? ` + ${ceFixedBonus} (CE)` : ''}`;
+            baseDamageValue = impactRoll + fixedBonus;
+            baseDamageText = `[${impactRolls.join(', ')}] (${diceCount}d8) + ${fixedBonus} (FOR*2 + CE%5)`;
              rollTitle = "Ataque Desarmado";
 
              // Unarmed uses Luta skill. Roll N d20 where N = attribute tied to the skill (Luta -> FOR)
@@ -349,19 +341,12 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
       if (isCritical) {
         // Maximize apenas o dano base em crítico
         if (selectedWeaponId === 'unarmed') {
-           const impactDie = getUnarmedImpactDie(char.level);
-           const { count: baseDice, sides: dieSides } = parseDice(impactDie);
-           const ll = stats.LL || 0;
            const ceSelected = Math.max(0, unarmedCE || 0);
-           const ceDiceBonus = Math.floor(ceSelected / 5);
-           const ceFixedBonus = Math.floor((ceSelected % 5) / 2);
-           const totalDice = baseDice + ceDiceBonus;
-           const maxImpact = totalDice * dieSides;
-           const strengthBonus = (char.attributes.FOR || 0) * 2;
-           const remainderBonus = ll % 5;
+           const { diceCount, fixedBonus } = computeUnarmedD8Damage(ceSelected, char.attributes.FOR || 0);
+           const maxDamage = calculateMaxD8Damage(diceCount, fixedBonus);
            
-           baseDamageValue = maxImpact + strengthBonus + remainderBonus + ceFixedBonus;
-           baseDamageText = `max(${totalDice}d${dieSides}) = ${maxImpact} + ${strengthBonus} (FOR*2) + ${remainderBonus} (LL%5)${ceFixedBonus ? ` + ${ceFixedBonus} (CE)` : ''} (Crítico!)`;
+           baseDamageValue = maxDamage;
+           baseDamageText = `max(${diceCount}d8) = ${maxDamage} (${diceCount}*8 + ${fixedBonus}) (Crítico!)`;
         }
       }
       
