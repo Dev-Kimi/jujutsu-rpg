@@ -312,7 +312,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
          const dicePart = `[${highlightedRolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
          const lutaTotal = lutaBonus + llBonus;
          attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${lutaTotal} (Luta)${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
-         isCritSuccess = baseAttackRoll === 20;
+         isCritSuccess = isCritical;
          isCritFail = baseAttackRoll === 1;
   } else {
          currentWeaponItem = equippedWeapons.find(w => w.id === selectedWeaponId);
@@ -347,7 +347,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
              const dicePart = `[${highlightedRolls.join(', ')}]${rolls.length > 1 ? ` ➜ ${best}` : ''}`;
              const skillTotal = attackBonus + llBonus;
              attackRollDetail = `${dicePart}${hasAdvAttack ? ' + Vantagem' : ''} + ${skillTotal} (${attackSkillName})${totalBuffBonus ? ` + ${totalBuffBonus} (Buffs)` : ''}${projectionBonus ? ` + ${projectionBonus} (Projeção)` : ''}`;
-             isCritSuccess = baseAttackRoll === 20;
+             isCritSuccess = criticalDieValue === 20;
              isCritFail = baseAttackRoll === 1;
 
              // Nova verificação de crítico: se o dado aleatório for 20
