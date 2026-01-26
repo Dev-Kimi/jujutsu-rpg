@@ -399,33 +399,23 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
       // Simplificação: Dano físico = Dano Base (sem reforço por dados)
       if (isCritical) {
-        // Maximize apenas o dano base em crítico
+        // Em crítico, adicionamos dados extras iguais aos dados base
         if (selectedWeaponId === 'unarmed') {
            const ceSelected = Math.max(0, unarmedCE || 0);
            const { diceCount, fixedBonus } = computeUnarmedD8Damage(ceSelected, char.attributes.FOR || 0, char.level, 'punch');
            const baseDice = getBaseDiceByLevel(char.level);
            const extraDiceCount = baseDice.punch;
            
-           // Calcular dano máximo para críticos
-           const maxDamage = diceCount * 8 + fixedBonus; // Dados amaldiçoados são sempre d8
-           baseDamageValue = maxDamage;
-           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) = ${maxDamage} (${diceCount}*8 + ${fixedBonus})`;
+           // Manter o dano base calculado anteriormente e apenas adicionar a informação dos extras
+           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) ${baseDamageText}`;
         } else {
            const ceSelected = Math.max(0, weaponCE || 0);
            const { baseDiceCount, baseDiceSides, cursedDiceCount, cursedDiceSides, fixedBonus } = computeWeaponD8Damage(ceSelected, char.attributes.FOR || 0, diceStr);
            const baseDice = getBaseDiceByLevel(char.level);
            const extraDiceCount = baseDice.punch;
            
-           // Calcular dano máximo para críticos
-           const maxBaseDamage = baseDiceCount * baseDiceSides;
-           const maxCursedDamage = cursedDiceCount * cursedDiceSides;
-           baseDamageValue = maxBaseDamage + maxCursedDamage + fixedBonus;
-           
-           const baseDiceText = baseDiceCount > 0 ? `${baseDiceCount}d${baseDiceSides}` : '';
-           const cursedDiceText = cursedDiceCount > 0 ? ` + ${cursedDiceCount}d${cursedDiceSides}` : '';
-           const fixedBonusText = fixedBonus ? ` + ${fixedBonus}` : '';
-           
-           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) ${baseDiceText}${cursedDiceText}${fixedBonusText} = ${baseDamageValue} (${baseDiceCount > 0 ? `${baseDiceCount}*${baseDiceSides}` : ''}${cursedDiceCount > 0 ? ` + ${cursedDiceCount}*${cursedDiceSides}` : ''}${fixedBonus ? ` + ${fixedBonus}` : ''})`;
+           // Manter o dano base calculado anteriormente e apenas adicionar a informação dos extras
+           baseDamageText = `Crítico! (+${extraDiceCount}d8 extras serão rolados) ${baseDamageText}`;
         }
       }
       
