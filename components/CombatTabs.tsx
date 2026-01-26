@@ -75,11 +75,13 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   onCloseDomain,
   onUpdateCharacter
 }) => {
+  const consumePVSafe = consumePV || (() => {});
   const [activeTab, setActiveTab] = useState<'physical' | 'defense'>('physical');
   const [invested, setInvested] = useState<number>(1);
   const [defenseCEMitigation, setDefenseCEMitigation] = useState<number>(0);
   const [unarmedDamageDie, setUnarmedDamageDie] = useState<string>('1d4');
   const [selectedWeaponId, setSelectedWeaponId] = useState<string>('unarmed');
+  const [unarmedCE, setUnarmedCE] = useState<number>(0);
 
   const [incomingDamage, setIncomingDamage] = useState<number>(0);
   const [lastResult, setLastResult] = useState<{ total: number, detail: string, isDamageTaken?: boolean, weaponBroken?: boolean, title?: string, attackRoll?: number, attackRollDetail?: string, attackRolls?: number[], isCritical?: boolean, isCritSuccess?: boolean, isCritFail?: boolean, damageTotal?: number, defenseRoll?: number, defenseRollDetail?: string, attackHits?: boolean } | null>(null);
@@ -97,8 +99,8 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
     }, 3000);
   };
 
-    // Identify equipped weapons from inventory
-    const equippedWeapons = char.inventory.filter(item => {
+  // Identify equipped weapons from inventory
+  const equippedWeapons = (char.inventory || []).filter(item => {
         try {
           // Must be equipped and have valid ID
           if (!item.id || !char.equippedWeapons?.includes(item.id)) return false;
@@ -470,7 +472,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
   const isHR = char.origin === Origin.RestricaoCelestial;
   
   // Check if character has Projection Sorcery
-  const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria" || char.techniques.some(t => t.name === "Projeção de Feitiçaria");
+  const hasProjection = char.innateTechnique?.name === "Projeção de Feitiçaria" || (char.techniques || []).some(t => t.name === "Projeção de Feitiçaria");
 
   const projectionStacks = char.projectionStacks || 0;
   const projectionBonus = projectionStacks === 1 ? 5 : projectionStacks === 2 ? 7 : projectionStacks === 3 ? 10 : 0;
@@ -574,7 +576,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
 
   const getWeaponCriticalThreshold = (weapon: Item): number => {
     // Try to find "Crítico: X" in description
-    const match = weapon.description.match(/Crítico:\s*(\d+)/i);
+    const match = weapon.description?.match(/Crítico:\s*(\d+)/i);
     if (match) return parseInt(match[1]);
 
     // Fallback to catalog data
@@ -869,7 +871,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                       if (onConsumeBuffs && relevantBuffs.length > 0) {
                         onConsumeBuffs(relevantBuffs);
                       }
-                      consumePV(finalDamage);
+                      consumePVSafe(finalDamage);
                       setLastResult({
                         total: finalDamage,
                         detail: `Dano ${incomingDamage} - Mitigação (CE ${ceSelected}➜${ceUsed}; ${mitigDiceCount}d6=[${mitigRolls.join(', ')}] + ${mitigFixed}${totalBuffBonus ? ` + Buffs ${totalBuffBonus}` : ''}) = ${reductionAmount}`,
@@ -891,7 +893,7 @@ export const CombatTabs: React.FC<CombatTabsProps> = ({
                         return;
                       }
                       const finalDamage = Math.max(0, incomingDamage);
-                      consumePV(finalDamage);
+                      consumePVSafe(finalDamage);
                       setLastResult({
                         total: finalDamage,
                         detail: `Dano direto aplicado: ${finalDamage}`,
