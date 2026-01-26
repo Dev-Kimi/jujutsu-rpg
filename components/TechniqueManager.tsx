@@ -11,7 +11,7 @@ import { InventoryList } from './InventoryList';
 import { BindingVowsManager } from './BindingVowsManager';
 import { CombatTabs } from './CombatTabs';
 import { MasterCombatTracker } from './MasterCombatTracker';
-import { calculateDerivedStats, computeCEInvestmentBonus, getTechniqueDamageDieSides, rollDice } from '../utils/calculations';
+import { calculateDerivedStats, computeCEInvestmentBonus, getTechniqueDamageDieSides, rollDice, computeTechniqueD8Damage, calculateMaxD8Damage } from '../utils/calculations';
 import { DiceRollLog } from './DiceRollLog';
 import { TechniqueCreatePage } from './TechniqueCreatePage';
 
@@ -1489,23 +1489,19 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
       showNotification(`Técnica ativada sem consumo de CE.`, 'success');
     }
 
-    const faces = getTechniqueDamageDieSides(powerCategory, characterLevel);
-    const { dano_fixo: fixed } = computeCEInvestmentBonus(investedCE);
-    const baseDice = 2;
-    const ceDiceBonus = Math.floor(investedCE / 3);
-    const multiplier = baseDice + ceDiceBonus;
-
+    const { diceCount, fixedBonus } = computeTechniqueD8Damage(investedCE);
+    
     let sum = 0;
     const rolls: number[] = [];
-    for (let i = 0; i < multiplier; i++) {
-      const r = rollDice(faces, 1);
+    for (let i = 0; i < diceCount; i++) {
+      const r = rollDice(8, 1);
       rolls.push(r);
       sum += r;
     }
-    const total = sum + fixed;
+    const total = sum + fixedBonus;
 
-    const diceText = `${multiplier}d${faces}=[${rolls.join('+')}]`;
-    const fixedText = fixed > 0 ? `${fixed}` : '';
+    const diceText = `${diceCount}d8=[${rolls.join('+')}]`;
+    const fixedText = fixedBonus > 0 ? `${fixedBonus}` : '';
     const joiner = diceText && fixedText ? ' + ' : '';
     const detail = `${diceText}${joiner}${fixedText}` || '0';
 
@@ -1712,12 +1708,8 @@ export const TechniqueManager: React.FC<TechniqueManagerProps> = ({
                   {(tech.subTechniques || []).map(sub => {
                     const expanded = !!expandedSubIds[sub.id];
                     const previewCe = Math.max(0, ceSpent || 0);
-                    const previewFixed = computeCEInvestmentBonus(previewCe).dano_fixo;
-                    const faces = getTechniqueDamageDieSides(sub.powerCategory, characterLevel);
-                    const baseDice = 2;
-                    const ceDiceBonus = Math.floor(previewCe / 3);
-                    const previewMultiplier = baseDice + ceDiceBonus;
-                    const diceLabel = `${previewMultiplier}d${faces}${previewFixed ? `+${previewFixed}` : ''}`;
+                    const { diceCount, fixedBonus } = computeTechniqueD8Damage(previewCe);
+                    const diceLabel = `${diceCount}d8${fixedBonus ? `+${fixedBonus}` : ''}`;
                     const summaryText = buildSubSummary(sub);
                     const descriptionText = sub.description || 'Sem descrição.';
                     const rangeLabel = getRangeLabel(sub);
