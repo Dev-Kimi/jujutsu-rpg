@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Technique } from '../types';
+import { Technique, DEFAULT_SKILLS } from '../types';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 
 type Props = {
@@ -34,6 +34,7 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
     consumesCharges: boolean;
     causesExhaustion: boolean;
     description: string;
+    attackSkill?: string;
   }>>(initialTechnique
     ? (initialTechnique.subTechniques || []).map(st => ({
         id: st.id,
@@ -52,7 +53,8 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
         guaranteedHit: !!st.guaranteedHit,
         consumesCharges: !!st.consumesCharges,
         causesExhaustion: !!st.causesExhaustion,
-        description: st.description || ''
+        description: st.description || '',
+        attackSkill: st.attackSkill || ''
       }))
     : [{
         id: Math.random().toString(36).substring(2, 9),
@@ -71,7 +73,8 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
         guaranteedHit: false,
         consumesCharges: false,
         causesExhaustion: false,
-        description: ''
+        description: '',
+        attackSkill: ''
       }]);
   useEffect(() => {
     if (!initialFocusSubTechniqueId) return;
@@ -100,7 +103,8 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
       guaranteedHit: false,
       consumesCharges: false,
       causesExhaustion: false,
-      description: ''
+      description: '',
+      attackSkill: ''
     }]);
   };
   const updateForm = (index: number, field: string, value: any) => {
@@ -134,7 +138,8 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
         conditionApplied: f.conditionApplied,
         guaranteedHit: f.guaranteedHit,
         consumesCharges: f.consumesCharges,
-        causesExhaustion: f.causesExhaustion
+        causesExhaustion: f.causesExhaustion,
+        attackSkill: f.attackSkill
       };
     });
     const technique: Technique = {
@@ -277,6 +282,24 @@ export const TechniqueCreatePage: React.FC<Props> = ({ title, submitLabel, onCan
                     </select>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Perícia de Ataque (Opcional)</label>
+                    <select
+                      value={f.attackSkill || ''}
+                      onChange={(e) => updateForm(idx, 'attackSkill', e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-white focus:border-curse-500 focus:outline-none"
+                    >
+                      <option value="">Nenhuma (Apenas Dano)</option>
+                      {DEFAULT_SKILLS.map(s => (
+                        <option key={s.id} value={s.name}>{s.name} ({s.attribute})</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-slate-500 mt-1">Se selecionado, um teste de ataque será rolado automaticamente junto com o dano.</p>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Alcance</label>
