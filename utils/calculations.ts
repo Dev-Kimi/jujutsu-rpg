@@ -335,8 +335,8 @@ export const computeUnarmedD8Damage = (ceInvested: number, strength: number): { 
   if (!Number.isInteger(ceInvested) || ceInvested < 0) {
     throw new Error('CE inválido: forneça um inteiro não-negativo');
   }
-  const diceCount = 4 + Math.floor(ceInvested / 5);
-  const fixedBonus = (strength * 2) + Math.floor((ceInvested % 5) / 2);
+  const diceCount = 2 + Math.floor(ceInvested / 5);
+  const fixedBonus = (strength * 5) + Math.floor((ceInvested % 5) / 2);
   return { diceCount, fixedBonus };
 };
 
@@ -374,10 +374,10 @@ export const computeWeaponD8Damage = (ceInvested: number, strength: number, base
   const baseCount = parseInt(diceMatch[1]);
   const baseSides = parseInt(diceMatch[2]);
   
-  // Fórmula: (dados base + [Investimento / 5]) * dado da arma(faces) + (FOR * 2) + (Investimento % 5 / 2, arrendondado para baixo)
+  // Fórmula: (dados base + [Investimento / 5]) * dado da arma(faces) + (FOR * 5) + (Investimento % 5 / 2, arrendondado para baixo)
   const extraDice = Math.floor(ceInvested / 5);
   const diceCount = baseCount + extraDice;
-  const fixedBonus = (strength * 2) + Math.floor((ceInvested % 5) / 2);
+  const fixedBonus = (strength * 5) + Math.floor((ceInvested % 5) / 2);
   
   return { diceCount, fixedBonus, baseSides };
 };
