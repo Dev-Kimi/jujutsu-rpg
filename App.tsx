@@ -1702,6 +1702,7 @@ const App: React.FC = () => {
                     onUpdate={handleTechniqueUpdate}
                     onRemove={handleTechniqueRemove}
                     onOpenLibrary={() => setShowTechniqueLibrary(true)}
+                    character={character}
                     characterLevel={character.level}
                     llValue={stats.LL}
                     intValue={character.attributes.INT}
