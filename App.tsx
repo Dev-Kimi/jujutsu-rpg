@@ -1704,6 +1704,7 @@ const App: React.FC = () => {
                     onOpenLibrary={() => setShowTechniqueLibrary(true)}
                     characterLevel={character.level}
                     llValue={stats.LL}
+                    intValue={character.attributes.INT}
                     currentCE={currentStats.ce}
                     onConsumeCE={consumeCE}
                  />
