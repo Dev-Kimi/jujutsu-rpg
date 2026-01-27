@@ -584,13 +584,6 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({
     }));
   };
 
-  const handleLevelUp = (newLevel: number) => {
-    updateViewingChar(prev => ({
-      ...prev,
-      level: newLevel
-    }));
-  };
-
   const handleAddTechnique = (technique: Technique) => {
     updateViewingChar(prev => ({
       ...prev,
@@ -1117,7 +1110,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({
                     )}
 
                     {sheetTab === 'progression' && (
-                      <LevelUpSummary char={viewingChar} onUpdateAptitude={handleAptitudeUpdate} onLevelUp={handleLevelUp} />
+                      <LevelUpSummary char={viewingChar} onUpdateAptitude={handleAptitudeUpdate} />
                     )}
 
                     {sheetTab === 'binding-vows' && (
