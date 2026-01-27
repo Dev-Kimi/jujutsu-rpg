@@ -183,7 +183,6 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
                    </select>
                  </div>
                </div>
-             </div>
           </div>
         ) : (
           <div className="flex items-center gap-3">
