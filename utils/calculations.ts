@@ -348,7 +348,7 @@ export const computeCEInvestmentBonus = (ceInvested: number): { dados_adicionais
   }
   const dados_adicionais = Math.floor(ceInvested / 3);
   const resto = ceInvested % 3;
-  const dano_fixo = Math.ceil(resto / 3);
+  const dano_fixo = Math.ceil(resto / 2);
   return { dados_adicionais, dano_fixo };
 };
 
@@ -362,7 +362,7 @@ export const computeUnarmedD8Damage = (ceInvested: number, strength: number, lev
   const unit = Math.floor(ceInvested / 5);
   const investDice = Math.floor(unit * 1.0);
   const diceCount = baseDiceCount + investDice;
-  const fixedBonus = (strength * 4) + (ceInvested % 5);
+  const fixedBonus = (strength * 5) + (ceInvested % 5 /2);
   
   return { diceCount, fixedBonus };
 };
