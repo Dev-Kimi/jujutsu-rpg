@@ -104,7 +104,7 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
           gainedSkill += 1;
         }
       } else {
-        if ([4, 8, 12, 16, 20].includes(level)) {
+        if ([4, 8, 12, 16, 20, 24, 28].includes(level)) {
           gainedAttr += 1;
         }
       }
