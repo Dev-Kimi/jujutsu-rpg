@@ -707,7 +707,7 @@ export const CampaignManager: React.FC<CampaignManagerProps> = ({
           if (isRestrictionCelestial) {
             nextCE = 0;
           } else {
-            const recovered = level + pre;
+            const recovered = Math.ceil(max.ce * 0.05);
             nextCE = Math.min(current.ce + recovered, max.ce ?? current.ce + recovered);
           }
 
