@@ -29,8 +29,8 @@ const LL_GAIN_TABLE = [
   6, 6, 6, 6,
   7,
   8, 8, 8,
-  9, 9, 9, 9,
-  10, 10, 10
+  12, 12, 12, 12,
+  16, 16, 16
 ];
 
 let rollAudioPool: HTMLAudioElement[] = [];
