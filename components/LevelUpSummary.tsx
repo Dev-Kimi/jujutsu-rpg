@@ -6,10 +6,9 @@ import { TrendingUp, Award, Book, Dna, Star, Crown, ChevronRight, CheckCircle2, 
 interface LevelUpSummaryProps {
   char: Character;
   onUpdateAptitude?: (category: keyof AptitudeLevels, level: number) => void;
-  onLevelUp?: (newLevel: number) => void;
 }
 
-export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAptitude, onLevelUp }) => {
+export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAptitude }) => {
   
   const resources = useMemo(() => calculateTotalResources(char.level, char.origin), [char.level, char.origin]);
   const nextRewards = useMemo(() => getNextLevelRewards(char.level, char.origin), [char.level, char.origin]);
@@ -173,48 +172,6 @@ export const LevelUpSummary: React.FC<LevelUpSummaryProps> = ({ char, onUpdateAp
           </div>
         </div>
       </div>
-
-      {/* Level Selection Grid */}
-      {onLevelUp && (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h3 className="font-bold text-white flex items-center gap-2 mb-4">
-            <TrendingUp size={20} className="text-curse-400" /> Selecionar Nível
-          </h3>
-          
-          <div className="grid grid-cols-6 sm:grid-cols-10 gap-2">
-            {Array.from({ length: 30 }, (_, i) => i + 1).map(level => (
-              <button
-                key={level}
-                onClick={() => onLevelUp(level)}
-                disabled={level <= char.level}
-                className={`p-2 rounded-lg text-sm font-bold transition-all duration-200 ${
-                  level === char.level
-                    ? 'bg-curse-600 text-white border-2 border-curse-400 shadow-lg shadow-curse-500/25'
-                    : level < char.level
-                    ? 'bg-slate-800 text-slate-400 border border-slate-700 cursor-not-allowed'
-                    : level === char.level + 1
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-500 hover:border-emerald-400'
-                    : 'bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 hover:border-slate-500'
-                }`}
-                title={level <= char.level ? `Nível ${level} já alcançado` : `Avançar para nível ${level}`}
-              >
-                {level}
-              </button>
-            ))}
-          </div>
-          
-          <div className="mt-4 text-xs text-slate-400 flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-slate-800 border border-slate-700"></div>
-            <span>Nível já alcançado</span>
-            
-            <div className="w-3 h-3 rounded bg-emerald-600 border border-emerald-500 ml-4"></div>
-            <span>Próximo nível</span>
-            
-            <div className="w-3 h-3 rounded bg-slate-700 border border-slate-600 ml-4"></div>
-            <span>Níveis futuros</span>
-          </div>
-        </div>
-      )}
 
       {/* Resources Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
