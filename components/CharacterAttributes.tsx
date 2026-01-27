@@ -129,44 +129,19 @@ export const CharacterAttributes: React.FC<CharacterAttributesProps> = ({ char, 
                className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-sm text-white font-bold"
              />
              <div className="space-y-2">
-                 <div className="space-y-1">
-                   <div className="text-xs text-slate-400 font-medium">Nível:</div>
-                   <div className="grid grid-cols-10 gap-1">
+                 <div>
+                   <div className="text-xs text-slate-400 font-medium mb-1">Nível:</div>
+                   <select 
+                     value={char.level}
+                     onChange={(e) => onUpdate('level', parseInt(e.target.value) || 1)}
+                     className="w-full bg-slate-900 border border-slate-700 rounded p-1 text-xs text-slate-300"
+                   >
                      {Array.from({ length: 30 }, (_, i) => i + 1).map(level => (
-                       <button
-                         key={level}
-                         type="button"
-                         onClick={() => onUpdate('level', level)}
-                         className={`w-6 h-6 text-xs rounded border transition-all ${
-                           char.level === level
-                             ? 'bg-purple-600 border-purple-400 text-white shadow-md'
-                             : level < char.level
-                             ? 'bg-slate-800 border-slate-600 text-slate-400 cursor-not-allowed'
-                             : level === char.level + 1
-                             ? 'bg-green-700 border-green-500 text-white hover:bg-green-600'
-                             : 'bg-slate-700 border-slate-500 text-slate-300 hover:bg-slate-600'
-                         }`}
-                         title={level === char.level ? 'Nível atual' : level < char.level ? 'Nível já alcançado' : `Definir nível ${level}`}
-                         disabled={level < char.level}
-                       >
-                         {level}
-                       </button>
+                       <option key={level} value={level}>
+                         Nível {level}
+                       </option>
                      ))}
-                   </div>
-                   <div className="text-[10px] text-slate-500 flex items-center gap-2">
-                     <div className="flex items-center gap-1">
-                       <div className="w-3 h-3 bg-purple-600 border border-purple-400 rounded"></div>
-                       <span>Atual</span>
-                     </div>
-                     <div className="flex items-center gap-1">
-                       <div className="w-3 h-3 bg-green-700 border border-green-500 rounded"></div>
-                       <span>Próximo</span>
-                     </div>
-                     <div className="flex items-center gap-1">
-                       <div className="w-3 h-3 bg-slate-700 border border-slate-500 rounded"></div>
-                       <span>Futuro</span>
-                     </div>
-                   </div>
+                   </select>
                  </div>
                  
                  <div>
