@@ -27,6 +27,16 @@ export const SORCERER_TABLE: LevelEntry[] = [
   { level: 18, gains: ["+1 Ponto de Habilidade"] },
   { level: 19, gains: ["Grau de Treinamento +3"] },
   { level: 20, gains: ["Aumento de Atributo (+1)", "+1 Ponto de Aptidão", "Técnica Máxima / Restauração"] },
+  { level: 21, gains: ["+1 Ponto de Habilidade", "Grau de Treinamento +3"] },
+  { level: 22, gains: ["+1 Ponto de Aptidão", "+1 Ponto de Habilidade"] },
+  { level: 23, gains: ["+1 Ponto de Habilidade"] },
+  { level: 24, gains: ["Aumento de Atributo (+1)", "+1 Ponto de Habilidade"] },
+  { level: 25, gains: ["Nova Variação da Técnica Inata", "Grau de Treinamento +3"] },
+  { level: 26, gains: ["+1 Ponto de Aptidão", "+1 Ponto de Habilidade"] },
+  { level: 27, gains: ["+1 Ponto de Habilidade"] },
+  { level: 28, gains: ["Aumento de Atributo (+1)", "+1 Ponto de Habilidade"] },
+  { level: 29, gains: ["Grau de Treinamento +3", "+1 Ponto de Aptidão"] },
+  { level: 30, gains: ["Aumento de Atributo (+1)", "+1 Ponto de Aptidão", "Domínio da Técnica Inata"] },
 ];
 
 // 2. Tabela Restrição Celestial (Físico)
@@ -36,6 +46,16 @@ export const HEAVENLY_TABLE: LevelEntry[] = [
   { level: 10, gains: ["Percepção da Alma (Ver Maldições/Almas)", "Quebra de Postura"] },
   { level: 15, gains: ["Corpo Indestrutível (RD 5 Universal)"] },
   { level: 20, gains: ["O Tirano dos Céus (Rerrolar Falhas Físicas)", "Limite Rompido"] },
+  { level: 21, gains: ["Resistência Sobrenatural (RD +2 Universal)"] },
+  { level: 22, gains: ["Velocidade Celestial (Movimento Extra)"] },
+  { level: 23, gains: ["Força Imparável (Bônus de Dano +2)"] },
+  { level: 24, gains: ["Corpo Indestrutível Aprimorado (RD 7 Universal)"] },
+  { level: 25, gains: ["Instinto Predatório Aprimorado (Perícias Extra)"] },
+  { level: 26, gains: ["Quebra de Postura Aprimorada"] },
+  { level: 27, gains: ["Assassino de Xamãs Aprimorado"] },
+  { level: 28, gains: ["Percepção da Alma Aprimorada"] },
+  { level: 29, gains: ["Mestre de Armas Supremo"] },
+  { level: 30, gains: ["Domínio Celestial", "Limite Transcendido"] },
 ];
 
 export interface ResourceSummary {
@@ -75,8 +95,8 @@ export const calculateTotalResources = (level: number, origin: Origin): Resource
     // Based on prompt: "HR follows unique table". 
     // We will apply Attribute increases to HR as well (standard RPG trope), but strictly follow table for others if explicitly separate.
     
-    // Check for Attribute Increases (Levels 4, 8, 12, 16, 20)
-    if ([4, 8, 12, 16, 20].includes(i)) {
+    // Check for Attribute Increases (Levels 4, 8, 12, 16, 20, 24, 28)
+    if ([4, 8, 12, 16, 20, 24, 28].includes(i)) {
       attributes += 1;
     }
 
@@ -115,7 +135,7 @@ export const getProficiencyBonus = (level: number): number => {
 
 export const getNextLevelRewards = (currentLevel: number, origin: Origin): string[] => {
   const nextLevel = currentLevel + 1;
-  if (nextLevel > 20) return ["Nível Máximo Alcançado"];
+  if (nextLevel > 30) return ["Nível Máximo Alcançado"];
 
   const isHR = origin === Origin.RestricaoCelestial;
   
