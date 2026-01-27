@@ -9,7 +9,9 @@ export interface BaseDiceProgression {
 }
 
 export const getBaseDiceByLevel = (level: number): BaseDiceProgression => {
-  if (level >= 17 && level <= 20) {
+  if (level >= 21 && level <= 30) {
+    return { utility: 11, punch: 12, medium: 12, highDamage: 14 };
+  } else if (level >= 17 && level <= 20) {
     return { utility: 9, punch: 10, medium: 10, highDamage: 12 };
   } else if (level >= 13 && level <= 16) {
     return { utility: 7, punch: 8, medium: 8, highDamage: 10 };
@@ -30,7 +32,8 @@ const LL_GAIN_TABLE = [
   7,
   8, 8, 8,
   12, 12, 12, 12,
-  16, 16, 16
+  16, 16, 16,
+  20, 20, 20, 20, 20
 ];
 
 let rollAudioPool: HTMLAudioElement[] = [];
@@ -120,7 +123,7 @@ export const calculateDerivedStats = (char: Character): DerivedStats => {
   const LL = getLLForLevel(level);
 
   const MaxPV = (15 + VIG * 5) + ((13 + VIG * 2) * level);
-  const MaxCE = (INT * LL) + (level * 20) + 30;
+  const MaxCE = (INT * LL) + (level * 25) + 50;
   const MaxPE = Math.floor(PRE * level * 1.5) + Math.floor(LL / 2);
 
   // E. Movement
